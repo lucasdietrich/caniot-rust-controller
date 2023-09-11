@@ -1,5 +1,7 @@
 use socketcan::{CanSocket, Frame, Socket};
 
+mod caniot;
+
 fn main() {
     let iface = "can0";
 
@@ -8,6 +10,9 @@ fn main() {
     loop {
         let frame = sock.read_frame().unwrap();
         println!("{}  {}", iface, frame_to_string(&frame));
+
+        let msg_id = caniot::Id::from(frame.raw_id());
+        println!("  {:?}", msg_id);
     }
 }
 

@@ -15,3 +15,6 @@ deploy: target_build
 
 run: 
 	ssh rpi /home/root/caniot-rust-controller-full
+
+fmt:
+	cargo fmt && cargo clippy -- -D warnings
