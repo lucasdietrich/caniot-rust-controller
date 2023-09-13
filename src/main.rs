@@ -1,6 +1,6 @@
-use socketcan::{CanSocket, Frame, Socket};
+use socketcan::{CanSocket, Frame, Socket, EmbeddedFrame};
 
-mod caniot;
+pub mod caniot;
 
 fn main() {
     let iface = "can0";
@@ -11,8 +11,9 @@ fn main() {
         let frame = sock.read_frame().unwrap();
         println!("{}  {}", iface, frame_to_string(&frame));
 
-        let msg_id = caniot::Id::from(frame.raw_id());
-        println!("  {:?}", msg_id);
+        let frame = caniot::Frame::from((frame.raw_id(), frame.data().try_into().unwrap()));
+        println!("{}  {:?}", iface, frame);
+        // println!("did = {:?}", frame.device_id());
     }
 }
 

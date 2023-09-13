@@ -30,6 +30,7 @@ checksum = "14c189c53d098945499cdfa7ecc63567cf3886b3332b312a5b4585d8d3a6a610"
 name = "caniot-rust-controller-full"
 version = "0.1.0"
 dependencies = [
+ "embedded-can 0.1.0",
  "num",
  "num-derive",
  "num-traits",
@@ -47,6 +48,15 @@ name = "either"
 version = "1.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a26ae43d7bcc3b814de94796a5e736d4029efb0ee900c12e2d54c993ad1a1e07"
+
+[[package]]
+name = "embedded-can"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2f985c1988048cf7b54c58d0e527c4812fed1bf0afd3190525315ba4b9eae9e9"
+dependencies = [
+ "nb",
+]
 
 [[package]]
 name = "embedded-can"
@@ -276,7 +286,7 @@ checksum = "a7f4c22d9e1c112cad4a39dea15dd4f17e4699edcece54b6401fcdd9c40bc053"
 dependencies = [
  "bitflags",
  "byte_conv",
- "embedded-can",
+ "embedded-can 0.4.1",
  "hex",
  "itertools",
  "libc",
