@@ -172,7 +172,7 @@ pub enum AttributeContent {
 
 #[derive(Debug)]
 pub struct ErrorData {
-    pub error: CaniotError
+    pub error: CaniotError,
 }
 
 impl From<u32> for Id {
@@ -207,7 +207,10 @@ impl From<(u32, &[u8; 8])> for Frame {
 
         // The repetitive logic to construct Frame is extracted here
         fn make_frame(device_id: DeviceId, frame_type: FrameType) -> Frame {
-            Frame { device_id, frame_type }
+            Frame {
+                device_id,
+                frame_type,
+            }
         }
 
         match id.msg_type {
@@ -216,30 +219,44 @@ impl From<(u32, &[u8; 8])> for Frame {
                     (Direction::Query, Action::Read) => TelemetryContent::Query,
                     (Direction::Query, Action::Write) => TelemetryContent::Command(data.clone()),
                     (Direction::Response, Action::Read) => TelemetryContent::Response(data.clone()),
-                    (Direction::Response, Action::Write) => TelemetryContent::Error(ErrorData { 
-                        error: CaniotError::from_i16(i16::from_le_bytes([data[0], data[1]])).unwrap_or(CaniotError::Eunexpected),
+                    (Direction::Response, Action::Write) => TelemetryContent::Error(ErrorData {
+                        error: CaniotError::from_i16(i16::from_le_bytes([data[0], data[1]]))
+                            .unwrap_or(CaniotError::Eunexpected),
                     }),
                 };
 
-                let telemetry_data = TelemetryData { endpoint: id.endpoint, payload };
+                let telemetry_data = TelemetryData {
+                    endpoint: id.endpoint,
+                    payload,
+                };
                 make_frame(device_id, FrameType::Telemetry(telemetry_data))
             }
-            
+
             Type::Attribute => {
-                let mut attribute_key = AttributeKey { key: data[0] as u16 };  // This is kept constant as in the original code
+                let mut attribute_key = AttributeKey {
+                    key: data[0] as u16,
+                }; // This is kept constant as in the original code
                 let payload = match (id.direction, id.action) {
                     (Direction::Query, Action::Read) => AttributeContent::ReadRequest,
-                    (Direction::Query, Action::Write) => AttributeContent::WriteRequest(u32::from_le_bytes(data[2 .. 6].try_into().unwrap())),
-                    (Direction::Response, Action::Read) => AttributeContent::Response(u32::from_le_bytes(data[2 .. 6].try_into().unwrap())),
+                    (Direction::Query, Action::Write) => AttributeContent::WriteRequest(
+                        u32::from_le_bytes(data[2..6].try_into().unwrap()),
+                    ),
+                    (Direction::Response, Action::Read) => AttributeContent::Response(
+                        u32::from_le_bytes(data[2..6].try_into().unwrap()),
+                    ),
                     (Direction::Response, Action::Write) => {
                         attribute_key.key = data[2] as u16;
-                        AttributeContent::Error(ErrorData { 
-                            error: CaniotError::from_i16(i16::from_le_bytes([data[0], data[1]])).unwrap_or(CaniotError::Eunexpected),
+                        AttributeContent::Error(ErrorData {
+                            error: CaniotError::from_i16(i16::from_le_bytes([data[0], data[1]]))
+                                .unwrap_or(CaniotError::Eunexpected),
                         })
-                    },
+                    }
                 };
 
-                let attribute_data = AttributeData { key: attribute_key, payload };
+                let attribute_data = AttributeData {
+                    key: attribute_key,
+                    payload,
+                };
                 make_frame(device_id, FrameType::Attribute(attribute_data))
             }
         }

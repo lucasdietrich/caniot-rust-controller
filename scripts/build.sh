@@ -1,7 +1,7 @@
 #!/bin/bash
 
-NAME="caniot-rust-controller-full"
-MODE="release"
+NAME="caniot-rctrl"
+BUILD_TYPE="release"
 TARGET="rpi"
 POKY_ENV="/opt/poky/hypirl-rpi-1.0/environment-setup-cortexa7t2hf-neon-vfpv4-poky-linux-gnueabi"
 TARGET_ARCH="armv7-unknown-linux-gnueabihf"
@@ -9,7 +9,12 @@ TARGET_ARCH="armv7-unknown-linux-gnueabihf"
 source $POKY_ENV
 
 function build() {
-    cargo build --target=$TARGET_ARCH --$MODE --verbose
+    # if release add --release
+    if [ "$BUILD_TYPE" == "release" ]; then
+        cargo build --target=$TARGET_ARCH --release --verbose
+    else
+        cargo build --target=$TARGET_ARCH --verbose
+    fi
 }
 
 function clean() {
@@ -17,7 +22,7 @@ function clean() {
 }
 
 function deploy() {
-    scp target/$TARGET_ARCH/$MODE/$NAME $TARGET:/home/root
+    scp target/$TARGET_ARCH/$BUILD_TYPE/$NAME $TARGET:/home/root
 }
 
 USAGE="Usage: $0 -d {build|clean|deploy}"

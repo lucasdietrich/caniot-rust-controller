@@ -1,13 +1,32 @@
 [package]
-name = "caniot-rust-controller-full"
+name = "caniot-rctrl"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+tokio = { version = "1", features = ["net"]}
+async-std = "1.12"
+rocket = { version = "0.5.0-rc.1", features = ["json"] }
+serde = { version = "1.0.188", features = ["derive"] }
+toml = "0.8.0"
+
+futures = "0.3"
+futures-util = "0.3"
+
+socketcan = { git = "https://github.com/socketcan-rs/socketcan-rs.git", rev = "c3004f0d7c600cd3964cd8655fd26f670d7c87e7", features = ["tokio", "async-std"]}
+embedded-can = "0.4"
+
+log = "0.4.20"
+env_logger = "0.10.0"
+
 num = "0.4"
 num-derive = "0.4"
 num-traits = "0.2"
-socketcan = "2.0.0"
-embedded-can = "0.1.0"
+
+[profile.release]
+# panic = "abort" / "unwind"
+lto = true
+opt-level = "z"
+strip = "debuginfo"
