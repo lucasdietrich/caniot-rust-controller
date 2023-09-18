@@ -1,5 +1,5 @@
-use rocket::{Rocket, Build, Config, log::LogLevel};
-use rocket::serde::{Serialize, json::Json, Deserialize};
+use rocket::serde::{json::Json, Deserialize, Serialize};
+use rocket::{log::LogLevel, Build, Config, Rocket};
 
 use crate::config::ServerConfig;
 use crate::context::ContextHandle;
@@ -18,8 +18,5 @@ pub fn rocket(config: ServerConfig, context: ContextHandle) -> Rocket<Build> {
 
     rocket::custom(config)
         .manage(context)
-        .mount("/", routes![
-            route_test,
-            route_test_id_name,
-        ])
+        .mount("/", routes![route_test, route_test_id_name, route_stats])
 }

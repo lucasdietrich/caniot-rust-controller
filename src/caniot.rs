@@ -4,6 +4,12 @@ use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 
 pub const CANIOT_ERROR_BASE: isize = 0x3A00;
+pub const CANIOT_DEVICE_FILTER_ID: u32 = 1 << 2; /* bit 2 is 1 for response frames */
+pub const CANIOT_DEVICE_FILTER_MASK: u32 = 1 << 2; /* bit 2 is 1 to filter frames by direction */
+
+use embedded_can::{Frame as EmbeddedFrame, Id as EmbeddedId};
+
+use thiserror::Error;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, FromPrimitive)]
 pub enum CaniotError {
@@ -175,8 +181,8 @@ pub struct ErrorData {
     pub error: CaniotError,
 }
 
-impl From<u32> for Id {
-    fn from(id: u32) -> Self {
+impl From<u16> for Id {
+    fn from(id: u16) -> Self {
         Id {
             device_id: DeviceId {
                 class: ((id >> 3) & 0x7) as u8,
@@ -186,6 +192,20 @@ impl From<u32> for Id {
             msg_type: Type::from_u8(((id >> 1) & 0x1) as u8).unwrap(),
             direction: Direction::from_u8(((id >> 2) & 0x1) as u8).unwrap(),
             endpoint: Endpoint::from_u8(((id >> 9) & 0x3) as u8).unwrap(),
+        }
+    }
+}
+
+impl TryFrom<EmbeddedId> for Id {
+    type Error = std::io::Error;
+
+    fn try_from(value: EmbeddedId) -> Result<Self, Self::Error> {
+        match value {
+            EmbeddedId::Standard(id) => Ok(id.as_raw().into()),
+            EmbeddedId::Extended(_) => Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                "Extended ID not supported",
+            )),
         }
     }
 }
@@ -200,9 +220,27 @@ impl Frame {
     }
 }
 
-impl From<(u32, &[u8; 8])> for Frame {
-    fn from((id, data): (u32, &[u8; 8])) -> Self {
-        let id = Id::from(id);
+#[derive(Error, Debug)]
+pub enum ConversionError {
+    #[error("TryFromSlice error: {0}")]
+    TryFromSlice(#[from] std::array::TryFromSliceError),
+    #[error("IoError: {0}")]
+    IoError(#[from] std::io::Error),
+}
+
+// This structure is used to encapsulate a Type which implements EmbeddedFrame
+// This way we can implement TryFrom<EmbeddedFrameWrapper<E>> for Frame
+// where E: EmbeddedFrame
+pub struct EmbeddedFrameWrapper<T: EmbeddedFrame>(pub T);
+
+impl<E> TryFrom<EmbeddedFrameWrapper<E>> for Frame
+where
+    E: EmbeddedFrame,
+{
+    type Error = ConversionError;
+
+    fn try_from(frame: EmbeddedFrameWrapper<E>) -> Result<Self, Self::Error> {
+        let id: Id = frame.0.id().try_into()?;
         let device_id = id.device_id;
 
         // The repetitive logic to construct Frame is extracted here
@@ -213,7 +251,9 @@ impl From<(u32, &[u8; 8])> for Frame {
             }
         }
 
-        match id.msg_type {
+        let data: [u8; 8] = frame.0.data().try_into()?;
+
+        Ok(match id.msg_type {
             Type::Telemetry => {
                 let payload = match (id.direction, id.action) {
                     (Direction::Query, Action::Read) => TelemetryContent::Query,
@@ -235,7 +275,7 @@ impl From<(u32, &[u8; 8])> for Frame {
             Type::Attribute => {
                 let mut attribute_key = AttributeKey {
                     key: data[0] as u16,
-                }; // This is kept constant as in the original code
+                };
                 let payload = match (id.direction, id.action) {
                     (Direction::Query, Action::Read) => AttributeContent::ReadRequest,
                     (Direction::Query, Action::Write) => AttributeContent::WriteRequest(
@@ -259,6 +299,6 @@ impl From<(u32, &[u8; 8])> for Frame {
                 };
                 make_frame(device_id, FrameType::Attribute(attribute_data))
             }
-        }
+        })
     }
 }

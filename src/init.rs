@@ -2,7 +2,7 @@ use env_logger;
 use log;
 use tokio;
 
-use crate::{config, context, server, can};
+use crate::{can, config, context, server};
 
 pub fn init_controller() {
     env_logger::builder()
@@ -26,7 +26,7 @@ pub fn init_controller() {
         .build()
         .unwrap();
 
-    let h_can = rt.spawn(can::can_socket(config.can, context.clone()));
+    let h_can = rt.spawn(can::can_listener(config.can, context.clone()));
     let h_rocket = rt.spawn(server::rocket(config.server, context.clone()).launch());
 
     rt.block_on(async {

@@ -1,9 +1,9 @@
-// use crate::caniot::DeviceId;
+use crate::caniot::DeviceId;
 
-// struct Device {
-//     device_id: DeviceId,
-// }
+struct Device {
+    pub device_id: DeviceId,
+}
 
-// struct Controller {
-//     devices: Vec<Device>,
-// }
+struct Controller {
+    pub devices: [Device; 63],
+}
