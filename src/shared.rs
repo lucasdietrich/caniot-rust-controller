@@ -11,18 +11,15 @@ pub struct Shared {
     // TODO ???
     // The Tokio runtime. Some tasks may need to spawn additional tasks onto the runtime.
     // pub rt: Mutex<tokio::runtime::Runtime>,
-
     /// Gather all statistics about the application
     pub stats: Mutex<Stats>,
 
     /// Used to signal the asynchronous task to shutdown
     /// The task subscribes to this channel
-    pub notify_shutdown: broadcast::Sender<()>
-
-    // TODO ???
-    // /// Used to signal the asynchronous task has completed
-    // /// The task drops the sender when it shuts down
-    // pub _shutdown_complete: mpsc::Sender<()>,
+    pub notify_shutdown: broadcast::Sender<()>, // TODO ???
+                                                // /// Used to signal the asynchronous task has completed
+                                                // /// The task drops the sender when it shuts down
+                                                // pub _shutdown_complete: mpsc::Sender<()>,
 }
 
 #[derive(Serialize, Debug, Clone, Copy)]
@@ -42,9 +39,7 @@ pub struct CanStats {
 #[derive(Serialize, Debug, Clone, Copy)]
 pub struct ServerStats {}
 
-pub fn new_context(
-    notify_shutdown: broadcast::Sender<()>,
-) -> SharedHandle {
+pub fn new_context(notify_shutdown: broadcast::Sender<()>) -> SharedHandle {
     Arc::new(Shared {
         stats: Mutex::new(Stats {
             can: CanStats {

@@ -4,7 +4,7 @@ use rocket::fairing::Fairing;
 use tokio;
 use tokio::sync::{broadcast, mpsc};
 
-use crate::{can, config, shared, server, logger};
+use crate::{can, config, logger, server, shared};
 
 fn get_tokio_rt() -> tokio::runtime::Runtime {
     tokio::runtime::Builder::new_current_thread()
@@ -30,8 +30,8 @@ pub fn init_controller() {
 
     rt.spawn(async move {
         tokio::signal::ctrl_c()
-        .await
-        .expect("Failed to install CTRL+C signal handler");
+            .await
+            .expect("Failed to install CTRL+C signal handler");
 
         let _ = notify_shutdown.send(());
     });

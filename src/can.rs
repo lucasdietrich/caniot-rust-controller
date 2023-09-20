@@ -8,7 +8,7 @@ use thiserror::Error;
 use log::{debug, error, info, warn};
 
 use crate::caniot::{
-    ConversionError, EmbeddedFrameWrapper, Frame as CaniotFrame, Id as CaniotId,
+    ConversionError, EmbeddedFrameWrapper, Id as CaniotId, Response as CaniotResponse,
     CANIOT_DEVICE_FILTER_ID, CANIOT_DEVICE_FILTER_MASK,
 };
 use crate::config::CanConfig;
@@ -27,23 +27,20 @@ pub enum CanListenerError {
 }
 
 fn handle_can_data_frame(frame: CanDataFrame, shared: &Shared) {
-    let frame: Result<CaniotFrame, _> = EmbeddedFrameWrapper(frame).try_into();
+    let frame: Result<CaniotResponse, _> = EmbeddedFrameWrapper(frame).try_into();
     match frame {
         Ok(frame) => {
             shared.stats.lock().unwrap().can.rx += 1;
-            debug!("Received {:?}", frame);
+            info!("{}", frame);
         }
         Err(err) => {
             shared.stats.lock().unwrap().can.malformed += 1;
-            error!("Failed to convert to CANIOT frame {}", err)
+            error!("Failed to convert into CANIOT frame {}", err)
         }
     }
 }
 
-pub async fn can_listener(
-    config: CanConfig,
-    shared: SharedHandle,
-) -> Result<(), CanListenerError> {
+pub async fn can_listener(config: CanConfig, shared: SharedHandle) -> Result<(), CanListenerError> {
     let mut sock = CanSocket::open(&config.interface)?;
 
     // keep only CANIOT device frames
@@ -51,7 +48,7 @@ pub async fn can_listener(
     sock.set_filters(&[filter])?;
 
     let mut shutdown = Shutdown::new(shared.notify_shutdown.subscribe());
-    
+
     loop {
         tokio::select! {
             Some(res) = sock.next() => match res {

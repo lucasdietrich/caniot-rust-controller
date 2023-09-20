@@ -1,3 +1,4 @@
+use core::fmt;
 use std::fmt::Debug;
 
 use num_derive::FromPrimitive;
@@ -68,7 +69,7 @@ impl CaniotError {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct DeviceId {
     pub class: u8,
     pub sub_id: u8,
@@ -80,9 +81,9 @@ impl DeviceId {
     }
 }
 
-impl Debug for DeviceId {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "({},{}: {})", self.class, self.sub_id, self.get_did())
+impl fmt::Display for DeviceId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "({}: {},{})", self.get_did(), self.class, self.sub_id)
     }
 }
 
@@ -112,14 +113,14 @@ pub enum Endpoint {
     BoardControl = 3,
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct AttributeKey {
-    pub key: u16,
-}
-
-impl From<u16> for AttributeKey {
-    fn from(key: u16) -> Self {
-        AttributeKey { key }
+impl fmt::Display for Endpoint {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Endpoint::ApplicationDefault => write!(f, "ep-0"),
+            Endpoint::Application1 => write!(f, "ep-1"),
+            Endpoint::Application2 => write!(f, "ep-2"),
+            Endpoint::BoardControl => write!(f, "ep-c"),
+        }
     }
 }
 
@@ -130,55 +131,6 @@ pub struct Id {
     msg_type: Type,
     action: Action,
     endpoint: Endpoint,
-}
-
-#[derive(Debug)]
-pub struct Frame {
-    pub device_id: DeviceId,
-    pub frame_type: FrameType,
-}
-
-#[derive(Debug)]
-pub enum FrameType {
-    Telemetry(TelemetryData),
-    Attribute(AttributeData),
-}
-
-#[derive(Debug)]
-pub struct TelemetryData {
-    pub endpoint: Endpoint,
-    pub payload: TelemetryContent,
-}
-
-#[derive(Debug)]
-pub struct AttributeData {
-    pub key: AttributeKey,
-    pub payload: AttributeContent,
-}
-
-// pub struct TelemetryPayload {
-//     pub data: [u8; 8],
-// }
-
-#[derive(Debug)]
-pub enum TelemetryContent {
-    Query,
-    Response([u8; 8]),
-    Command([u8; 8]),
-    Error(ErrorData),
-}
-
-#[derive(Debug)]
-pub enum AttributeContent {
-    ReadRequest,
-    WriteRequest(u32),
-    Response(u32),
-    Error(ErrorData),
-}
-
-#[derive(Debug)]
-pub struct ErrorData {
-    pub error: CaniotError,
 }
 
 impl From<u16> for Id {
@@ -210,13 +162,60 @@ impl TryFrom<EmbeddedId> for Id {
     }
 }
 
-impl Frame {
+pub type Request = Frame<RequestData>;
+pub type Response = Frame<ResponseData>;
+
+#[derive(Debug)]
+pub struct Frame<T> {
+    pub device_id: DeviceId,
+    pub data: T,
+}
+
+#[derive(Debug)]
+pub enum RequestData {
+    Telemetry {
+        endpoint: Endpoint,
+    },
+    Command {
+        endpoint: Endpoint,
+        payload: [u8; 8],
+    },
+    AttributeRead {
+        key: u16,
+    },
+    AttributeWrite {
+        key: u16,
+        value: u32,
+    },
+}
+
+#[derive(Debug)]
+pub enum ResponseData {
+    Telemetry {
+        endpoint: Endpoint,
+        payload: [u8; 8],
+    },
+    Attribute {
+        key: u16,
+        value: u32,
+    },
+    Error {
+        error: CaniotError,
+    },
+}
+
+#[derive(Debug)]
+pub struct ErrorData {
+    pub error: CaniotError,
+}
+
+impl Frame<ResponseData> {
     pub fn is_telemetry(&self) -> bool {
-        matches!(self.frame_type, FrameType::Telemetry(_))
+        matches!(self.data, ResponseData::Telemetry { .. })
     }
 
     pub fn is_attribute(&self) -> bool {
-        matches!(self.frame_type, FrameType::Attribute(_))
+        matches!(self.data, ResponseData::Attribute { .. })
     }
 }
 
@@ -226,6 +225,8 @@ pub enum ConversionError {
     TryFromSlice(#[from] std::array::TryFromSliceError),
     #[error("IoError: {0}")]
     IoError(#[from] std::io::Error),
+    #[error("Not a CANIOT response frame")]
+    NotCaniotResponse,
 }
 
 // This structure is used to encapsulate a Type which implements EmbeddedFrame
@@ -233,7 +234,7 @@ pub enum ConversionError {
 // where E: EmbeddedFrame
 pub struct EmbeddedFrameWrapper<T: EmbeddedFrame>(pub T);
 
-impl<E> TryFrom<EmbeddedFrameWrapper<E>> for Frame
+impl<E> TryFrom<EmbeddedFrameWrapper<E>> for Frame<ResponseData>
 where
     E: EmbeddedFrame,
 {
@@ -242,63 +243,66 @@ where
     fn try_from(frame: EmbeddedFrameWrapper<E>) -> Result<Self, Self::Error> {
         let id: Id = frame.0.id().try_into()?;
         let device_id = id.device_id;
+        let data: [u8; 8] = frame.0.data().try_into()?;
 
-        // The repetitive logic to construct Frame is extracted here
-        fn make_frame(device_id: DeviceId, frame_type: FrameType) -> Frame {
-            Frame {
-                device_id,
-                frame_type,
+        if id.direction != Direction::Response {
+            if id.action == Action::Write {
+                return Ok(Frame {
+                    device_id,
+                    data: ResponseData::Error {
+                        error: CaniotError::from_i16(i16::from_le_bytes(
+                            data[0..2].try_into().unwrap(),
+                        ))
+                        .unwrap_or(CaniotError::Eunexpected),
+                    },
+                });
+            } else {
+                return Err(ConversionError::NotCaniotResponse);
             }
         }
 
-        let data: [u8; 8] = frame.0.data().try_into()?;
-
-        Ok(match id.msg_type {
-            Type::Telemetry => {
-                let payload = match (id.direction, id.action) {
-                    (Direction::Query, Action::Read) => TelemetryContent::Query,
-                    (Direction::Query, Action::Write) => TelemetryContent::Command(data.clone()),
-                    (Direction::Response, Action::Read) => TelemetryContent::Response(data.clone()),
-                    (Direction::Response, Action::Write) => TelemetryContent::Error(ErrorData {
-                        error: CaniotError::from_i16(i16::from_le_bytes([data[0], data[1]]))
-                            .unwrap_or(CaniotError::Eunexpected),
-                    }),
-                };
-
-                let telemetry_data = TelemetryData {
+        match id.msg_type {
+            Type::Telemetry => Ok(Frame {
+                device_id,
+                data: ResponseData::Telemetry {
                     endpoint: id.endpoint,
-                    payload,
-                };
-                make_frame(device_id, FrameType::Telemetry(telemetry_data))
-            }
+                    payload: data,
+                },
+            }),
+            Type::Attribute => Ok(Frame {
+                device_id,
+                data: ResponseData::Attribute {
+                    key: u16::from_le_bytes(data[0..2].try_into().unwrap()),
+                    value: u32::from_le_bytes(data[2..6].try_into().unwrap()),
+                },
+            }),
+        }
+    }
+}
 
-            Type::Attribute => {
-                let mut attribute_key = AttributeKey {
-                    key: data[0] as u16,
-                };
-                let payload = match (id.direction, id.action) {
-                    (Direction::Query, Action::Read) => AttributeContent::ReadRequest,
-                    (Direction::Query, Action::Write) => AttributeContent::WriteRequest(
-                        u32::from_le_bytes(data[2..6].try_into().unwrap()),
-                    ),
-                    (Direction::Response, Action::Read) => AttributeContent::Response(
-                        u32::from_le_bytes(data[2..6].try_into().unwrap()),
-                    ),
-                    (Direction::Response, Action::Write) => {
-                        attribute_key.key = data[2] as u16;
-                        AttributeContent::Error(ErrorData {
-                            error: CaniotError::from_i16(i16::from_le_bytes([data[0], data[1]]))
-                                .unwrap_or(CaniotError::Eunexpected),
-                        })
-                    }
-                };
-
-                let attribute_data = AttributeData {
-                    key: attribute_key,
-                    payload,
-                };
-                make_frame(device_id, FrameType::Attribute(attribute_data))
+impl fmt::Display for Frame<ResponseData> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match &self.data {
+            ResponseData::Telemetry { endpoint, payload } => {
+                write!(
+                    f,
+                    "Telemetry Response {}: {} / {}",
+                    self.device_id,
+                    endpoint,
+                    payload
+                        .iter()
+                        .map(|x| format!("{:02x}", x))
+                        .collect::<Vec<String>>()
+                        .join(" ")
+                )
             }
-        })
+            ResponseData::Attribute { key, value } => {
+                // Modify as per the actual representation of the key and value
+                write!(f, "Attribute: key {} / value {}", key, value)
+            }
+            ResponseData::Error { error } => {
+                write!(f, "Error: {:?}", error)
+            }
+        }
     }
 }
