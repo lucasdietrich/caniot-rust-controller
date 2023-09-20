@@ -3,6 +3,8 @@ use tokio::sync::{broadcast, mpsc};
 
 use serde::Serialize;
 
+use crate::caniot::Request as CaniotRequest;
+
 pub type SharedHandle = Arc<Shared>;
 
 /// The `Shared` struct contains fields for managing shared state between asynchronous tasks.
@@ -16,10 +18,14 @@ pub struct Shared {
 
     /// Used to signal the asynchronous task to shutdown
     /// The task subscribes to this channel
-    pub notify_shutdown: broadcast::Sender<()>, // TODO ???
-                                                // /// Used to signal the asynchronous task has completed
-                                                // /// The task drops the sender when it shuts down
-                                                // pub _shutdown_complete: mpsc::Sender<()>,
+    pub notify_shutdown: broadcast::Sender<()>,
+
+    // TODO ???
+    // /// Used to signal the asynchronous task has completed
+    // /// The task drops the sender when it shuts down
+    // pub _shutdown_complete: mpsc::Sender<()>,
+    /// Message queue for sending CANIOT commands to the CAN bus
+    pub can_tx_queue: mpsc::Sender<CaniotRequest>,
 }
 
 #[derive(Serialize, Debug, Clone, Copy)]
@@ -39,7 +45,10 @@ pub struct CanStats {
 #[derive(Serialize, Debug, Clone, Copy)]
 pub struct ServerStats {}
 
-pub fn new_context(notify_shutdown: broadcast::Sender<()>) -> SharedHandle {
+pub fn new_context(
+    notify_shutdown: broadcast::Sender<()>,
+    can_tx_queue: mpsc::Sender<CaniotRequest>,
+) -> SharedHandle {
     Arc::new(Shared {
         stats: Mutex::new(Stats {
             can: CanStats {
@@ -51,5 +60,6 @@ pub fn new_context(notify_shutdown: broadcast::Sender<()>) -> SharedHandle {
             server: ServerStats {},
         }),
         notify_shutdown,
+        can_tx_queue,
     })
 }

@@ -16,7 +16,8 @@ pub fn rocket(config: ServerConfig, shared: SharedHandle) -> Rocket<Build> {
         ..Default::default()
     };
 
-    rocket::custom(config)
-        .manage(shared)
-        .mount("/", routes![route_test, route_test_id_name, route_stats])
+    rocket::custom(config).manage(shared).mount(
+        "/",
+        routes![route_test, route_test_id_name, route_stats, route_can],
+    )
 }

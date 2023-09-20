@@ -8,9 +8,10 @@ pub const CANIOT_ERROR_BASE: isize = 0x3A00;
 pub const CANIOT_DEVICE_FILTER_ID: u32 = 1 << 2; /* bit 2 is 1 for response frames */
 pub const CANIOT_DEVICE_FILTER_MASK: u32 = 1 << 2; /* bit 2 is 1 to filter frames by direction */
 
-use embedded_can::{Frame as EmbeddedFrame, Id as EmbeddedId};
+use embedded_can::{Frame as EmbeddedFrame, Id as EmbeddedId, StandardId};
 
 use thiserror::Error;
+use tokio::sync::broadcast::error;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, FromPrimitive)]
 pub enum CaniotError {
@@ -75,6 +76,15 @@ pub struct DeviceId {
     pub sub_id: u8,
 }
 
+impl From<u8> for DeviceId {
+    fn from(id: u8) -> Self {
+        DeviceId {
+            class: (id & 0x7) as u8,
+            sub_id: ((id >> 3) & 0x7) as u8,
+        }
+    }
+}
+
 impl DeviceId {
     pub fn get_did(&self) -> u8 {
         (self.sub_id << 3) | self.class
@@ -136,15 +146,31 @@ pub struct Id {
 impl From<u16> for Id {
     fn from(id: u16) -> Self {
         Id {
-            device_id: DeviceId {
-                class: ((id >> 3) & 0x7) as u8,
-                sub_id: ((id >> 6) & 0x7) as u8,
-            },
+            device_id: DeviceId::from((id >> 3) as u8),
             action: Action::from_u8((id & 0x1) as u8).unwrap(),
             msg_type: Type::from_u8(((id >> 1) & 0x1) as u8).unwrap(),
             direction: Direction::from_u8(((id >> 2) & 0x1) as u8).unwrap(),
             endpoint: Endpoint::from_u8(((id >> 9) & 0x3) as u8).unwrap(),
         }
+    }
+}
+
+impl Id {
+    // Direct conversion functions instead of Into traits
+    pub fn to_u16(self) -> u16 {
+        let mut id: u16 = 0;
+        id |= (self.device_id.class as u16) << 3;
+        id |= (self.device_id.sub_id as u16) << 6;
+        id |= (self.action as u16) << 0;
+        id |= (self.msg_type as u16) << 1;
+        id |= (self.direction as u16) << 2;
+        id |= (self.endpoint as u16) << 9;
+        id
+    }
+
+    pub fn to_embedded_id(self) -> EmbeddedId {
+        let std_can_id = StandardId::new(self.to_u16()).unwrap();
+        EmbeddedId::Standard(std_can_id)
     }
 }
 
@@ -169,6 +195,51 @@ pub type Response = Frame<ResponseData>;
 pub struct Frame<T> {
     pub device_id: DeviceId,
     pub data: T,
+}
+
+impl Request {
+    pub fn get_id(&self) -> EmbeddedId {
+        let id = match &self.data {
+            RequestData::Telemetry { endpoint, .. } => Id {
+                device_id: self.device_id,
+                direction: Direction::Query,
+                msg_type: Type::Telemetry,
+                action: Action::Read,
+                endpoint: *endpoint,
+            },
+            RequestData::Command { endpoint, .. } => Id {
+                device_id: self.device_id,
+                direction: Direction::Query,
+                msg_type: Type::Telemetry,
+                action: Action::Write,
+                endpoint: *endpoint,
+            },
+            RequestData::AttributeRead { .. } => Id {
+                device_id: self.device_id,
+                direction: Direction::Query,
+                msg_type: Type::Attribute,
+                action: Action::Read,
+                endpoint: Endpoint::ApplicationDefault,
+            },
+            RequestData::AttributeWrite { .. } => Id {
+                device_id: self.device_id,
+                direction: Direction::Query,
+                msg_type: Type::Attribute,
+                action: Action::Write,
+                endpoint: Endpoint::ApplicationDefault,
+            },
+        };
+        let can_id = StandardId::new(id.to_u16()).unwrap();
+        EmbeddedId::Standard(can_id)
+    }
+
+    pub fn to_can_frame<T>(&self) -> T
+    where
+        T: EmbeddedFrame,
+    {
+        // TODO implement this
+        EmbeddedFrame::new(self.get_id(), &[0u8; 8]).unwrap()
+    }
 }
 
 #[derive(Debug)]
@@ -280,7 +351,11 @@ where
     }
 }
 
-impl fmt::Display for Frame<ResponseData> {
+fn format_payload(payload: &[u8; 8]) -> String {
+    payload.iter().map(|x| format!("{:02x}", x)).collect::<Vec<String>>().join(" ")
+}
+
+impl fmt::Display for Response {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.data {
             ResponseData::Telemetry { endpoint, payload } => {
@@ -289,19 +364,44 @@ impl fmt::Display for Frame<ResponseData> {
                     "Telemetry Response {}: {} / {}",
                     self.device_id,
                     endpoint,
-                    payload
-                        .iter()
-                        .map(|x| format!("{:02x}", x))
-                        .collect::<Vec<String>>()
-                        .join(" ")
+                    format_payload(payload)
                 )
             }
             ResponseData::Attribute { key, value } => {
                 // Modify as per the actual representation of the key and value
-                write!(f, "Attribute: key {} / value {}", key, value)
+                write!(f, "Attribute: key {} = value {}", key, value)
             }
             ResponseData::Error { error } => {
                 write!(f, "Error: {:?}", error)
+            }
+        }
+    }
+}
+
+impl fmt::Display for Request {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match &self.data {
+            RequestData::Telemetry { endpoint } => {
+                write!(f, "Telemetry Request {}: {}", self.device_id, endpoint)
+            }
+            RequestData::Command { endpoint, payload } => {
+                write!(
+                    f,
+                    "Command Request {}: {} / {}",
+                    self.device_id,
+                    endpoint,
+                    format_payload(payload)
+                )
+            }
+            RequestData::AttributeRead { key } => {
+                write!(f, "Attribute Read Request {}: key {}", self.device_id, key)
+            }
+            RequestData::AttributeWrite { key, value } => {
+                write!(
+                    f,
+                    "Attribute Write Request {}: key {} write {}",
+                    self.device_id, key, value
+                )
             }
         }
     }

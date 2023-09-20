@@ -1,5 +1,6 @@
 {
     "recommendations": [
-        "zhangyue.rust-mod-generator"
+        "zhangyue.rust-mod-generator",
+        "humao.rest-client"
     ]
 }
