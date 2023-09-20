@@ -51,3 +51,4 @@ Run with
 
 - Allow to set custom configuration file path: `./caniot-rctrl -c /etc/caniot/caniot-controller.toml`
 - Timestamp received CAN frames (wait for this feature of `socketcan` crate https://github.com/socketcan-rs/socketcan-rs/issues/22)
+- Implent complete shutdown mecanism: https://tokio.rs/tokio/topics/shutdown

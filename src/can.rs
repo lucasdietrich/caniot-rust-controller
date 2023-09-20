@@ -12,7 +12,8 @@ use crate::caniot::{
     CANIOT_DEVICE_FILTER_ID, CANIOT_DEVICE_FILTER_MASK,
 };
 use crate::config::CanConfig;
-use crate::context::ContextHandle;
+use crate::shared::{Shared, SharedHandle};
+use crate::shutdown::Shutdown;
 
 #[derive(Error, Debug)]
 pub enum CanListenerError {
@@ -25,9 +26,23 @@ pub enum CanListenerError {
     // ConversionError(#[from] ConversionError),
 }
 
+fn handle_can_data_frame(frame: CanDataFrame, shared: &Shared) {
+    let frame: Result<CaniotFrame, _> = EmbeddedFrameWrapper(frame).try_into();
+    match frame {
+        Ok(frame) => {
+            shared.stats.lock().unwrap().can.rx += 1;
+            debug!("Received {:?}", frame);
+        }
+        Err(err) => {
+            shared.stats.lock().unwrap().can.malformed += 1;
+            error!("Failed to convert to CANIOT frame {}", err)
+        }
+    }
+}
+
 pub async fn can_listener(
     config: CanConfig,
-    context: ContextHandle,
+    shared: SharedHandle,
 ) -> Result<(), CanListenerError> {
     let mut sock = CanSocket::open(&config.interface)?;
 
@@ -35,24 +50,20 @@ pub async fn can_listener(
     let filter = CanFilter::new(CANIOT_DEVICE_FILTER_ID, CANIOT_DEVICE_FILTER_MASK);
     sock.set_filters(&[filter])?;
 
-    while let Some(res) = sock.next().await {
-        match res {
-            Ok(CanFrame::Data(frame)) => {
-                let frame: Result<CaniotFrame, _> = EmbeddedFrameWrapper(frame).try_into();
-                match frame {
-                    Ok(frame) => {
-                        context.lock().unwrap().stats.can.rx += 1;
-                        debug!("Received {:?}", frame);
-                    }
-                    Err(err) => {
-                        context.lock().unwrap().stats.can.malformed += 1;
-                        error!("Failed to convert to CANIOT frame {}", err)
-                    }
-                }
+    let mut shutdown = Shutdown::new(shared.notify_shutdown.subscribe());
+    
+    loop {
+        tokio::select! {
+            Some(res) = sock.next() => match res {
+                Ok(CanFrame::Data(frame)) => handle_can_data_frame(frame, &shared),
+                Ok(CanFrame::Remote(frame)) => warn!("Unhandled {:?}", frame),
+                Ok(CanFrame::Error(frame)) => error!("{:?}", frame),
+                Err(err) => error!("{}", err),
+            },
+            _ = shutdown.recv() => {
+                warn!("Received shutdown signal");
+                break;
             }
-            Ok(CanFrame::Remote(frame)) => warn!("Unhandled {:?}", frame),
-            Ok(CanFrame::Error(frame)) => error!("{:?}", frame),
-            Err(err) => error!("{}", err),
         }
     }
 

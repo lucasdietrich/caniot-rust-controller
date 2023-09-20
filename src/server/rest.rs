@@ -1,4 +1,4 @@
-use crate::context::{ContextHandle, Stats};
+use crate::shared::{SharedHandle, Stats};
 use rocket::{
     serde::{json::Json, Deserialize, Serialize},
     State,
@@ -16,7 +16,7 @@ pub fn route_test_id_name(id: u32, name: &str) -> String {
 }
 
 #[get("/stats")]
-pub fn route_stats(context: &State<ContextHandle>) -> Json<Stats> {
-    let context = context.lock().unwrap();
-    Json(context.stats.clone())
+pub fn route_stats(shared: &State<SharedHandle>) -> Json<Stats> {
+    let stats = shared.stats.lock().unwrap();
+    Json(stats.clone())
 }
