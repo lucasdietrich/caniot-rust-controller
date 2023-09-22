@@ -1,0 +1,283 @@
+syntax = "proto3";
+
+//
+// python3 -m grpc_tools.protoc -Icancontroller/ipc --python_out=cancontroller/ipc --grpc_python_out=cancontroller/ipc model.proto
+//
+
+package cancontroller.ipc;
+
+service CanController {
+  rpc SendGarage(GarageCommand) returns (CommandResponse) {}
+
+  rpc GetAlarm(AlarmCommand) returns (CommandResponse) {}
+  rpc SendAlarm(AlarmCommand) returns (CommandResponse) {}
+
+  rpc SetHeaters(HeatersCommand) returns (CommandResponse) {}
+
+  rpc RequestTelemetry(TelemetryTarget) returns (Empty) {}
+  rpc CommandDevice(BoardLevelCommand) returns (CommandResponse) {}
+  rpc ReadAttribute(AttributeRequest) returns (AttributeResponse) {}
+  rpc WriteAttribute(AttributeRequest) returns (AttributeResponse) {}
+
+  rpc Reset(DeviceId) returns (CommandResponse) {}
+  rpc ResetFactoryDefaults(DeviceId) returns (CommandResponse) {}
+
+  rpc GetDevices(Empty) returns (Devices) {}
+  rpc GetDevice(DeviceId) returns (Device) {}
+}
+
+/*____________________________________________________________________________________________________________________*/
+
+message DeviceId
+{
+  uint32 cls = 1;
+  uint32 sid = 2;
+}
+
+enum Status {
+  OK = 0;
+  NOK = 1;
+  TIMEOUT = 2;
+}
+
+message CommandResponse {
+  Status status = 4;
+}
+
+message Attribute {
+  uint32 key = 1;
+  uint32 value = 2;
+}
+
+/*____________________________________________________________________________________________________________________*/
+
+enum LightCommand {
+  LIGHT_CMD_NONE = 0;
+  LIGHT_CMD_ON = 1;
+  LIGHT_CMD_OFF = 2;
+  LIGHT_CMD_TOGGLE = 3;
+}
+
+enum TELEMETRY_ENDPOINT {
+  ENDPOINT_APPLICATION = 0;
+  ENDPOINT_1 = 1;
+  ENDPOINT_2 = 2;
+  ENDPOINT_BOARD_CONTROL = 3;
+}
+
+enum CaniotComplexDigitalCommand {
+  CANIOT_XPS_NONE = 0;
+  CANIOT_XPS_SET_ON = 1;
+  CANIOT_XPS_SET_OFF = 2;
+  CANIOT_XPS_TOGGLE = 3;
+  CANIOT_XPS_RESET = 4;
+  CANIOT_XPS_PULSE_ON = 5;
+  CANIOT_XPS_PULSE_OFF = 6;
+  CANIOT_XPS_PULSE_CANCEL = 7;
+}
+
+enum CaniotHeaterState {
+  CANIOT_HEATER_NONE = 0;
+  CANIOT_HEATER_COMFORT = 1;
+  CANIOT_HEATER_COMFORT_MIN_1 = 2;
+  CANIOT_HEATER_COMFORT_MIN_2 = 3;
+  CANIOT_HEATER_COMFORT_ENERGY_SAVING = 4;
+  CANIOT_HEATER_FROST_FREE = 5;
+  CANIOT_HEATER_OFF = 6;
+}
+
+message BoardLevelCommand {
+  DeviceId device = 1;
+
+  CaniotComplexDigitalCommand coc1 = 2;
+  CaniotComplexDigitalCommand coc2 = 3;
+  CaniotComplexDigitalCommand crl1 = 4;
+  CaniotComplexDigitalCommand crl2 = 5;
+}
+
+/*____________________________________________________________________________________________________________________*/
+
+enum GarageDoorCommand {
+  COMMAND_UNSPECIFIED = 0;
+  COMMAND_LEFT = 1;
+  COMMAND_RIGHT = 2;
+  COMMAND_ALL = 3;
+}
+
+message GarageCommand {
+  GarageDoorCommand command = 2;
+}
+
+/*____________________________________________________________________________________________________________________*/
+
+enum AlarmStateCommand {
+  COMMAND_ALARM_NONE = 0;
+  COMMAND_ALARM_ENABLE = 1;
+  COMMAND_ALARM_DISABLE = 2;
+}
+
+message AlarmCommand {
+  AlarmStateCommand alarm_state = 1;
+
+  CaniotComplexDigitalCommand light1 = 2;
+  CaniotComplexDigitalCommand light2 = 3;
+}
+
+message HeatersCommand {
+  repeated CaniotHeaterState heater = 1;
+}
+
+/*____________________________________________________________________________________________________________________*/
+
+message AttributeRequest {
+  DeviceId device = 2;
+  uint32 key = 3;
+  uint32 value = 4;
+
+  float timeout = 5;  // if timeout == 0.0 then return immediately with status OK
+  // if timeout != 0.0 return status TIMEOUT if timeout value exceeded
+  // return pending ok if value == write value with WriteAttribute and check key anywhere
+}
+
+message AttributeResponse {
+  DeviceId device = 1;
+  uint32 key = 2;
+  uint32 value = 3;
+
+  Status status = 4;
+
+  float response_time = 5;
+}
+
+/*____________________________________________________________________________________________________________________*/
+
+message Empty {
+
+}
+
+message DateTime
+{
+  uint32 seconds = 1;
+}
+
+message Device {
+  DeviceId deviceid = 1;
+  string name = 2;
+  uint32 version = 3;
+
+  message Status {
+    DateTime last_seen = 1;
+    uint32 received = 2;
+    uint32 sent = 3;
+    bool online = 4;
+  }
+
+  Status status = 4;
+
+  repeated int32 raw = 5 [packed = true];
+
+  oneof model {
+    bool generic = 11;
+    GarageDoorModel garage = 6;
+    OutdoorControllerModel outdoor_alarm = 7;
+    HeatingControllerModel heaters = 8;
+    IndoorControllerModel indoor_alarm = 12;
+  }
+
+  /* list of all retrieved/updated attribute in the current session */
+  repeated Attribute attribute = 9;
+}
+
+message DeviceResponse {
+  oneof dev {
+    Device device = 1;
+    Empty empty = 2;
+  }
+}
+
+message TelemetryTarget
+{
+  DeviceId deviceid = 1;
+  TELEMETRY_ENDPOINT endpoint = 2;
+}
+
+/*____________________________________________________________________________________________________________________*/
+
+message V1BSPModel
+{
+  uint32 oc1 = 1;
+  uint32 oc2 = 2;
+
+  uint32 rl1 = 3;
+  uint32 rl2 = 4;
+
+  uint32 in1 = 5;
+  uint32 in2 = 6;
+  uint32 in3 = 7;
+  uint32 in4 = 8;
+
+  float int_temp = 9;
+  bool active_int_temp = 10;
+
+  float ext_temp = 11;
+  bool active_ext_temp = 12;
+
+  uint32 adc1 = 13;
+  uint32 adc2 = 14;
+
+  uint32 poc1 = 15;
+  uint32 poc2 = 16;
+  uint32 prl1 = 17;
+  uint32 prl2 = 18;
+}
+
+message TinyBSPModel
+{
+  // array of digital states
+  repeated bool in = 1 [packed = true];
+
+  float int_temp = 9;
+  bool active_int_temp = 10;
+
+  float ext_temp = 11;
+  bool active_ext_temp = 12;
+}
+
+message GarageDoorModel
+{
+  V1BSPModel base = 1;
+
+  bool left = 2;
+  bool right = 3;
+  bool gate = 4;
+}
+
+message OutdoorControllerModel
+{
+  V1BSPModel base = 1;
+
+  bool enabled = 2;
+  uint32 triggered_count = 3;
+  float last_signal = 4;
+  uint32 siren_count = 5;
+  float last_siren = 6;
+  float last_command = 7;
+}
+
+message IndoorControllerModel
+{
+  TinyBSPModel base = 1;
+}
+
+message HeatingControllerModel
+{
+  TinyBSPModel base = 1;
+
+  repeated CaniotHeaterState heater = 2;
+
+  bool power_status = 6;
+}
+
+message Devices {
+  repeated Device device = 1;
+}

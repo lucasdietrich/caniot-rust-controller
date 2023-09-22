@@ -8,6 +8,7 @@ mod controller;
 mod init;
 mod logger;
 mod webserver;
+mod grpcserver;
 mod shared;
 mod shutdown;
 
