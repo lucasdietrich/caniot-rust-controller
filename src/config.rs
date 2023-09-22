@@ -3,38 +3,13 @@ use serde::Deserialize;
 use std::fs;
 use toml;
 
+use crate::can::CanConfig;
+use crate::server::ServerConfig;
+
 #[derive(Deserialize, Debug, Default)]
 pub struct AppConfig {
     pub can: CanConfig,
     pub server: ServerConfig,
-}
-
-#[derive(Deserialize, Debug)]
-pub struct CanConfig {
-    pub interface: String,
-}
-
-impl Default for CanConfig {
-    fn default() -> Self {
-        CanConfig {
-            interface: "vcan0".to_string(),
-        }
-    }
-}
-
-#[derive(Deserialize, Debug)]
-pub struct ServerConfig {
-    pub port: u16,
-    pub listen: String,
-}
-
-impl Default for ServerConfig {
-    fn default() -> Self {
-        ServerConfig {
-            port: 8000,
-            listen: "0.0.0.0".to_string(),
-        }
-    }
 }
 
 const CONFIG_PATH: &str = "caniot-controller.toml";

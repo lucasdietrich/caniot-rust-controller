@@ -11,7 +11,6 @@ pub const CANIOT_DEVICE_FILTER_MASK: u32 = 1 << 2; /* bit 2 is 1 to filter frame
 use embedded_can::{Frame as EmbeddedFrame, Id as EmbeddedId, StandardId};
 
 use thiserror::Error;
-use tokio::sync::broadcast::error;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, FromPrimitive)]
 pub enum CaniotError {
@@ -88,6 +87,10 @@ impl From<u8> for DeviceId {
 impl DeviceId {
     pub fn get_did(&self) -> u8 {
         (self.sub_id << 3) | self.class
+    }
+
+    pub fn is_broadcast(&self) -> bool {
+        self.get_did() == 0x7F
     }
 }
 
@@ -352,7 +355,11 @@ where
 }
 
 fn format_payload(payload: &[u8; 8]) -> String {
-    payload.iter().map(|x| format!("{:02x}", x)).collect::<Vec<String>>().join(" ")
+    payload
+        .iter()
+        .map(|x| format!("{:02x}", x))
+        .collect::<Vec<String>>()
+        .join(" ")
 }
 
 impl fmt::Display for Response {

@@ -1,10 +1,23 @@
 use rocket::serde::{json::Json, Deserialize, Serialize};
 use rocket::{log::LogLevel, Build, Config, Rocket};
 
-use crate::config::ServerConfig;
 use crate::shared::SharedHandle;
-
 use crate::server::rest::*;
+
+#[derive(Deserialize, Debug)]
+pub struct ServerConfig {
+    pub port: u16,
+    pub listen: String,
+}
+
+impl Default for ServerConfig {
+    fn default() -> Self {
+        ServerConfig {
+            port: 8000,
+            listen: "0.0.0.0".to_string(),
+        }
+    }
+}
 
 pub fn rocket(config: ServerConfig, shared: SharedHandle) -> Rocket<Build> {
     let config = Config {

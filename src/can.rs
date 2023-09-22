@@ -5,14 +5,27 @@ use socketcan::tokio::CanSocket;
 use socketcan::{CanDataFrame, CanFilter, CanFrame, Error as CanError, SocketOptions};
 use thiserror::Error;
 use tokio::sync::mpsc;
+use serde::Deserialize;
 
 use crate::caniot::{
     ConversionError, EmbeddedFrameWrapper, Id as CaniotId, Request as CaniotRequest,
     Response as CaniotResponse, CANIOT_DEVICE_FILTER_ID, CANIOT_DEVICE_FILTER_MASK,
 };
-use crate::config::CanConfig;
 use crate::shared::{Shared, SharedHandle};
 use crate::shutdown::Shutdown;
+
+#[derive(Deserialize, Debug)]
+pub struct CanConfig {
+    pub interface: String,
+}
+
+impl Default for CanConfig {
+    fn default() -> Self {
+        CanConfig {
+            interface: "vcan0".to_string(),
+        }
+    }
+}
 
 const CAN_TX_QUEUE_SIZE: usize = 10;
 
@@ -57,6 +70,11 @@ pub async fn can_listener(
     // keep only CANIOT device frames
     let filter = CanFilter::new(CANIOT_DEVICE_FILTER_ID, CANIOT_DEVICE_FILTER_MASK);
     sock.set_filters(&[filter])?;
+
+    info!(
+        "CAN listener started on {} with filter {:04x}:{:04x}",
+        config.interface, CANIOT_DEVICE_FILTER_ID, CANIOT_DEVICE_FILTER_MASK
+    );
 
     loop {
         tokio::select! {
