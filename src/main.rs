@@ -7,7 +7,7 @@ mod config;
 mod controller;
 mod init;
 mod logger;
-mod server;
+mod webserver;
 mod shared;
 mod shutdown;
 

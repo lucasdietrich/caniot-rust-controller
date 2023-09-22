@@ -2,7 +2,7 @@ use rocket::serde::{json::Json, Deserialize, Serialize};
 use rocket::{log::LogLevel, Build, Config, Rocket};
 
 use crate::shared::SharedHandle;
-use crate::server::rest::*;
+use crate::webserver::rest::*;
 
 #[derive(Deserialize, Debug)]
 pub struct ServerConfig {

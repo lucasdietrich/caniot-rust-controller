@@ -1,10 +1,7 @@
-use futures_util::Future;
-use log;
-use rocket::fairing::Fairing;
 use tokio;
-use tokio::sync::{broadcast, mpsc};
+use tokio::sync::broadcast;
 
-use crate::{can, config, logger, server, shared};
+use crate::{can, config, logger, webserver, shared};
 
 fn get_tokio_rt() -> tokio::runtime::Runtime {
     tokio::runtime::Builder::new_current_thread()
@@ -42,7 +39,7 @@ pub fn init_controller() {
         shared.clone(),
         can_q_receiver,
     ));
-    let h_rocket = rt.spawn(server::rocket(config.server, shared.clone()).launch());
+    let h_rocket = rt.spawn(webserver::rocket(config.server, shared.clone()).launch());
 
     let _ = rt.block_on(async { tokio::join!(h_can, h_rocket) });
 }
