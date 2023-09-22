@@ -1,12 +1,12 @@
 use log::warn;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::fs;
 use toml;
 
 use crate::can::CanConfig;
 use crate::webserver::ServerConfig;
 
-#[derive(Deserialize, Debug, Default)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct AppConfig {
     pub can: CanConfig,
     pub server: ServerConfig,

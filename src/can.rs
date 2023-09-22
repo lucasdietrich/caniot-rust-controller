@@ -5,7 +5,7 @@ use socketcan::tokio::CanSocket;
 use socketcan::{CanDataFrame, CanFilter, CanFrame, Error as CanError, SocketOptions};
 use thiserror::Error;
 use tokio::sync::mpsc;
-use serde::Deserialize;
+use serde::{Serialize, Deserialize};
 
 use crate::caniot::{
     ConversionError, EmbeddedFrameWrapper, Id as CaniotId, Request as CaniotRequest,
@@ -14,7 +14,7 @@ use crate::caniot::{
 use crate::shared::{Shared, SharedHandle};
 use crate::shutdown::Shutdown;
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct CanConfig {
     pub interface: String,
 }
@@ -59,12 +59,11 @@ pub fn can_create_tx_queue() -> (mpsc::Sender<CaniotRequest>, mpsc::Receiver<Can
 }
 
 pub async fn can_listener(
-    config: CanConfig,
     shared: SharedHandle,
     mut tx_queue_receiver: mpsc::Receiver<CaniotRequest>,
 ) -> Result<(), CanListenerError> {
+    let config = &shared.config.can;
     let mut shutdown = Shutdown::new(shared.notify_shutdown.subscribe());
-
     let mut sock = CanSocket::open(&config.interface)?;
 
     // keep only CANIOT device frames

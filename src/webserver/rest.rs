@@ -26,6 +26,12 @@ pub fn route_stats(shared: &State<SharedHandle>) -> Json<Stats> {
     Json(stats.clone())
 }
 
+#[get("/config")]
+pub fn route_config(shared: &State<SharedHandle>) -> Json<crate::config::AppConfig> {
+    let config = &shared.config;
+    Json(config.clone())
+}
+
 // #[derive(Serialize, Deserialize, Debug)]
 // struct CanFrame {
 //     device_id: u8,

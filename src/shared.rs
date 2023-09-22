@@ -4,15 +4,20 @@ use tokio::sync::{broadcast, mpsc};
 use serde::Serialize;
 
 use crate::caniot::Request as CaniotRequest;
+use crate::config::AppConfig;
 
 pub type SharedHandle = Arc<Shared>;
 
 /// The `Shared` struct contains fields for managing shared state between asynchronous tasks.
 #[derive(Debug)]
 pub struct Shared {
+    /// The application configuration
+    pub config: AppConfig,
+
     // TODO ???
     // The Tokio runtime. Some tasks may need to spawn additional tasks onto the runtime.
     // pub rt: Mutex<tokio::runtime::Runtime>,
+
     /// Gather all statistics about the application
     pub stats: Mutex<Stats>,
 
@@ -46,10 +51,12 @@ pub struct CanStats {
 pub struct ServerStats {}
 
 pub fn new_context(
+    config: AppConfig,
     notify_shutdown: broadcast::Sender<()>,
     can_tx_queue: mpsc::Sender<CaniotRequest>,
 ) -> SharedHandle {
     Arc::new(Shared {
+        config,
         stats: Mutex::new(Stats {
             can: CanStats {
                 rx: 0,

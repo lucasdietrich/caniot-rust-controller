@@ -2,9 +2,9 @@ use rocket::serde::{json::Json, Deserialize, Serialize};
 use rocket::{log::LogLevel, Build, Config, Rocket};
 
 use crate::shared::SharedHandle;
-use crate::webserver::rest::*;
+use super::rest::*;
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ServerConfig {
     pub port: u16,
     pub listen: String,
@@ -19,7 +19,8 @@ impl Default for ServerConfig {
     }
 }
 
-pub fn rocket(config: ServerConfig, shared: SharedHandle) -> Rocket<Build> {
+pub fn rocket(shared: SharedHandle) -> Rocket<Build> {
+    let config = &shared.config.server;
     let config = Config {
         workers: 1,
         log_level: LogLevel::Critical,
@@ -31,6 +32,6 @@ pub fn rocket(config: ServerConfig, shared: SharedHandle) -> Rocket<Build> {
 
     rocket::custom(config).manage(shared).mount(
         "/",
-        routes![route_test, route_test_id_name, route_stats, route_can],
+        routes![route_test, route_test_id_name, route_stats, route_can, route_config],
     )
 }

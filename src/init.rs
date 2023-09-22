@@ -21,7 +21,7 @@ pub fn init_controller() {
     let (notify_shutdown, _) = broadcast::channel(1);
 
     let (can_q_sender, can_q_receiver) = can::can_create_tx_queue();
-    let shared = shared::new_context(notify_shutdown.clone(), can_q_sender);
+    let shared = shared::new_context(config, notify_shutdown.clone(), can_q_sender);
 
     // Initialize tokio runtime
     let rt = get_tokio_rt();
@@ -35,11 +35,10 @@ pub fn init_controller() {
     });
 
     let h_can = rt.spawn(can::can_listener(
-        config.can,
         shared.clone(),
         can_q_receiver,
     ));
-    let h_rocket = rt.spawn(webserver::rocket(config.server, shared.clone()).launch());
+    let h_rocket = rt.spawn(webserver::rocket(shared.clone()).launch());
 
     let _ = rt.block_on(async { tokio::join!(h_can, h_rocket) });
 }
