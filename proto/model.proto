@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package cancontroller.ipc;
+
+service CanController {
+  rpc Hello(HelloRequest) returns (HelloResponse) {}
+  rpc GetDevice(DeviceId) returns (Device) {}
+}
+
+message HelloRequest {
+  string name = 1;
+}
+
+message HelloResponse {
+  string message = 1;
+}
+
+message DeviceId
+{
+  uint32 cls = 1;
+  uint32 sid = 2;
+}
+
+message DateTime
+{
+  uint32 seconds = 1;
+}
+
+message Device {
+  DeviceId deviceid = 1;
+  string name = 2;
+  uint32 version = 3;
+
+  /*
+  message Status {
+    DateTime last_seen = 1;
+    uint32 received = 2;
+    uint32 sent = 3;
+    bool online = 4;
+  }
+
+  Status status = 4;
+
+  repeated int32 raw = 5 [packed = true];
+
+  oneof model {
+    bool generic = 11;
+    GarageDoorModel garage = 6;
+    OutdoorControllerModel outdoor_alarm = 7;
+    HeatingControllerModel heaters = 8;
+    IndoorControllerModel indoor_alarm = 12;
+  }
+
+  repeated Attribute attribute = 9;
+  */
+}

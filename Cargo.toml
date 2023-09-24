@@ -26,6 +26,12 @@ num-derive = "0.4"
 num-traits = "0.2"
 thiserror = "1.0.48"
 
+tonic = { version = "0.10.1" }
+prost = "0.12"
+
+[build-dependencies]
+tonic-build = { version = "0.10.1", features = ["prost"] }
+
 [profile.release]
 # panic = "abort" / "unwind"
 lto = true

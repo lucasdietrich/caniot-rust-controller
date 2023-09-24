@@ -1,7 +1,7 @@
 use tokio;
 use tokio::sync::broadcast;
 
-use crate::{can, config, logger, webserver, shared};
+use crate::{can, config, logger, webserver, shared, grpcserver};
 
 fn get_tokio_rt() -> tokio::runtime::Runtime {
     tokio::runtime::Builder::new_current_thread()
@@ -39,6 +39,7 @@ pub fn init_controller() {
         can_q_receiver,
     ));
     let h_rocket = rt.spawn(webserver::rocket(shared.clone()).launch());
+    let h_grpc = rt.spawn(grpcserver::grpc_server(shared.clone()));
 
     let _ = rt.block_on(async { tokio::join!(h_can, h_rocket) });
 }

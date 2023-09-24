@@ -4,12 +4,14 @@ use std::fs;
 use toml;
 
 use crate::can::CanConfig;
-use crate::webserver::ServerConfig;
+use crate::webserver::WebserverConfig;
+use crate::grpcserver::GrpcConfig;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct AppConfig {
     pub can: CanConfig,
-    pub server: ServerConfig,
+    pub web: WebserverConfig,
+    pub grpc: GrpcConfig,
 }
 
 const CONFIG_PATH: &str = "caniot-controller.toml";

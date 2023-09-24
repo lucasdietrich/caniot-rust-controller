@@ -5,14 +5,14 @@ use crate::shared::SharedHandle;
 use super::rest::*;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct ServerConfig {
+pub struct WebserverConfig {
     pub port: u16,
     pub listen: String,
 }
 
-impl Default for ServerConfig {
+impl Default for WebserverConfig {
     fn default() -> Self {
-        ServerConfig {
+        WebserverConfig {
             port: 8000,
             listen: "0.0.0.0".to_string(),
         }
@@ -20,7 +20,7 @@ impl Default for ServerConfig {
 }
 
 pub fn rocket(shared: SharedHandle) -> Rocket<Build> {
-    let config = &shared.config.server;
+    let config = &shared.config.web;
     let config = Config {
         workers: 1,
         log_level: LogLevel::Critical,

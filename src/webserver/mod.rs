@@ -1,4 +1,4 @@
 mod rest;
 pub mod init;
 
-pub use init::{ServerConfig, rocket};
+pub use init::{WebserverConfig, rocket};
