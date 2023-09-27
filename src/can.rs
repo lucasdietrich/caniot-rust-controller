@@ -1,11 +1,11 @@
 use embedded_can::Frame as EmbeddedFrame;
 use futures_util::{SinkExt, StreamExt};
 use log::{debug, error, info, warn};
+use serde::{Deserialize, Serialize};
 use socketcan::tokio::CanSocket;
 use socketcan::{CanDataFrame, CanFilter, CanFrame, Error as CanError, SocketOptions};
 use thiserror::Error;
 use tokio::sync::mpsc;
-use serde::{Serialize, Deserialize};
 
 use crate::caniot::{
     ConversionError, EmbeddedFrameWrapper, Id as CaniotId, Request as CaniotRequest,

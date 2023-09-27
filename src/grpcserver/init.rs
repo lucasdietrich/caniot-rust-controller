@@ -1,5 +1,8 @@
 use log::info;
-use tonic::{transport::{Server, Error as GrpcError}, Request, Response, Status, Code};
+use tonic::{
+    transport::{Error as GrpcError, Server},
+    Code, Request, Response, Status,
+};
 
 use model::can_controller_server::{CanController, CanControllerServer};
 use model::*;
@@ -8,7 +11,7 @@ pub mod model {
     tonic::include_proto!("cancontroller.ipc");
 }
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::shared::SharedHandle;
@@ -21,7 +24,7 @@ pub struct GrpcConfig {
 impl Default for GrpcConfig {
     fn default() -> Self {
         Self {
-            listen: "[::]:50051".to_string()
+            listen: "[::]:50051".to_string(),
         }
     }
 }
@@ -41,7 +44,7 @@ struct MyCanController {}
 impl CanController for MyCanController {
     async fn hello(
         &self,
-        request: Request<HelloRequest>
+        request: Request<HelloRequest>,
     ) -> Result<Response<HelloResponse>, Status> {
         println!("Got a request: {:?}", request);
 
@@ -52,10 +55,7 @@ impl CanController for MyCanController {
         Ok(Response::new(response))
     }
 
-    async fn get_device(
-        &self,
-        request: Request<DeviceId>
-    ) -> Result<Response<Device>, Status> {
+    async fn get_device(&self, request: Request<DeviceId>) -> Result<Response<Device>, Status> {
         println!("Got a request: {:?}", request);
 
         let device = Device {

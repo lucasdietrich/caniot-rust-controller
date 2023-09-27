@@ -1,8 +1,8 @@
 use rocket::serde::{json::Json, Deserialize, Serialize};
 use rocket::{log::LogLevel, Build, Config, Rocket};
 
-use crate::shared::SharedHandle;
 use super::rest::*;
+use crate::shared::SharedHandle;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct WebserverConfig {
@@ -32,6 +32,12 @@ pub fn rocket(shared: SharedHandle) -> Rocket<Build> {
 
     rocket::custom(config).manage(shared).mount(
         "/",
-        routes![route_test, route_test_id_name, route_stats, route_can, route_config],
+        routes![
+            route_test,
+            route_test_id_name,
+            route_stats,
+            route_can,
+            route_config
+        ],
     )
 }

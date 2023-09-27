@@ -40,9 +40,12 @@ Configuration file is `caniot-controller.toml` in the current directory.
 [can]
 interface = "can0"
 
-[server]
+[web]
 port = 8080
 listen = "0.0.0.0"
+
+[grpc]
+listen = "[::]:50051"
 ```
 
 Run with

@@ -1,0 +1,85 @@
+use std::default;
+
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
+pub enum XPS {
+    #[default]
+    None = 0,
+    SetOn = 1,
+    SetOff = 2,
+    Toggle = 3,
+    Reset = 4,
+    PulseOn = 5,
+    PulseOff = 6,
+    PulseCancel = 7,
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
+pub enum TS {
+    #[default]
+    None = 0,
+    Set = 1,
+    Reset = 2,
+    Toggle = 3,
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
+pub enum HeatingMode {
+    #[default]
+    None = 0,
+    Comfort = 1,
+    ComfortMin1 = 2,
+    ComfortMin2 = 3,
+    EnergySaving = 4,
+    FrostProtection = 5,
+    Stop = 6,
+    // unused
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
+pub struct SystemCommand {
+    pub hardware_reset: bool,
+    pub software_reset: bool,
+    pub watchdog_reset: bool,
+    pub watchdog_enable: TS,
+    pub factory_reset: bool,
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
+pub struct Class0Payload {
+    pub oc1: bool,
+    pub oc2: bool,
+    pub rl1: bool,
+    pub rl2: bool,
+    pub in1: bool,
+    pub in2: bool,
+    pub in3: bool,
+    pub in4: bool,
+    pub poc1: bool,
+    pub puc2: bool,
+    pub prl1: bool,
+    pub prl2: bool,
+
+    pub temp_in: i16,
+    pub temp_out: [i16; 3],
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
+pub struct Class0Command {
+    pub coc1: XPS,
+    pub coc2: XPS,
+    pub crl1: XPS,
+    pub crl2: XPS,
+
+    pub sys: SystemCommand,
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
+pub struct HeatingControllerCommand {
+    pub modes: [HeatingMode; 4],
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
+pub struct HeatingControllerPayload {
+    pub modes: [HeatingMode; 4],
+    pub power_status: bool,
+}

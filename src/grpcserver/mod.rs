@@ -1,3 +1,3 @@
 mod init;
 
-pub use init::{GrpcConfig, grpc_server};
+pub use init::{grpc_server, GrpcConfig};

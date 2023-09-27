@@ -14,10 +14,6 @@ pub struct Shared {
     /// The application configuration
     pub config: AppConfig,
 
-    // TODO ???
-    // The Tokio runtime. Some tasks may need to spawn additional tasks onto the runtime.
-    // pub rt: Mutex<tokio::runtime::Runtime>,
-
     /// Gather all statistics about the application
     pub stats: Mutex<Stats>,
 
@@ -25,10 +21,6 @@ pub struct Shared {
     /// The task subscribes to this channel
     pub notify_shutdown: broadcast::Sender<()>,
 
-    // TODO ???
-    // /// Used to signal the asynchronous task has completed
-    // /// The task drops the sender when it shuts down
-    // pub _shutdown_complete: mpsc::Sender<()>,
     /// Message queue for sending CANIOT commands to the CAN bus
     pub can_tx_queue: mpsc::Sender<CaniotRequest>,
 }
