@@ -4,17 +4,11 @@ use tonic::{
     Code, Request, Response, Status,
 };
 
-use model::can_controller_server::{CanController, CanControllerServer};
-use model::*;
-
-pub mod model {
-    tonic::include_proto!("cancontroller.ipc");
-}
-
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::shared::SharedHandle;
+use super::ng::get_ng_caniot_controller;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GrpcConfig {
@@ -37,41 +31,10 @@ pub enum GrpcServerInitError {
     GrpcError(#[from] GrpcError),
 }
 
-#[derive(Debug, Default)]
-struct MyCanController {}
-
-#[tonic::async_trait]
-impl CanController for MyCanController {
-    async fn hello(
-        &self,
-        request: Request<HelloRequest>,
-    ) -> Result<Response<HelloResponse>, Status> {
-        println!("Got a request: {:?}", request);
-
-        let response = HelloResponse {
-            message: format!("Hello {}!", request.into_inner().name),
-        };
-
-        Ok(Response::new(response))
-    }
-
-    async fn get_device(&self, request: Request<DeviceId>) -> Result<Response<Device>, Status> {
-        println!("Got a request: {:?}", request);
-
-        let device = Device {
-            deviceid: request.into_inner().into(),
-            name: "test".to_string(),
-            version: 0,
-        };
-
-        Ok(Response::new(device))
-    }
-}
-
 pub async fn grpc_server(shared: SharedHandle) -> Result<(), GrpcServerInitError> {
     let addr = &shared.config.grpc.listen;
     let addr = addr.parse().expect("gRPC: Could not parse listen address");
-    let controller = MyCanController::default();
+    let ng_controller = get_ng_caniot_controller();
 
     let mut rx: tokio::sync::broadcast::Receiver<()> = shared.notify_shutdown.subscribe();
     let shutdown_future = async move {
@@ -82,7 +45,7 @@ pub async fn grpc_server(shared: SharedHandle) -> Result<(), GrpcServerInitError
     info!("gRPC server listening on {}", addr);
 
     Server::builder()
-        .add_service(CanControllerServer::new(controller))
+        .add_service(ng_controller)
         .serve_with_shutdown(addr, shutdown_future)
         .await?;
 

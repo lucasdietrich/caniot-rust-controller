@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package ng;
+
+import "common.proto";
+
+service CaniotController {
+  rpc Hello(HelloRequest) returns (HelloResponse) {}
+  rpc HelloEmpty(Empty) returns (Empty) {}
+}
+
+message HelloRequest {
+  string name = 1;
+}
+
+message HelloResponse {
+  string message = 1;
+}
