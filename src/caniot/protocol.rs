@@ -78,8 +78,8 @@ pub struct DeviceId {
 impl From<u8> for DeviceId {
     fn from(id: u8) -> Self {
         DeviceId {
-            class: (id & 0x7) as u8,
-            sub_id: ((id >> 3) & 0x7) as u8,
+            class: id & 0x7,
+            sub_id: (id >> 3) & 0x7,
         }
     }
 }
@@ -164,7 +164,7 @@ impl Id {
         let mut id: u16 = 0;
         id |= (self.device_id.class as u16) << 3;
         id |= (self.device_id.sub_id as u16) << 6;
-        id |= (self.action as u16) << 0;
+        id |= self.action as u16;
         id |= (self.msg_type as u16) << 1;
         id |= (self.direction as u16) << 2;
         id |= (self.endpoint as u16) << 9;

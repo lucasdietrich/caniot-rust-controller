@@ -6,13 +6,16 @@ format:
 build:
 	cargo build
 
+clean:
+	cargo clean
+
 run:
 	cargo run
 
 target:
 	./scripts/build.sh build debug
 
-deploy:
+deploy: deploy_config
 	./scripts/build.sh build debug
 	scp target/armv7-unknown-linux-gnueabihf/debug/caniot-rctrl rpi:/home/root/caniot-rctrl
 

@@ -23,7 +23,7 @@ pub fn route_test_id_name(id: u32, name: &str) -> String {
 #[get("/stats")]
 pub fn route_stats(shared: &State<SharedHandle>) -> Json<Stats> {
     let stats = shared.stats.lock().unwrap();
-    Json(stats.clone())
+    Json(*stats)
 }
 
 #[get("/config")]

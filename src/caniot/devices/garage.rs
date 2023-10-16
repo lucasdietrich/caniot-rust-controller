@@ -6,11 +6,20 @@ pub struct GarageDoorCommand {
     pub right_door_activate: bool,
 }
 
+#[allow(clippy::all)]
 impl Into<Class0Command> for GarageDoorCommand {
     fn into(self) -> Class0Command {
         Class0Command {
-            crl1: if self.left_door_activate { XPS::PulseOn } else { XPS::None },
-            crl2: if self.right_door_activate { XPS::PulseOn } else { XPS::None },
+            crl1: if self.left_door_activate {
+                Xps::PulseOn
+            } else {
+                Xps::None
+            },
+            crl2: if self.right_door_activate {
+                Xps::PulseOn
+            } else {
+                Xps::None
+            },
             ..Default::default()
         }
     }
@@ -28,7 +37,7 @@ impl From<Class0Payload> for GarageDoorStatus {
         Self {
             left_door_status: payload.in3,
             right_door_status: payload.in4,
-            garage_light_status: payload.in2
+            garage_light_status: payload.in2,
         }
     }
 }

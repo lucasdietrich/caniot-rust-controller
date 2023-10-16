@@ -1,3 +1,4 @@
+use log::info;
 use tokio;
 use tokio::sync::broadcast;
 
@@ -30,6 +31,8 @@ pub fn init_controller() {
         tokio::signal::ctrl_c()
             .await
             .expect("Failed to install CTRL+C signal handler");
+        
+        info!("CTRL+C received, shutting down...");
 
         let _ = notify_shutdown.send(());
     });

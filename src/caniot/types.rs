@@ -1,7 +1,7 @@
 use std::default;
 
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
-pub enum XPS {
+pub enum Xps {
     #[default]
     None = 0,
     SetOn = 1,
@@ -65,10 +65,10 @@ pub struct Class0Payload {
 
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub struct Class0Command {
-    pub coc1: XPS,
-    pub coc2: XPS,
-    pub crl1: XPS,
-    pub crl2: XPS,
+    pub coc1: Xps,
+    pub coc2: Xps,
+    pub crl1: Xps,
+    pub crl2: Xps,
 
     pub sys: SystemCommand,
 }

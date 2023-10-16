@@ -73,12 +73,18 @@ pub async fn grpc_server(shared: SharedHandle) -> Result<(), GrpcServerInitError
     let addr = addr.parse().expect("gRPC: Could not parse listen address");
     let controller = MyCanController::default();
 
-    Server::builder()
-        .add_service(CanControllerServer::new(controller))
-        .serve(addr)
-        .await?;
+    let mut rx: tokio::sync::broadcast::Receiver<()> = shared.notify_shutdown.subscribe();
+    let shutdown_future = async move {
+        let _ = rx.recv().await;
+        info!("gRPC server shutting down...");
+    };
 
     info!("gRPC server listening on {}", addr);
+
+    Server::builder()
+        .add_service(CanControllerServer::new(controller))
+        .serve_with_shutdown(addr, shutdown_future)
+        .await?;
 
     Ok(())
 }
