@@ -23,6 +23,15 @@ pub enum TS {
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
+pub enum TSP {
+    #[default]
+    None = 0,
+    Set = 1,
+    Reset = 2,
+    Pulse = 3,
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub enum HeatingMode {
     #[default]
     None = 0,
@@ -38,10 +47,11 @@ pub enum HeatingMode {
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub struct SystemCommand {
     pub hardware_reset: bool,
-    pub software_reset: bool,
-    pub watchdog_reset: bool,
+    pub software_reset: bool, // deprecated
+    pub watchdog_reset: bool, // deprecated
     pub watchdog_enable: TS,
     pub factory_reset: bool,
+    pub inhibit: TSP,
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq)]

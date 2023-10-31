@@ -1,8 +1,13 @@
+use std::sync::Arc;
+use std::time::Duration;
+
 use log::info;
-use tokio;
+use tokio::{self, time::sleep};
 use tokio::sync::broadcast;
 
-use crate::{can, config, grpcserver, logger, shared, webserver};
+use crate::controller::{ControllerActor, ControllerActorHandle};
+use crate::shutdown::Shutdown;
+use crate::{can, controller, config, grpcserver, logger, shared, webserver};
 
 fn get_tokio_rt() -> tokio::runtime::Runtime {
     tokio::runtime::Builder::new_current_thread()
@@ -13,7 +18,7 @@ fn get_tokio_rt() -> tokio::runtime::Runtime {
         .unwrap()
 }
 
-pub fn init_controller() {
+pub fn run_controller() {
     logger::init_logger();
 
     let config = config::load_config();
@@ -21,25 +26,32 @@ pub fn init_controller() {
 
     let (notify_shutdown, _) = broadcast::channel(1);
 
-    let (can_q_sender, can_q_receiver) = can::can_create_tx_queue();
-    let shared = shared::new_context(config, notify_shutdown.clone(), can_q_sender);
-
-    // Initialize tokio runtime
     let rt = get_tokio_rt();
+    let rt = Arc::new(rt);
+
+    let can_iface = rt.block_on(can::init_interface(&config.can));
+    let caniot_controller = controller::Controller::new(can_iface, Shutdown::new(notify_shutdown.subscribe()));
+    let caniot_controller_handle = ControllerActorHandle::new(&rt, caniot_controller);
+
+    let shared = shared::new_context(
+        rt.clone(), 
+        Arc::new(caniot_controller_handle),
+        &config, 
+        notify_shutdown.clone()
+    );
 
     rt.spawn(async move {
         tokio::signal::ctrl_c()
-            .await
-            .expect("Failed to install CTRL+C signal handler");
-        
+        .await
+        .expect("Failed to install CTRL+C signal handler");
+    
         info!("CTRL+C received, shutting down...");
-
+        
         let _ = notify_shutdown.send(());
     });
 
-    let h_can = rt.spawn(can::can_listener(shared.clone(), can_q_receiver));
     let h_rocket = rt.spawn(webserver::rocket(shared.clone()).launch());
     let h_grpc = rt.spawn(grpcserver::grpc_server(shared.clone()));
 
-    let _ = rt.block_on(async { tokio::join!(h_can, h_rocket, h_grpc) });
+    let _ = rt.block_on(async { tokio::join!(h_rocket, h_grpc) });
 }

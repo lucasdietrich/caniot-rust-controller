@@ -6,10 +6,12 @@ use toml;
 use crate::can::CanConfig;
 use crate::grpcserver::GrpcConfig;
 use crate::webserver::WebserverConfig;
+use crate::controller::CaniotConfig;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct AppConfig {
     pub can: CanConfig,
+    pub caniot: CaniotConfig,
     pub web: WebserverConfig,
     pub grpc: GrpcConfig,
 }

@@ -7,6 +7,8 @@ import "common.proto";
 service CaniotController {
   rpc Hello(HelloRequest) returns (HelloResponse) {}
   rpc HelloEmpty(Empty) returns (Empty) {}
+
+  rpc RequestTelemetry(TelemetryRequest) returns (TelemetryResponse) {}
 }
 
 message HelloRequest {
@@ -14,5 +16,15 @@ message HelloRequest {
 }
 
 message HelloResponse {
+  string message = 1;
+}
+
+message TelemetryRequest {
+  DeviceId did = 1;
+  Endpoint endpoint = 2;
+  float timeout = 3;
+}
+
+message TelemetryResponse {
   string message = 1;
 }

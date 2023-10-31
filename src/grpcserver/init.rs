@@ -7,8 +7,8 @@ use tonic::{
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::shared::SharedHandle;
 use super::ng::get_ng_caniot_controller;
+use crate::shared::SharedHandle;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GrpcConfig {

@@ -1,64 +1,53 @@
 use std::sync::{Arc, Mutex};
+use tokio::runtime::Runtime;
 use tokio::sync::{broadcast, mpsc};
 
 use serde::Serialize;
 
 use crate::caniot::Request as CaniotRequest;
 use crate::config::AppConfig;
+use crate::can::CanStats;
+use crate::controller::ControllerActorHandle;
 
 pub type SharedHandle = Arc<Shared>;
 
 /// The `Shared` struct contains fields for managing shared state between asynchronous tasks.
 #[derive(Debug)]
 pub struct Shared {
+    pub rt: Arc<Runtime>,
+
+    pub controller_actor_handle: Arc<ControllerActorHandle>,
+
     /// The application configuration
     pub config: AppConfig,
-
-    /// Gather all statistics about the application
-    pub stats: Mutex<Stats>,
 
     /// Used to signal the asynchronous task to shutdown
     /// The task subscribes to this channel
     pub notify_shutdown: broadcast::Sender<()>,
 
-    /// Message queue for sending CANIOT commands to the CAN bus
-    pub can_tx_queue: mpsc::Sender<CaniotRequest>,
+    // Message queue for sending CANIOT commands to the CAN bus
+    // pub can_tx_queue: mpsc::Sender<CaniotRequest>,
 }
 
 #[derive(Serialize, Debug, Clone, Copy)]
 pub struct Stats {
-    pub can: CanStats,
+    // pub can: CanStats,
     pub server: ServerStats,
-}
-
-#[derive(Serialize, Debug, Clone, Copy)]
-pub struct CanStats {
-    pub rx: usize,
-    pub tx: usize,
-    pub err: usize,
-    pub malformed: usize,
 }
 
 #[derive(Serialize, Debug, Clone, Copy)]
 pub struct ServerStats {}
 
 pub fn new_context(
-    config: AppConfig,
+    rt: Arc<Runtime>,
+    controller_actor_handle: Arc<ControllerActorHandle>,
+    config: &AppConfig,
     notify_shutdown: broadcast::Sender<()>,
-    can_tx_queue: mpsc::Sender<CaniotRequest>,
 ) -> SharedHandle {
     Arc::new(Shared {
-        config,
-        stats: Mutex::new(Stats {
-            can: CanStats {
-                rx: 0,
-                tx: 0,
-                err: 0,
-                malformed: 0,
-            },
-            server: ServerStats {},
-        }),
+        rt,
+        controller_actor_handle: controller_actor_handle.clone(),
+        config: config.clone(),
         notify_shutdown,
-        can_tx_queue,
     })
 }

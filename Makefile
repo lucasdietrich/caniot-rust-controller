@@ -1,5 +1,7 @@
 .PHONY: build run target deploy deploy_release deploy_config fmt
 
+all: build
+
 format:
 	cargo fmt
 
@@ -19,7 +21,7 @@ deploy: deploy_config
 	./scripts/build.sh build debug
 	scp target/armv7-unknown-linux-gnueabihf/debug/caniot-rctrl rpi:/home/root/caniot-rctrl
 
-deploy_release: target
+deploy_release: deploy_config
 	./scripts/build.sh build release
 	scp target/armv7-unknown-linux-gnueabihf/release/caniot-rctrl rpi:/home/root/caniot-rctrl
 

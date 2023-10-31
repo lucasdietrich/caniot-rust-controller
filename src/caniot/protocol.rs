@@ -252,7 +252,7 @@ pub enum RequestData {
     },
     Command {
         endpoint: Endpoint,
-        payload: [u8; 8],
+        payload: Vec<u8>,
     },
     AttributeRead {
         key: u16,
@@ -267,7 +267,7 @@ pub enum RequestData {
 pub enum ResponseData {
     Telemetry {
         endpoint: Endpoint,
-        payload: [u8; 8],
+        payload: Vec<u8>,
     },
     Attribute {
         key: u16,
@@ -317,7 +317,7 @@ where
     fn try_from(frame: EmbeddedFrameWrapper<E>) -> Result<Self, Self::Error> {
         let id: Id = frame.0.id().try_into()?;
         let device_id = id.device_id;
-        let data: [u8; 8] = frame.0.data().try_into()?;
+        let data: Vec<u8> = frame.0.data().to_vec();
 
         if id.direction != Direction::Response {
             if id.action == Action::Write {
@@ -354,7 +354,7 @@ where
     }
 }
 
-fn format_payload(payload: &[u8; 8]) -> String {
+fn format_payload(payload: &Vec<u8>) -> String {
     payload
         .iter()
         .map(|x| format!("{:02x}", x))

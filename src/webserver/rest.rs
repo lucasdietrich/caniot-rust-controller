@@ -3,7 +3,7 @@ use rocket::{
     State,
 };
 
-use crate::caniot::Request as CaniotRequest;
+use crate::{caniot::Request as CaniotRequest, shared::ServerStats};
 use crate::{
     caniot::DeviceId,
     shared::{SharedHandle, Stats},
@@ -22,8 +22,11 @@ pub fn route_test_id_name(id: u32, name: &str) -> String {
 
 #[get("/stats")]
 pub fn route_stats(shared: &State<SharedHandle>) -> Json<Stats> {
-    let stats = shared.stats.lock().unwrap();
-    Json(*stats)
+    // let stats = shared.stats.lock().unwrap();
+    let stats = Stats {
+        server: ServerStats {},
+    };
+    Json(stats)
 }
 
 #[get("/config")]
@@ -46,12 +49,7 @@ pub async fn route_can(did: u8, shared: &State<SharedHandle>) -> Result<(), Stri
         },
     };
 
-    shared
-        .can_tx_queue
-        .clone()
-        .send(caniot_request)
-        .await
-        .map_err(|err| err.to_string())?;
+    let z = shared.controller_actor_handle.query().await;
 
     Ok(())
 }

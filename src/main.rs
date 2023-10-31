@@ -1,5 +1,5 @@
 // TODO: Disable this for production
-#![allow(dead_code, unused_imports)]
+// #![allow(dead_code, unused_imports)]
 
 #[macro_use]
 extern crate rocket;
@@ -16,5 +16,5 @@ mod shutdown;
 mod webserver;
 
 fn main() {
-    init::init_controller();
+    init::run_controller();
 }

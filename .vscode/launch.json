@@ -40,13 +40,6 @@
             },
             "args": [],
             "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "custom",
-            "name": "Target debug",
-            "targetCreateCommands": ["target create ${workspaceFolder}/target/armv7-unknown-linux-gnueabihf/debug/caniot-rctrl"],
-            "processCreateCommands": ["gdb-remote 192.168.10.215:8989"]
         }
     ]
 }

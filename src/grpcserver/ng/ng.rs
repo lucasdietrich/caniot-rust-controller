@@ -32,11 +32,21 @@ impl CaniotController for NgCaniotController {
         Ok(Response::new(response))
     }
 
-    async fn hello_empty(
+    async fn hello_empty(&self, _request: Request<Empty>) -> Result<Response<Empty>, Status> {
+        Ok(Response::new(Empty {}))
+    }
+
+    async fn request_telemetry(
         &self,
-        _request: Request<Empty>,
-    ) -> Result<Response<Empty>, Status> {
-        Ok(Response::new(Empty { }))
+        request: Request<TelemetryRequest>,
+    ) -> Result<Response<TelemetryResponse>, Status> {
+        println!("Got a request: {:?}", request);
+
+        let response = TelemetryResponse {
+            message: format!("Hello!"),
+        };
+
+        Ok(Response::new(response))
     }
 }
 

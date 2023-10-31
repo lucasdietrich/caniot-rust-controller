@@ -1,5 +1,5 @@
 mod init;
-mod ng;
 mod legacy;
+mod ng;
 
 pub use init::{grpc_server, GrpcConfig};

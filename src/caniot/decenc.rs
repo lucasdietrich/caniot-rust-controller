@@ -35,6 +35,7 @@ pub fn encode_sys_command(sysc: SystemCommand) -> u8 {
     payload |= (sysc.watchdog_reset as u8) << 2;
     payload |= (sysc.watchdog_enable as u8) << 3;
     payload |= (sysc.factory_reset as u8) << 5;
+    payload |= (sysc.inhibit as u8) << 6;
 
     payload
 }
