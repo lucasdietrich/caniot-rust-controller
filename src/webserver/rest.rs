@@ -21,11 +21,15 @@ pub fn route_test_id_name(id: u32, name: &str) -> String {
 }
 
 #[get("/stats")]
-pub fn route_stats(shared: &State<SharedHandle>) -> Json<Stats> {
-    // let stats = shared.stats.lock().unwrap();
+pub async fn route_stats(shared: &State<SharedHandle>) -> Json<Stats> {
+    let (caniot, can) = shared.controller_actor_handle.get_stats().await.unwrap();
+
     let stats = Stats {
+        caniot,
+        can,
         server: ServerStats {},
     };
+
     Json(stats)
 }
 

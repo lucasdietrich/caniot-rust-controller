@@ -1,17 +1,18 @@
 use tokio::{sync::{mpsc, oneshot}, runtime::Runtime, task::JoinHandle};
 
-use super::Controller;
+use crate::can::CanStats;
+
+use super::{Controller, CaniotStats};
 
 const CHANNEL_SIZE: usize = 10;
 
-#[derive(Debug)]
-pub struct ControllerResponse {
-
-}
-
-#[derive(Debug)]
-pub struct ControllerMessage {
-    respond_to: oneshot::Sender<ControllerResponse>,
+enum ControllerMessage {
+    GetStats {
+        respond_to: oneshot::Sender<(CaniotStats, CanStats)>,
+    },
+    Query {
+        respond_to: oneshot::Sender<()>,
+    },
 }
 
 pub struct ControllerActor {
@@ -25,9 +26,14 @@ impl ControllerActor {
     }
 
     async fn handle_message(&mut self, message: ControllerMessage) {
-        println!("ControllerMessage {:?}", message);
-        let ControllerMessage { respond_to } = message;
-        let _ = respond_to.send(ControllerResponse {});
+        match message {
+            ControllerMessage::GetStats { respond_to } => {
+                let _ =respond_to.send((self.controller.stats, self.controller.iface.stats));
+            },
+            ControllerMessage::Query { respond_to } => {
+                let _ = respond_to.send(());
+            }
+        }
     }
 
     async fn run(mut self) {
@@ -54,10 +60,15 @@ impl ControllerActorHandle {
 
     pub async fn query(&self) -> Result<(), ()> {
         let (respond_to, recv) = oneshot::channel();
-        let msg = ControllerMessage { respond_to };
+        let msg = ControllerMessage::Query { respond_to };
         self.sender.send(msg).await.unwrap();
-        println!("query response received");
-        let _ = recv.await.unwrap();
-        Ok(())
+        recv.await.map_err(|_| ())
+    }
+
+    pub async fn get_stats(&self) -> Result<(CaniotStats, CanStats), ()> {
+        let (respond_to, recv) = oneshot::channel();
+        let msg = ControllerMessage::GetStats { respond_to };
+        self.sender.send(msg).await.unwrap();
+        recv.await.map_err(|_| ())
     }
 }

@@ -7,7 +7,7 @@ use serde::Serialize;
 use crate::caniot::Request as CaniotRequest;
 use crate::config::AppConfig;
 use crate::can::CanStats;
-use crate::controller::ControllerActorHandle;
+use crate::controller::{ControllerActorHandle, CaniotStats};
 
 pub type SharedHandle = Arc<Shared>;
 
@@ -31,7 +31,8 @@ pub struct Shared {
 
 #[derive(Serialize, Debug, Clone, Copy)]
 pub struct Stats {
-    // pub can: CanStats,
+    pub caniot: CaniotStats,
+    pub can: CanStats,
     pub server: ServerStats,
 }
 
