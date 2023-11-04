@@ -5,9 +5,9 @@ use log::info;
 use tokio::{self, time::sleep};
 use tokio::sync::broadcast;
 
-use crate::controller::{ControllerActor, ControllerActorHandle};
+use crate::controller::{ControllerHandle};
 use crate::shutdown::Shutdown;
-use crate::{can, controller, config, grpcserver, logger, shared, webserver};
+use crate::{can, controller, config, grpcserver, logger, shared, webserver, caniot};
 
 fn get_tokio_rt() -> tokio::runtime::Runtime {
     tokio::runtime::Builder::new_current_thread()
@@ -31,7 +31,7 @@ pub fn run_controller() {
 
     let can_iface = rt.block_on(can::init_interface(&config.can));
     let caniot_controller = controller::Controller::new(can_iface, Shutdown::new(notify_shutdown.subscribe()));
-    let caniot_controller_handle = ControllerActorHandle::new(&rt, caniot_controller);
+    let caniot_controller_handle = caniot_controller.get_handle();
 
     let shared = shared::new_context(
         rt.clone(), 
@@ -50,8 +50,9 @@ pub fn run_controller() {
         let _ = notify_shutdown.send(());
     });
 
+    let h_ctrl = rt.spawn(caniot_controller.run());
     let h_rocket = rt.spawn(webserver::rocket(shared.clone()).launch());
     let h_grpc = rt.spawn(grpcserver::grpc_server(shared.clone()));
 
-    let _ = rt.block_on(async { tokio::join!(h_rocket, h_grpc) });
+    let _ = rt.block_on(async { tokio::join!(h_ctrl, h_rocket, h_grpc) });
 }

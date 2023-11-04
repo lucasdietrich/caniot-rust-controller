@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use crate::can::CanInterface;
+use crate::can::{CanInterface, CanStats};
 use crate::caniot::{DeviceId, RequestData, ResponseData, EmbeddedFrameWrapper, Response as CaniotResponse, Request as CaniotRequest};
 use crate::shared::{Shared, SharedHandle};
 use crate::shutdown::{Shutdown, self};
@@ -10,7 +10,12 @@ use serde::{Deserialize, Serialize};
 use socketcan::CanDataFrame;
 use thiserror::Error;
 use tokio::select;
+use tokio::sync::{mpsc, oneshot};
 use tokio::time::sleep;
+
+use super::{ControllerMessage, ControllerHandle};
+
+const CHANNEL_SIZE: usize = 10;
 
 #[derive(Serialize, Debug, Clone, Copy, Default)]
 pub struct CaniotStats {
@@ -39,23 +44,45 @@ struct Device {
 
 pub struct Controller {
     pub iface: CanInterface,
-    shutdown: Shutdown,
     pub stats: CaniotStats,
-
+    
     devices: [Device; 63],
+    
+    shutdown: Shutdown,
+    receiver: mpsc::Receiver<ControllerMessage>,
+    handle: ControllerHandle,
 }
 
 impl Controller {
     pub(crate) fn new(iface: CanInterface, shutdown: Shutdown) -> Self {
+        let (sender, receiver) = mpsc::channel(CHANNEL_SIZE);
+
         Self {
             iface,
-            shutdown,
             stats: CaniotStats::default(),
             devices: [Device { device_id: DeviceId { class: 0, sub_id: 0 } }; 63],
+            shutdown,
+            receiver,
+            handle: ControllerHandle { sender },
         }
     }
 
-    fn handle_can_data_frame(&mut self, frame: CanDataFrame) {
+    pub fn get_handle(&self) -> ControllerHandle {
+        self.handle.clone()
+    }
+
+    fn handle_message(&mut self, message: ControllerMessage) {
+        match message {
+            ControllerMessage::GetStats { respond_to } => {
+                let _ = respond_to.send((self.stats, self.iface.stats));
+            },
+            ControllerMessage::Query { respond_to } => {
+                let _ = respond_to.send(());
+            }
+        }
+    }
+
+    fn handle_can_frame(&mut self, frame: CanDataFrame) {
         let frame: Result<CaniotResponse, _> = EmbeddedFrameWrapper(frame).try_into();
         match frame {
             Ok(frame) => {
@@ -72,8 +99,11 @@ impl Controller {
     pub async fn run(mut self) -> Result<(), ()> {
         loop {
             select! {
+                Some(message) = self.receiver.recv() => {
+                    self.handle_message(message);
+                },
                 Some(frame) = self.iface.recv_poll() => {
-                    self.handle_can_data_frame(frame);
+                    self.handle_can_frame(frame);
                 },
                 _ = self.shutdown.recv() => {
                     warn!("Received shutdown signal");

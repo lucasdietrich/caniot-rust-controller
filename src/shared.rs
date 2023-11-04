@@ -7,7 +7,7 @@ use serde::Serialize;
 use crate::caniot::Request as CaniotRequest;
 use crate::config::AppConfig;
 use crate::can::CanStats;
-use crate::controller::{ControllerActorHandle, CaniotStats};
+use crate::controller::{ControllerHandle, CaniotStats};
 
 pub type SharedHandle = Arc<Shared>;
 
@@ -16,7 +16,7 @@ pub type SharedHandle = Arc<Shared>;
 pub struct Shared {
     pub rt: Arc<Runtime>,
 
-    pub controller_actor_handle: Arc<ControllerActorHandle>,
+    pub controller_actor_handle: Arc<ControllerHandle>,
 
     /// The application configuration
     pub config: AppConfig,
@@ -41,7 +41,7 @@ pub struct ServerStats {}
 
 pub fn new_context(
     rt: Arc<Runtime>,
-    controller_actor_handle: Arc<ControllerActorHandle>,
+    controller_actor_handle: Arc<ControllerHandle>,
     config: &AppConfig,
     notify_shutdown: broadcast::Sender<()>,
 ) -> SharedHandle {
