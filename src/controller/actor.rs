@@ -74,7 +74,7 @@ pub async fn handle_message(controller: &mut Controller, message: ControllerMess
                 .query(
                     request,
                     timeout_ms,
-                    Box::pin(move |result| {
+                    Box::new(move |result| {
                         let _ = respond_to.send(result.ok());
                     }),
                 )

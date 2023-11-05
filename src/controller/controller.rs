@@ -63,14 +63,14 @@ struct Device {
     device_id: DeviceId,
 }
 
-type PendingQueryClosure = Pin<Box<dyn FnOnce(Result<CaniotResponse, ControllerError>) -> () + Send + Sync + 'static>>;
+type PendingQueryClosure = Box<dyn FnOnce(Result<CaniotResponse, ControllerError>) -> () + Send + 'static>;
 
 struct PendingQuery {
     // query pending
     query: CaniotRequest,
 
     // closure to call when response is received
-    closure: PendingQueryClosure,
+    closure: Option<PendingQueryClosure>,
 
     // timeout in milliseconds
     timeout_ms: u32,
@@ -130,7 +130,7 @@ impl Controller {
 
         let pending_query = PendingQuery {
             query: request,
-            closure,
+            closure: Some(closure),
             timeout_ms,
             sent_at: std::time::Instant::now(),
         };
@@ -153,11 +153,14 @@ impl Controller {
             .position(|pq| is_response_to(&pq.query, &frame).is_response())
             .map(|idx| self.pending_queries.remove(idx));
 
-        if let Some(pq) = pq {
-            let closure = pq.closure;
-            closure(Ok(frame));
-        } else {
-            error!("Received response to unknown query: {}", frame);
+        if let Some(mut pq) = pq {
+            info!("Found pending query for {:?}", frame);
+
+            let closure = std::mem::replace(&mut pq.closure, None);
+
+            if let Some(closure) = closure {
+                closure(Ok(frame));
+            }
         }
 
         Ok(())
