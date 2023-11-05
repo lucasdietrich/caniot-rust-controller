@@ -1,13 +1,16 @@
 use rocket::{
+    response::content::{self, RawJson},
     serde::{json::Json, Deserialize, Serialize},
     State,
 };
 
 use crate::{caniot::Request as CaniotRequest, shared::ServerStats};
 use crate::{
-    caniot::DeviceId,
+    caniot::{DeviceId, Endpoint},
     shared::{SharedHandle, Stats},
 };
+
+use num_derive::FromPrimitive;
 
 #[get("/test")]
 pub fn route_test() -> &'static str {
@@ -22,7 +25,7 @@ pub fn route_test_id_name(id: u32, name: &str) -> String {
 
 #[get("/stats")]
 pub async fn route_stats(shared: &State<SharedHandle>) -> Json<Stats> {
-    let (caniot, can) = shared.controller_actor_handle.get_stats().await.unwrap();
+    let (caniot, can) = shared.controller_handle.get_stats().await.unwrap();
 
     let stats = Stats {
         caniot,
@@ -31,6 +34,29 @@ pub async fn route_stats(shared: &State<SharedHandle>) -> Json<Stats> {
     };
 
     Json(stats)
+}
+
+#[get("/caniot/request_telemetry/<did>/<endpoint>")]
+pub async fn route_caniot_request_telemetry(
+    did: u8,
+    endpoint: u8,
+    shared: &State<SharedHandle>,
+) -> content::RawJson<&'static str> {
+    let device_id = DeviceId::from(did);
+    let endpoint = num::FromPrimitive::from_u8(endpoint).unwrap();
+
+    let response = shared
+        .controller_handle
+        .query_telemetry(device_id, endpoint, 1000)
+        .await
+        .unwrap();
+
+    if let Some(response) = response {
+        println!("response: {:?}", response);
+        RawJson("{ \"status\": \"ok\" }")
+    } else {
+        RawJson("{ \"status\": \"timeout\" }")
+    }
 }
 
 #[get("/config")]
@@ -53,7 +79,7 @@ pub async fn route_can(did: u8, shared: &State<SharedHandle>) -> Result<(), Stri
         },
     };
 
-    let z = shared.controller_actor_handle.query().await;
+    let z = shared.controller_handle.query().await;
 
     Ok(())
 }

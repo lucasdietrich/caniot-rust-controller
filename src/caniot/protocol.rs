@@ -12,6 +12,12 @@ use embedded_can::{Frame as EmbeddedFrame, Id as EmbeddedId, StandardId};
 
 use thiserror::Error;
 
+#[derive(Error, Debug)]
+pub enum ProtocolError {
+    #[error("Timeout Error")]
+    Caniot2Can,
+}
+
 #[derive(Debug, PartialEq, Eq, Clone, Copy, FromPrimitive)]
 pub enum CaniotError {
     Ok = 0x0000,
@@ -194,7 +200,7 @@ impl TryFrom<EmbeddedId> for Id {
 pub type Request = Frame<RequestData>;
 pub type Response = Frame<ResponseData>;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Frame<T> {
     pub device_id: DeviceId,
     pub data: T,
@@ -236,16 +242,16 @@ impl Request {
         EmbeddedId::Standard(can_id)
     }
 
-    pub fn to_can_frame<T>(&self) -> T
+    pub fn to_can_frame<T>(&self) -> Result<T, ProtocolError>
     where
         T: EmbeddedFrame,
     {
-        // TODO implement this
-        EmbeddedFrame::new(self.get_id(), &[0u8; 8]).unwrap()
+        let data = self.data.to_data();
+        Ok(EmbeddedFrame::new(self.get_id(), &data).unwrap())
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum RequestData {
     Telemetry {
         endpoint: Endpoint,
@@ -263,7 +269,22 @@ pub enum RequestData {
     },
 }
 
-#[derive(Debug)]
+impl RequestData {
+    pub fn to_data(&self) -> Vec<u8> {
+        match self {
+            RequestData::Telemetry { .. } => vec![],
+            RequestData::Command { payload, .. } => payload.clone(),
+            RequestData::AttributeRead { key } => key.to_le_bytes().to_vec(),
+            RequestData::AttributeWrite { key, value } => {
+                let mut data = key.to_le_bytes().to_vec();
+                data.extend_from_slice(&value.to_le_bytes());
+                data
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub enum ResponseData {
     Telemetry {
         endpoint: Endpoint,
@@ -274,6 +295,9 @@ pub enum ResponseData {
         value: u32,
     },
     Error {
+        // endpoint is Some if telemetry or command error
+        // endpoint is None if attribute error
+        endpoint: Option<Endpoint>,
         error: CaniotError,
     },
 }
@@ -324,6 +348,11 @@ where
                 return Ok(Frame {
                     device_id,
                     data: ResponseData::Error {
+                        endpoint: if id.msg_type == Type::Telemetry {
+                            Some(id.endpoint)
+                        } else {
+                            None
+                        },
                         error: CaniotError::from_i16(i16::from_le_bytes(
                             data[0..2].try_into().unwrap(),
                         ))
@@ -378,8 +407,8 @@ impl fmt::Display for Response {
                 // Modify as per the actual representation of the key and value
                 write!(f, "Attribute: key {} = value {}", key, value)
             }
-            ResponseData::Error { error } => {
-                write!(f, "Error: {:?}", error)
+            ResponseData::Error { error, endpoint } => {
+                write!(f, "Error: {:?} Endpoint {:?}", error, endpoint)
             }
         }
     }
@@ -411,5 +440,106 @@ impl fmt::Display for Request {
                 )
             }
         }
+    }
+}
+
+pub fn build_telemetry_request(device_id: DeviceId, endpoint: Endpoint) -> Request {
+    Request {
+        device_id,
+        data: RequestData::Telemetry { endpoint },
+    }
+}
+pub fn build_attribute_read_request(device_id: DeviceId, key: u16) -> Request {
+    Request {
+        device_id,
+        data: RequestData::AttributeRead { key },
+    }
+}
+
+pub fn build_attribute_write_request(device_id: DeviceId, key: u16, value: u32) -> Request {
+    Request {
+        device_id,
+        data: RequestData::AttributeWrite { key, value },
+    }
+}
+
+pub fn build_command_request(device_id: DeviceId, endpoint: Endpoint, payload: Vec<u8>) -> Request {
+    Request {
+        device_id,
+        data: RequestData::Command { endpoint, payload },
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ResponseMatch {
+    is_reponse: bool,
+    is_error: bool,
+}
+
+impl ResponseMatch {
+    pub fn new(is_response: bool, is_error: bool) -> Self {
+        Self {
+            is_reponse: is_response,
+            is_error: is_error,
+        }
+    }
+
+    pub fn is_response(&self) -> bool {
+        self.is_reponse
+    }
+
+    pub fn is_error(&self) -> bool {
+        self.is_error
+    }
+
+    pub fn is_valid_response(&self) -> bool {
+        self.is_reponse && !self.is_error
+    }
+
+    pub fn is_response_error(&self) -> bool {
+        self.is_reponse && self.is_error
+    }
+}
+
+fn response_match_any_telemetry_query(
+    query_endpoint: Endpoint,
+    response: &Response,
+) -> ResponseMatch {
+    let (is_response, is_error) = match response.data {
+        ResponseData::Telemetry {
+            endpoint: response_endpoint,
+            ..
+        } => (query_endpoint == response_endpoint, false),
+        ResponseData::Error {
+            endpoint: response_endpoint,
+            ..
+        } => (Some(query_endpoint) == response_endpoint, true),
+        ResponseData::Attribute { .. } => (false, false),
+    };
+
+    ResponseMatch::new(is_response, is_error)
+}
+
+fn response_match_any_attribute_query(key: u16, response: &Response) -> ResponseMatch {
+    let (is_response, is_error) = match response.data {
+        ResponseData::Telemetry { .. } => (false, false),
+        ResponseData::Attribute {
+            key: response_key, ..
+        } => (key == response_key, false),
+        ResponseData::Error { endpoint, .. } => (endpoint.is_none(), true),
+    };
+
+    ResponseMatch::new(is_response, is_error)
+}
+
+pub fn is_response_to(query: &Request, response: &Response) -> ResponseMatch {
+    match query.data {
+        RequestData::Command { endpoint, .. } | RequestData::Telemetry { endpoint } => {
+            response_match_any_telemetry_query(endpoint, response)
+        }
+        RequestData::AttributeWrite { key, .. } | RequestData::AttributeRead { key } => {
+            response_match_any_attribute_query(key, response)
+        }
+        _ => ResponseMatch::new(false, false),
     }
 }

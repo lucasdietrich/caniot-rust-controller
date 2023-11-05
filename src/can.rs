@@ -54,7 +54,10 @@ impl CanInterface {
         let sock = CanSocket::open(&config.interface)?;
         let filter = CanFilter::new(CANIOT_DEVICE_FILTER_ID, CANIOT_DEVICE_FILTER_MASK);
         sock.set_filters(&[filter])?;
-        Ok(Self { sock, stats: CanStats::default() })
+        Ok(Self {
+            sock,
+            stats: CanStats::default(),
+        })
     }
 
     pub async fn send(&mut self, frame: CanFrame) -> Result<(), CanInterfaceError> {

@@ -2,12 +2,12 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use log::info;
-use tokio::{self, time::sleep};
 use tokio::sync::broadcast;
+use tokio::{self, time::sleep};
 
-use crate::controller::{ControllerHandle};
+use crate::controller::ControllerHandle;
 use crate::shutdown::Shutdown;
-use crate::{can, controller, config, grpcserver, logger, shared, webserver, caniot};
+use crate::{can, caniot, config, controller, grpcserver, logger, shared, webserver};
 
 fn get_tokio_rt() -> tokio::runtime::Runtime {
     tokio::runtime::Builder::new_current_thread()
@@ -30,23 +30,27 @@ pub fn run_controller() {
     let rt = Arc::new(rt);
 
     let can_iface = rt.block_on(can::init_interface(&config.can));
-    let caniot_controller = controller::Controller::new(can_iface, Shutdown::new(notify_shutdown.subscribe()));
+    let caniot_controller = controller::Controller::new(
+        can_iface,
+        rt.clone(),
+        Shutdown::new(notify_shutdown.subscribe()),
+    );
     let caniot_controller_handle = caniot_controller.get_handle();
 
     let shared = shared::new_context(
-        rt.clone(), 
+        rt.clone(),
         Arc::new(caniot_controller_handle),
-        &config, 
-        notify_shutdown.clone()
+        &config,
+        notify_shutdown.clone(),
     );
 
     rt.spawn(async move {
         tokio::signal::ctrl_c()
-        .await
-        .expect("Failed to install CTRL+C signal handler");
-    
+            .await
+            .expect("Failed to install CTRL+C signal handler");
+
         info!("CTRL+C received, shutting down...");
-        
+
         let _ = notify_shutdown.send(());
     });
 

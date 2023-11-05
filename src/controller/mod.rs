@@ -1,5 +1,5 @@
-pub mod controller;
-pub mod handle;
+mod actor;
+mod controller;
 
+pub use actor::ControllerHandle;
 pub use controller::*;
-pub use handle::*;

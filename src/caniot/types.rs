@@ -1,6 +1,8 @@
 use std::default;
 
-#[derive(Debug, Default, Clone, Copy, PartialEq)]
+use num_derive::FromPrimitive;
+
+#[derive(Debug, Default, Clone, Copy, PartialEq, FromPrimitive)]
 pub enum Xps {
     #[default]
     None = 0,
@@ -13,7 +15,7 @@ pub enum Xps {
     PulseCancel = 7,
 }
 
-#[derive(Debug, Default, Clone, Copy, PartialEq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, FromPrimitive)]
 pub enum TS {
     #[default]
     None = 0,
@@ -22,7 +24,7 @@ pub enum TS {
     Toggle = 3,
 }
 
-#[derive(Debug, Default, Clone, Copy, PartialEq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, FromPrimitive)]
 pub enum TSP {
     #[default]
     None = 0,
@@ -31,7 +33,7 @@ pub enum TSP {
     Pulse = 3,
 }
 
-#[derive(Debug, Default, Clone, Copy, PartialEq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, FromPrimitive)]
 pub enum HeatingMode {
     #[default]
     None = 0,
@@ -81,6 +83,11 @@ pub struct Class0Command {
     pub crl2: Xps,
 
     pub sys: SystemCommand,
+}
+
+pub enum BlcCommand {
+    Class0(Class0Command),
+    // Class1(Class1Command),
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq)]

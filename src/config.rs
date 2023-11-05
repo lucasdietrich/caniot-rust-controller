@@ -4,9 +4,9 @@ use std::fs;
 use toml;
 
 use crate::can::CanConfig;
+use crate::controller::CaniotConfig;
 use crate::grpcserver::GrpcConfig;
 use crate::webserver::WebserverConfig;
-use crate::controller::CaniotConfig;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct AppConfig {

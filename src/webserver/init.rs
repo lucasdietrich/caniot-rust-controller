@@ -37,7 +37,8 @@ pub fn rocket(shared: SharedHandle) -> Rocket<Build> {
             route_test_id_name,
             route_stats,
             route_can,
-            route_config
+            route_config,
+            route_caniot_request_telemetry,
         ],
     )
 }

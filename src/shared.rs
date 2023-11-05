@@ -4,10 +4,10 @@ use tokio::sync::{broadcast, mpsc};
 
 use serde::Serialize;
 
+use crate::can::CanStats;
 use crate::caniot::Request as CaniotRequest;
 use crate::config::AppConfig;
-use crate::can::CanStats;
-use crate::controller::{ControllerHandle, CaniotStats};
+use crate::controller::{CaniotStats, ControllerHandle};
 
 pub type SharedHandle = Arc<Shared>;
 
@@ -16,7 +16,7 @@ pub type SharedHandle = Arc<Shared>;
 pub struct Shared {
     pub rt: Arc<Runtime>,
 
-    pub controller_actor_handle: Arc<ControllerHandle>,
+    pub controller_handle: Arc<ControllerHandle>,
 
     /// The application configuration
     pub config: AppConfig,
@@ -24,7 +24,6 @@ pub struct Shared {
     /// Used to signal the asynchronous task to shutdown
     /// The task subscribes to this channel
     pub notify_shutdown: broadcast::Sender<()>,
-
     // Message queue for sending CANIOT commands to the CAN bus
     // pub can_tx_queue: mpsc::Sender<CaniotRequest>,
 }
@@ -41,13 +40,13 @@ pub struct ServerStats {}
 
 pub fn new_context(
     rt: Arc<Runtime>,
-    controller_actor_handle: Arc<ControllerHandle>,
+    controller_handle: Arc<ControllerHandle>,
     config: &AppConfig,
     notify_shutdown: broadcast::Sender<()>,
 ) -> SharedHandle {
     Arc::new(Shared {
         rt,
-        controller_actor_handle: controller_actor_handle.clone(),
+        controller_handle: controller_handle,
         config: config.clone(),
         notify_shutdown,
     })
