@@ -50,6 +50,9 @@ pub enum ControllerError {
     #[error("Timeout Error")]
     Timeout,
 
+    #[error("Unsupported query Error")]
+    UnsupportedQuery,
+
     #[error("CAN Interface Error: {0}")]
     CanError(#[from] CanInterfaceError),
 
@@ -123,6 +126,7 @@ impl Controller {
         info!("TX {}", request);
         let can_frame = request.to_can_frame()?;
         self.iface.send(can_frame).await?;
+        self.stats.tx += 1;
         Ok(())
     }
 
@@ -132,7 +136,10 @@ impl Controller {
         timeout_ms: u32,
         sender: oneshot::Sender<Result<CaniotResponse, ControllerError>>,
     ) {
-        if let Err(err) = self.send_caniot_frame(&request).await {
+        if request.device_id == DeviceId::BROADCAST {
+            error!("BROADCAST query not supported");
+            let _ = sender.send(Err(ControllerError::UnsupportedQuery));
+        } else if let Err(err) = self.send_caniot_frame(&request).await {
             error!("Failed to send CANIOT frame: {:?}", err);
             let _ = sender.send(Err(err)); // Send None, but do not panic if receiver is dropped
         } else {
@@ -152,6 +159,9 @@ impl Controller {
 
         // update stats
         self.stats.rx += 1;
+
+        // TODO if a frame can answer multiple pending queries, remove all of them
+        // TODO broadcast should be handled differently as the oneshot channel cannot be used to send multiple responses
 
         let pq = self
             .pending_queries
@@ -200,7 +210,10 @@ impl Controller {
 
         // send timeout to all timed out queries
         for pq in timed_out_queries {
-            warn!("Pending query timeout {} after {} ms", pq.query, pq.timeout_ms);
+            warn!(
+                "Pending query timeout {} after {} ms",
+                pq.query, pq.timeout_ms
+            );
             let _ = pq.sender.send(Err(ControllerError::Timeout)); // Do not panic if receiver is dropped
         }
     }

@@ -4,6 +4,8 @@ use std::fmt::Debug;
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 
+use serde::{Deserialize, Serialize};
+
 pub const CANIOT_ERROR_BASE: isize = 0x3A00;
 pub const CANIOT_DEVICE_FILTER_ID: u32 = 1 << 2; /* bit 2 is 1 for response frames */
 pub const CANIOT_DEVICE_FILTER_MASK: u32 = 1 << 2; /* bit 2 is 1 to filter frames by direction */
@@ -14,11 +16,11 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum ProtocolError {
-    #[error("Timeout Error")]
-    Caniot2Can,
+    #[error("DeviceIdCreationError")]
+    DeviceIdCreationError,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy, FromPrimitive)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, FromPrimitive, Serialize)]
 pub enum CaniotError {
     Ok = 0x0000,
     Einval = CANIOT_ERROR_BASE, // Invalid argument
@@ -75,28 +77,35 @@ impl CaniotError {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 pub struct DeviceId {
     pub class: u8,
     pub sub_id: u8,
 }
 
-impl From<u8> for DeviceId {
-    fn from(id: u8) -> Self {
-        DeviceId {
-            class: id & 0x7,
-            sub_id: (id >> 3) & 0x7,
+impl TryFrom<u8> for DeviceId {
+    type Error = ProtocolError;
+
+    fn try_from(id: u8) -> Result<Self, Self::Error> {
+        if id > 0x3f {
+            return Err(ProtocolError::DeviceIdCreationError);
+        } else {
+            Ok(DeviceId {
+                class: id & 0x7,
+                sub_id: (id >> 3) & 0x7,
+            })
         }
     }
 }
 
 impl DeviceId {
+    pub const BROADCAST: DeviceId = DeviceId {
+        class: 0x7,
+        sub_id: 0x7,
+    };
+
     pub fn get_did(&self) -> u8 {
         (self.sub_id << 3) | self.class
-    }
-
-    pub fn is_broadcast(&self) -> bool {
-        self.get_did() == 0x7F
     }
 }
 
@@ -124,7 +133,7 @@ pub enum Direction {
     Response = 1,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy, FromPrimitive)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, FromPrimitive, Serialize)]
 pub enum Endpoint {
     ApplicationDefault = 0,
     Application1 = 1,
@@ -155,7 +164,7 @@ pub struct Id {
 impl From<u16> for Id {
     fn from(id: u16) -> Self {
         Id {
-            device_id: DeviceId::from((id >> 3) as u8),
+            device_id: DeviceId::try_from(((id >> 3) & 0x3f) as u8).unwrap(),
             action: Action::from_u8((id & 0x1) as u8).unwrap(),
             msg_type: Type::from_u8(((id >> 1) & 0x1) as u8).unwrap(),
             direction: Direction::from_u8(((id >> 2) & 0x1) as u8).unwrap(),
@@ -200,8 +209,11 @@ impl TryFrom<EmbeddedId> for Id {
 pub type Request = Frame<RequestData>;
 pub type Response = Frame<ResponseData>;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Frame<T> {
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct Frame<T>
+where
+    T: Serialize,
+{
     pub device_id: DeviceId,
     pub data: T,
 }
@@ -251,7 +263,7 @@ impl Request {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub enum RequestData {
     Telemetry {
         endpoint: Endpoint,
@@ -284,7 +296,7 @@ impl RequestData {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub enum ResponseData {
     Telemetry {
         endpoint: Endpoint,
@@ -533,7 +545,7 @@ fn response_match_any_attribute_query(key: u16, response: &Response) -> Response
 }
 
 pub fn is_response_to(query: &Request, response: &Response) -> ResponseMatch {
-    if query.device_id != response.device_id {
+    if query.device_id != DeviceId::BROADCAST && query.device_id != response.device_id {
         return ResponseMatch::new(false, false);
     }
 

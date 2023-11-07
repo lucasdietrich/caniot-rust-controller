@@ -1,18 +1,11 @@
-use embedded_can::Frame as EmbeddedFrame;
 use futures_util::{SinkExt, StreamExt};
-use log::{debug, error, info, warn};
+use log::{error, warn};
 use serde::{Deserialize, Serialize};
 use socketcan::tokio::CanSocket;
 use socketcan::{CanDataFrame, CanFilter, CanFrame, Error as CanError, SocketOptions};
 use thiserror::Error;
-use tokio::sync::mpsc;
 
-use crate::caniot::{
-    ConversionError, EmbeddedFrameWrapper, Id as CaniotId, Request as CaniotRequest,
-    Response as CaniotResponse, CANIOT_DEVICE_FILTER_ID, CANIOT_DEVICE_FILTER_MASK,
-};
-use crate::shared::{Shared, SharedHandle};
-use crate::shutdown::Shutdown;
+use crate::caniot::{CANIOT_DEVICE_FILTER_ID, CANIOT_DEVICE_FILTER_MASK};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct CanConfig {

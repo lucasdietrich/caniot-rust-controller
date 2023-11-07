@@ -14,8 +14,10 @@ pub type SharedHandle = Arc<Shared>;
 /// The `Shared` struct contains fields for managing shared state between asynchronous tasks.
 #[derive(Debug)]
 pub struct Shared {
+    /// The Tokio runtime
     pub rt: Arc<Runtime>,
 
+    /// The CAN controller handle
     pub controller_handle: Arc<ControllerHandle>,
 
     /// The application configuration
@@ -24,8 +26,6 @@ pub struct Shared {
     /// Used to signal the asynchronous task to shutdown
     /// The task subscribes to this channel
     pub notify_shutdown: broadcast::Sender<()>,
-    // Message queue for sending CANIOT commands to the CAN bus
-    // pub can_tx_queue: mpsc::Sender<CaniotRequest>,
 }
 
 #[derive(Serialize, Debug, Clone, Copy)]
