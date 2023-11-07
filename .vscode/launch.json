@@ -5,6 +5,33 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "cppgdb Target",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceRoot}/target/armv7-unknown-linux-gnueabihf/debug/caniot-rctrl",
+            "args": [],
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "useExtendedRemote": true,
+            "MIMode": "gdb",
+            "miDebuggerPath": "/opt/poky/hypirl-rpi-1.0/sysroots/x86_64-pokysdk-linux/usr/bin/arm-poky-linux-gnueabi/arm-poky-linux-gnueabi-gdb",
+            "miDebuggerServerAddress": "192.168.10.215:8989",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set remote exec-file",
+                    "text": "set remote exec-file siridb-server",
+                    "ignoreFailures": false
+                }
+            ],
+        },
+        {
             "type": "lldb",
             "request": "launch",
             "name": "Debug local",
@@ -40,6 +67,17 @@
             },
             "args": [],
             "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "LLDB Target",
+            "type": "lldb",
+            "request": "custom",
+            "targetCreateCommands": [
+                "target create ${workspaceFolder}/target/armv7-unknown-linux-gnueabihf/debug/caniot-rctrl"
+            ],
+            "processCreateCommands": [
+                "gdb-remote 192.168.10.215:8989"
+            ]
         }
     ]
 }

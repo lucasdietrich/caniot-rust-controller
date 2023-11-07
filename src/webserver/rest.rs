@@ -48,11 +48,10 @@ pub async fn route_caniot_request_telemetry(
     let response = shared
         .controller_handle
         .query_telemetry(device_id, endpoint, 1000)
-        .await
-        .unwrap();
+        .await;
 
-    if let Some(response) = response {
-        println!("response: {:?}", response);
+    if let Ok(response) = response {
+        info!("response: {:?}", response);
         RawJson("{ \"status\": \"ok\" }")
     } else {
         RawJson("{ \"status\": \"timeout\" }")

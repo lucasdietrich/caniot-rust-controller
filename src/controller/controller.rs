@@ -2,11 +2,13 @@ use std::pin::Pin;
 use std::sync::Arc;
 use std::time::Duration;
 
+use itertools::partition;
+
 use crate::can::{CanInterface, CanInterfaceError, CanStats};
 use crate::caniot::{
-    DeviceId, EmbeddedFrameWrapper, ProtocolError as CaniotProtocolError, Request as CaniotRequest,
-    RequestData, Response as CaniotResponse, ResponseData,
-    is_response_to, ConversionError
+    is_response_to, ConversionError as CaniotConversionError, DeviceId, EmbeddedFrameWrapper,
+    ProtocolError as CaniotProtocolError, Request as CaniotRequest, RequestData,
+    Response as CaniotResponse, ResponseData,
 };
 use crate::controller;
 use crate::shared::{Shared, SharedHandle};
@@ -55,7 +57,7 @@ pub enum ControllerError {
     CaniotProtocolError(#[from] CaniotProtocolError),
 
     #[error("Conversion Error: {0}")]
-    ConversionError(#[from] ConversionError),
+    CaniotConversionError(#[from] CaniotConversionError),
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -63,14 +65,13 @@ struct Device {
     device_id: DeviceId,
 }
 
-type PendingQueryClosure = Box<dyn FnOnce(Result<CaniotResponse, ControllerError>) -> () + Send + 'static>;
-
+#[derive(Debug)]
 struct PendingQuery {
     // query pending
     query: CaniotRequest,
 
     // closure to call when response is received
-    closure: Option<PendingQueryClosure>,
+    sender: oneshot::Sender<Result<CaniotResponse, ControllerError>>,
 
     // timeout in milliseconds
     timeout_ms: u32,
@@ -118,56 +119,96 @@ impl Controller {
         self.handle.clone()
     }
 
+    async fn send_caniot_frame(&mut self, request: &CaniotRequest) -> Result<(), ControllerError> {
+        info!("TX {}", request);
+        let can_frame = request.to_can_frame()?;
+        self.iface.send(can_frame).await?;
+        Ok(())
+    }
+
     pub async fn query(
         &mut self,
         request: CaniotRequest,
         timeout_ms: u32,
-        closure: PendingQueryClosure,
-    ) -> Result<(), ControllerError> {
-        let can_frame = request.to_can_frame()?;
-        println!("Sending CAN frame: {:?} -> {:?}", request, can_frame);
-        self.iface.send(can_frame).await?;
-
-        let pending_query = PendingQuery {
-            query: request,
-            closure: Some(closure),
-            timeout_ms,
-            sent_at: std::time::Instant::now(),
-        };
-
-        self.pending_queries.push(pending_query);
-
-        Ok(())
+        sender: oneshot::Sender<Result<CaniotResponse, ControllerError>>,
+    ) {
+        if let Err(err) = self.send_caniot_frame(&request).await {
+            error!("Failed to send CANIOT frame: {:?}", err);
+            let _ = sender.send(Err(err)); // Send None, but do not panic if receiver is dropped
+        } else {
+            self.pending_queries.push(PendingQuery {
+                query: request,
+                sender,
+                timeout_ms,
+                sent_at: std::time::Instant::now(),
+            })
+        }
     }
 
     async fn handle_can_frame(&mut self, frame: CanDataFrame) -> Result<(), ControllerError> {
         let frame: CaniotResponse = EmbeddedFrameWrapper(frame).try_into()?;
-        
+
         info!("RX {}", frame);
 
         // update stats
         self.stats.rx += 1;
 
-        let pq = self.pending_queries
+        let pq = self
+            .pending_queries
             .iter()
             .position(|pq| is_response_to(&pq.query, &frame).is_response())
             .map(|idx| self.pending_queries.remove(idx));
 
-        if let Some(mut pq) = pq {
-            info!("Found pending query for {:?}", frame);
-
-            let closure = std::mem::replace(&mut pq.closure, None);
-
-            if let Some(closure) = closure {
-                closure(Ok(frame));
-            }
+        if let Some(pq) = pq {
+            let _ = pq.sender.send(Ok(frame)); // Do not panic if receiver is dropped
         }
 
         Ok(())
     }
 
+    fn time_to_next_timeout(&self) -> Duration {
+        // TODO improve this code
+        let now = std::time::Instant::now();
+
+        let neareast_timeout = self
+            .pending_queries
+            .iter()
+            .map(|pq| pq.sent_at + Duration::from_millis(pq.timeout_ms as u64))
+            .min();
+
+        if let Some(neareast_timeout) = neareast_timeout {
+            if neareast_timeout > now {
+                neareast_timeout - now
+            } else {
+                Duration::from_millis(0)
+            }
+        } else {
+            Duration::MAX
+        }
+    }
+
+    async fn handle_pending_queries(&mut self) {
+        let now = std::time::Instant::now();
+
+        // place all timed out queries at the end of the vector
+        let split_index = partition(&mut self.pending_queries, |pq| {
+            now.duration_since(pq.sent_at) < Duration::from_millis(pq.timeout_ms as u64)
+        });
+
+        // remove timed out queries
+        let timed_out_queries = self.pending_queries.split_off(split_index);
+
+        // send timeout to all timed out queries
+        for pq in timed_out_queries {
+            warn!("Pending query timeout {} after {} ms", pq.query, pq.timeout_ms);
+            let _ = pq.sender.send(Err(ControllerError::Timeout)); // Do not panic if receiver is dropped
+        }
+    }
+
     pub async fn run(mut self) -> Result<(), ()> {
         loop {
+            let time_to_next_timeout = self.time_to_next_timeout();
+
             select! {
                 Some(message) = self.receiver.recv() => {
                     handle_message(&mut self, message).await;
@@ -176,19 +217,23 @@ impl Controller {
                     match self.handle_can_frame(frame).await {
                         Ok(_) => {
                         },
-                        Err(ControllerError::ConversionError(err)) => {
+                        Err(ControllerError::CaniotConversionError(err)) => {
                             self.stats.malformed += 1;
                             error!("Failed to convert into CANIOT frame {}", err)
                         },
                         _ => {}
                     }
                 },
-                // TODO handle pending queries timeout
+                _ = sleep(time_to_next_timeout) => {
+                    // timeout handled in handle_pending_queries()
+                },
                 _ = self.shutdown.recv() => {
                     warn!("Received shutdown signal");
                     break;
                 }
             }
+
+            self.handle_pending_queries().await;
         }
 
         Ok(())

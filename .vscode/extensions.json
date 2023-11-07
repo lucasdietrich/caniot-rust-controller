@@ -1,6 +1,7 @@
 {
     "recommendations": [
         "zhangyue.rust-mod-generator",
-        "humao.rest-client"
+        "humao.rest-client",
+        "vadimcn.vscode-lldb"
     ]
 }

@@ -1,20 +1,24 @@
 use tokio::sync::{mpsc, oneshot};
 
-use crate::{can::CanStats, caniot};
+use crate::{
+    can::CanStats,
+    caniot::{self, build_telemetry_request},
+};
 
-use super::{CaniotStats, Controller};
+use super::{CaniotStats, Controller, ControllerError};
 
 pub enum ControllerMessage {
     GetStats {
         respond_to: oneshot::Sender<(CaniotStats, CanStats)>,
     },
-    QueryTelemetry {
-        device_id: caniot::DeviceId,
-        endpoint: caniot::Endpoint,
+    QueryFrame {
+        query: caniot::Request,
         timeout_ms: u32,
-        respond_to: oneshot::Sender<Option<caniot::Response>>,
+        respond_to: oneshot::Sender<Result<caniot::Response, ControllerError>>,
     },
     Query {
+        // query: caniot::Request,
+        // timeout_ms: u32,
         respond_to: oneshot::Sender<()>,
     },
 }
@@ -39,22 +43,30 @@ impl ControllerHandle {
         recv.await.map_err(|_| ())
     }
 
-    pub async fn query_telemetry(
+    pub async fn query_frame(
         &self,
-        device_id: caniot::DeviceId,
-        endpoint: caniot::Endpoint,
+        frame: caniot::Request,
         timeout_ms: u32,
-    ) -> Result<Option<caniot::Response>, ()> {
+    ) -> Result<caniot::Response, ControllerError> {
         let (respond_to, recv) = oneshot::channel();
-        let msg = ControllerMessage::QueryTelemetry {
-            device_id,
-            endpoint,
+        let msg = ControllerMessage::QueryFrame {
+            query: frame,
             timeout_ms,
             respond_to,
         };
         self.sender.send(msg).await.unwrap();
         let response = recv.await.unwrap();
-        Ok(response)
+        response
+    }
+
+    pub async fn query_telemetry(
+        &self,
+        device_id: caniot::DeviceId,
+        endpoint: caniot::Endpoint,
+        timeout_ms: u32,
+    ) -> Result<caniot::Response, ControllerError> {
+        self.query_frame(build_telemetry_request(device_id, endpoint), timeout_ms)
+            .await
     }
 }
 
@@ -63,28 +75,12 @@ pub async fn handle_message(controller: &mut Controller, message: ControllerMess
         ControllerMessage::GetStats { respond_to } => {
             let _ = respond_to.send((controller.stats, controller.iface.stats));
         }
-        ControllerMessage::QueryTelemetry {
-            device_id,
-            endpoint,
+        ControllerMessage::QueryFrame {
+            query,
             timeout_ms,
             respond_to,
         } => {
-            let request = caniot::build_telemetry_request(device_id, endpoint);
-            let result = controller
-                .query(
-                    request,
-                    timeout_ms,
-                    Box::new(move |result| {
-                        let _ = respond_to.send(result.ok());
-                    }),
-                )
-                .await;
-
-            // Return None if the query failed
-            // TODO replace this Result<>
-            // if result.is_err() {
-            //     respond_to.send(None);
-            // }
+            controller.query(query, timeout_ms, respond_to).await;
         }
         ControllerMessage::Query { respond_to } => {
             let _ = respond_to.send(());

@@ -75,7 +75,7 @@ impl CaniotError {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct DeviceId {
     pub class: u8,
     pub sub_id: u8,
@@ -200,7 +200,7 @@ impl TryFrom<EmbeddedId> for Id {
 pub type Request = Frame<RequestData>;
 pub type Response = Frame<ResponseData>;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Frame<T> {
     pub device_id: DeviceId,
     pub data: T,
@@ -533,6 +533,10 @@ fn response_match_any_attribute_query(key: u16, response: &Response) -> Response
 }
 
 pub fn is_response_to(query: &Request, response: &Response) -> ResponseMatch {
+    if query.device_id != response.device_id {
+        return ResponseMatch::new(false, false);
+    }
+
     match query.data {
         RequestData::Command { endpoint, .. } | RequestData::Telemetry { endpoint } => {
             response_match_any_telemetry_query(endpoint, response)
@@ -540,6 +544,5 @@ pub fn is_response_to(query: &Request, response: &Response) -> ResponseMatch {
         RequestData::AttributeWrite { key, .. } | RequestData::AttributeRead { key } => {
             response_match_any_attribute_query(key, response)
         }
-        _ => ResponseMatch::new(false, false),
     }
 }
