@@ -22,7 +22,7 @@ pub enum ProtocolError {
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, FromPrimitive, Serialize)]
 pub enum CaniotError {
-    Ok = 0x0000,
+    Ok = 0x00000000,
     Einval = CANIOT_ERROR_BASE, // Invalid argument
     Enproc,                     // UNPROCESSABLE
     Ecmd,                       // COMMAND
@@ -357,7 +357,7 @@ pub enum ConversionError {
     NotCaniotResponse,
 }
 
-const ERROR_CODE_LEN: usize = 2;
+const ERROR_CODE_LEN: usize = 4;
 const ARG_LEN: usize = 4;
 
 pub fn parse_error_payload(
@@ -365,8 +365,8 @@ pub fn parse_error_payload(
     payload: &[u8],
 ) -> Result<ResponseData, ConversionError> {
     let len = payload.len();
-    let error_code: Option<CaniotError> = if len >= 2 {
-        CaniotError::from_i16(i16::from_le_bytes(payload[0..2].try_into().unwrap()))
+    let error_code: Option<CaniotError> = if len >= ERROR_CODE_LEN {
+        CaniotError::from_i32(i32::from_le_bytes(payload[0..ERROR_CODE_LEN].try_into().unwrap()))
     } else {
         None
     };
@@ -641,14 +641,14 @@ mod tests {
 
         test_payload(
             Some(Endpoint::ApplicationDefault),
-            &[0x00, 0x00],
+            &[0x00, 0x00, 0x00, 0x00, 0x00],
             ErrorSource::Telemetry(Endpoint::ApplicationDefault, None),
             Some(CaniotError::Ok),
         );
 
         test_payload(
             Some(Endpoint::ApplicationDefault),
-            &[0x00, 0x3a, 0xFF, 0x00, 0x00, 0x00],
+            &[0x00, 0x3a, 0x00, 0x00, 0xFF, 0x00, 0x00, 0x00],
             ErrorSource::Telemetry(Endpoint::ApplicationDefault, Some(0xFF)),
             Some(CaniotError::Einval),
         );
@@ -657,7 +657,7 @@ mod tests {
 
         test_payload(
             None,
-            &[0x00, 0x3a, 0x00, 0x01, 0x00, 0x00],
+            &[0x00, 0x3a, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00],
             ErrorSource::Attribute(Some(0x0100)),
             Some(CaniotError::Einval),
         );
