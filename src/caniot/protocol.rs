@@ -104,6 +104,10 @@ impl DeviceId {
         sub_id: 0x7,
     };
 
+    pub fn new(did: u8) -> Result<Self, ProtocolError> {
+        Self::try_from(did)
+    }
+
     pub fn get_did(&self) -> u8 {
         (self.sub_id << 3) | self.class
     }
@@ -189,6 +193,16 @@ impl Id {
     pub fn to_embedded_id(self) -> EmbeddedId {
         let std_can_id = StandardId::new(self.to_u16()).unwrap();
         EmbeddedId::Standard(std_can_id)
+    }
+
+    /// Returns the endpoint if the message is a telemetry message
+    /// Returns None if the message is not a attribute message
+    pub fn get_endpoint(&self) -> Option<Endpoint> {
+        if self.msg_type == Type::Telemetry {
+            Some(self.endpoint)
+        } else {
+            None
+        }
     }
 }
 
@@ -296,7 +310,13 @@ impl RequestData {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub enum ErrorSource {
+    Telemetry(Endpoint, Option<u32>),
+    Attribute(Option<u16>),
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub enum ResponseData {
     Telemetry {
         endpoint: Endpoint,
@@ -307,10 +327,8 @@ pub enum ResponseData {
         value: u32,
     },
     Error {
-        // endpoint is Some if telemetry or command error
-        // endpoint is None if attribute error
-        endpoint: Option<Endpoint>,
-        error: CaniotError,
+        source: ErrorSource,
+        error: Option<CaniotError>,
     },
 }
 
@@ -339,6 +357,36 @@ pub enum ConversionError {
     NotCaniotResponse,
 }
 
+const ERROR_CODE_LEN: usize = 2;
+const ARG_LEN: usize = 4;
+
+pub fn parse_error_payload(
+    endpoint: Option<Endpoint>,
+    payload: &[u8],
+) -> Result<ResponseData, ConversionError> {
+    let len = payload.len();
+    let error_code: Option<CaniotError> = if len >= 2 {
+        CaniotError::from_i16(i16::from_le_bytes(payload[0..2].try_into().unwrap()))
+    } else {
+        None
+    };
+
+    let arg = payload
+        .get(ERROR_CODE_LEN..ERROR_CODE_LEN + ARG_LEN)
+        .and_then(|bytes| bytes.try_into().ok())
+        .map(u32::from_le_bytes);
+
+    let source = match endpoint {
+        Some(ep) => ErrorSource::Telemetry(ep, arg),
+        None => ErrorSource::Attribute(arg.map(|x| x as u16)),
+    };
+
+    Ok(ResponseData::Error {
+        source,
+        error: error_code,
+    })
+}
+
 // This structure is used to encapsulate a Type which implements EmbeddedFrame
 // This way we can implement TryFrom<EmbeddedFrameWrapper<E>> for Frame
 // where E: EmbeddedFrame
@@ -357,20 +405,9 @@ where
 
         if id.direction != Direction::Response {
             if id.action == Action::Write {
-                return Ok(Frame {
-                    device_id,
-                    data: ResponseData::Error {
-                        endpoint: if id.msg_type == Type::Telemetry {
-                            Some(id.endpoint)
-                        } else {
-                            None
-                        },
-                        error: CaniotError::from_i16(i16::from_le_bytes(
-                            data[0..2].try_into().unwrap(),
-                        ))
-                        .unwrap_or(CaniotError::Eunexpected),
-                    },
-                });
+                return parse_error_payload(id.get_endpoint(), &data)
+                    .map(|data| Frame { device_id, data })
+                    .map_err(|e| e.into());
             } else {
                 return Err(ConversionError::NotCaniotResponse);
             }
@@ -419,8 +456,8 @@ impl fmt::Display for Response {
                 // Modify as per the actual representation of the key and value
                 write!(f, "Attribute: key {} = value {}", key, value)
             }
-            ResponseData::Error { error, endpoint } => {
-                write!(f, "Error: {:?} Endpoint {:?}", error, endpoint)
+            ResponseData::Error { error, source } => {
+                write!(f, "Error: {:?} Source {:?}", error, source)
             }
         }
     }
@@ -523,9 +560,10 @@ fn response_match_any_telemetry_query(
             ..
         } => (query_endpoint == response_endpoint, false),
         ResponseData::Error {
-            endpoint: response_endpoint,
+            source: ErrorSource::Telemetry(endpoint, _),
             ..
-        } => (Some(query_endpoint) == response_endpoint, true),
+        } => (query_endpoint == endpoint, true),
+        ResponseData::Error { .. } => (false, true),
         ResponseData::Attribute { .. } => (false, false),
     };
 
@@ -538,7 +576,15 @@ fn response_match_any_attribute_query(key: u16, response: &Response) -> Response
         ResponseData::Attribute {
             key: response_key, ..
         } => (key == response_key, false),
-        ResponseData::Error { endpoint, .. } => (endpoint.is_none(), true),
+        ResponseData::Error {
+            source: ErrorSource::Attribute(err_key),
+            ..
+        } => (
+            // unwrap_or(true) because if no key is present, we assume it is a response to any attribute query
+            err_key.map(|err_key| key == err_key).unwrap_or(true),
+            true,
+        ),
+        ResponseData::Error { .. } => (false, true),
     };
 
     ResponseMatch::new(is_response, is_error)
@@ -556,5 +602,148 @@ pub fn is_response_to(query: &Request, response: &Response) -> ResponseMatch {
         RequestData::AttributeWrite { key, .. } | RequestData::AttributeRead { key } => {
             response_match_any_attribute_query(key, response)
         }
+    }
+}
+
+///
+/// Tests private functions
+///
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    #[test]
+    fn test_parse_error_payload() {
+        fn test_payload(
+            endpoint: Option<Endpoint>,
+            payload: &[u8],
+            expected_source: ErrorSource,
+            expected_error: Option<CaniotError>,
+        ) {
+            let resp = parse_error_payload(endpoint, payload).unwrap();
+            assert_eq!(
+                resp,
+                ResponseData::Error {
+                    source: expected_source,
+                    error: expected_error
+                }
+            );
+        }
+
+        test_payload(
+            Some(Endpoint::ApplicationDefault),
+            &[],
+            ErrorSource::Telemetry(Endpoint::ApplicationDefault, None),
+            None,
+        );
+
+        test_payload(
+            Some(Endpoint::ApplicationDefault),
+            &[0x00, 0x00],
+            ErrorSource::Telemetry(Endpoint::ApplicationDefault, None),
+            Some(CaniotError::Ok),
+        );
+
+        test_payload(
+            Some(Endpoint::ApplicationDefault),
+            &[0x00, 0x3a, 0xFF, 0x00, 0x00, 0x00],
+            ErrorSource::Telemetry(Endpoint::ApplicationDefault, Some(0xFF)),
+            Some(CaniotError::Einval),
+        );
+
+        test_payload(None, &[0x00], ErrorSource::Attribute(None), None);
+
+        test_payload(
+            None,
+            &[0x00, 0x3a, 0x00, 0x01, 0x00, 0x00],
+            ErrorSource::Attribute(Some(0x0100)),
+            Some(CaniotError::Einval),
+        );
+    }
+
+    #[test]
+    fn test_response_match_any_attribute_query() {
+        // attribute
+        let query = Request {
+            device_id: DeviceId::new(1).unwrap(),
+            data: RequestData::AttributeRead { key: 0x0100 },
+        };
+
+        let response = Response {
+            device_id: DeviceId::new(1).unwrap(),
+            data: ResponseData::Attribute {
+                key: 0x0100,
+                value: 0x12345678,
+            },
+        };
+        assert!(is_response_to(&query, &response).is_valid_response());
+
+        let response = Response {
+            device_id: DeviceId::new(1).unwrap(),
+            data: ResponseData::Error { 
+                source: ErrorSource::Attribute(Some(0x0100)),
+                error: None 
+            },
+        };
+        assert!(is_response_to(&query, &response).is_response_error());
+
+        let response = Response {
+            device_id: DeviceId::new(1).unwrap(),
+            data: ResponseData::Error { 
+                source: ErrorSource::Attribute(None),
+                error: None 
+            },
+        };
+        assert!(is_response_to(&query, &response).is_response_error());
+
+        let response = Response {
+            device_id: DeviceId::new(1).unwrap(),
+            data: ResponseData::Error { 
+                source: ErrorSource::Telemetry(Endpoint::BoardControl, None),
+                error: None 
+            },
+        };
+        let is_response = is_response_to(&query, &response);
+        assert!(is_response.is_error() && !is_response.is_response());
+
+        // telemetry
+        let query = Request {
+            device_id: DeviceId::new(1).unwrap(),
+            data: RequestData::Telemetry { endpoint: Endpoint::Application2 },
+        };
+
+        let response = Response {
+            device_id: DeviceId::new(1).unwrap(),
+            data: ResponseData::Telemetry { endpoint: Endpoint::Application2, payload: vec![] },
+        };
+        assert!(is_response_to(&query, &response).is_valid_response());
+
+        let response = Response {
+            device_id: DeviceId::new(1).unwrap(),
+            data: ResponseData::Telemetry { endpoint: Endpoint::Application1, payload: vec![] },
+        };
+        let m = is_response_to(&query, &response);
+        assert!(!m.is_error() && !m.is_response());
+
+        let response = Response {
+            device_id: DeviceId::new(1).unwrap(),
+            data: ResponseData::Error { 
+                source: ErrorSource::Telemetry(Endpoint::Application2, None),
+                error: None
+            },
+        };
+        assert!(is_response_to(&query, &response).is_response_error());
+
+        let response = Response {
+            device_id: DeviceId::new(1).unwrap(),
+            data: ResponseData::Error { 
+                source: ErrorSource::Telemetry(Endpoint::BoardControl, None),
+                error: None
+            },
+        };
+        let m = is_response_to(&query, &response);
+        assert!(m.is_error() && !m.is_response());
     }
 }
