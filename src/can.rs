@@ -38,10 +38,13 @@ pub enum CanInterfaceError {
 }
 
 pub struct CanInterface {
+    #[cfg(not(feature = "emu"))]
     sock: CanSocket,
+
     pub stats: CanStats,
 }
 
+#[cfg(not(feature = "emu"))]
 impl CanInterface {
     pub async fn new(config: &CanConfig) -> Result<Self, CanInterfaceError> {
         let sock = CanSocket::open(&config.interface)?;
@@ -80,6 +83,25 @@ impl CanInterface {
                 }
             };
         };
+        None
+    }
+}
+
+#[cfg(feature = "emu")]
+impl CanInterface {
+    pub async fn new(_config: &CanConfig) -> Result<Self, CanInterfaceError> {
+        warn!("Using emulated CAN interface");
+        Ok(Self {
+            stats: CanStats::default(),
+        })
+    }
+
+    pub async fn send(&mut self, _frame: CanFrame) -> Result<(), CanInterfaceError> {
+        self.stats.tx += 1;
+        Ok(())
+    }
+
+    pub async fn recv_poll(&mut self) -> Option<CanDataFrame> {
         None
     }
 }

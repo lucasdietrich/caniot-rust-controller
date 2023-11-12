@@ -50,11 +50,11 @@ listen = "[::]:50051"
 
 Run with
 
-    ./caniot-rctrl
+    ./caniot-rust-controller
 
 ## TODO
 
-- Allow to set custom configuration file path: `./caniot-rctrl -c /etc/caniot/caniot-controller.toml`
+- Allow to set custom configuration file path: `./caniot-rust-controller -c /etc/caniot/caniot-controller.toml`
 - Timestamp received CAN frames (wait for this feature of `socketcan` crate https://github.com/socketcan-rs/socketcan-rs/issues/22)
 - Implent complete shutdown mecanism: https://tokio.rs/tokio/topics/shutdown
 - Tune log level of rocket server

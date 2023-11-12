@@ -5,3 +5,6 @@ pub mod types;
 pub mod devices;
 
 pub use protocol::*;
+
+#[cfg(test)]
+mod tests;

@@ -14,6 +14,7 @@ mod logger;
 mod shared;
 mod shutdown;
 mod webserver;
+// mod devices;
 
 fn main() {
     init::run_controller();

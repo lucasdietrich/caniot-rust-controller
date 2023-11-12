@@ -2,7 +2,7 @@ use std::pin::Pin;
 use std::sync::Arc;
 use std::time::Duration;
 
-use itertools::partition;
+use itertools::{partition, Itertools};
 
 use crate::can::{CanInterface, CanInterfaceError, CanStats};
 use crate::caniot::{
@@ -100,16 +100,19 @@ pub struct Controller {
 impl Controller {
     pub(crate) fn new(iface: CanInterface, rt: Arc<Runtime>, shutdown: Shutdown) -> Self {
         let (sender, receiver) = mpsc::channel(CHANNEL_SIZE);
+        let devices = (0..DEVICES_COUNT)
+            .into_iter()
+            .map(|did| Device {
+                device_id: DeviceId::new(did as u8).unwrap(),
+            })
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap();
 
         Self {
             iface,
             stats: CaniotStats::default(),
-            devices: [Device {
-                device_id: DeviceId {
-                    class: 0,
-                    sub_id: 0,
-                },
-            }; 63],
+            devices,
             pending_queries: Vec::new(),
             rt,
             shutdown,
@@ -251,4 +254,9 @@ impl Controller {
 
         Ok(())
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
 }

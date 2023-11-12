@@ -366,7 +366,9 @@ pub fn parse_error_payload(
 ) -> Result<ResponseData, ConversionError> {
     let len = payload.len();
     let error_code: Option<CaniotError> = if len >= ERROR_CODE_LEN {
-        CaniotError::from_i32(i32::from_le_bytes(payload[0..ERROR_CODE_LEN].try_into().unwrap()))
+        CaniotError::from_i32(i32::from_le_bytes(
+            payload[0..ERROR_CODE_LEN].try_into().unwrap(),
+        ))
     } else {
         None
     };
@@ -682,27 +684,27 @@ mod tests {
 
         let response = Response {
             device_id: DeviceId::new(1).unwrap(),
-            data: ResponseData::Error { 
+            data: ResponseData::Error {
                 source: ErrorSource::Attribute(Some(0x0100)),
-                error: None 
+                error: None,
             },
         };
         assert!(is_response_to(&query, &response).is_response_error());
 
         let response = Response {
             device_id: DeviceId::new(1).unwrap(),
-            data: ResponseData::Error { 
+            data: ResponseData::Error {
                 source: ErrorSource::Attribute(None),
-                error: None 
+                error: None,
             },
         };
         assert!(is_response_to(&query, &response).is_response_error());
 
         let response = Response {
             device_id: DeviceId::new(1).unwrap(),
-            data: ResponseData::Error { 
+            data: ResponseData::Error {
                 source: ErrorSource::Telemetry(Endpoint::BoardControl, None),
-                error: None 
+                error: None,
             },
         };
         let is_response = is_response_to(&query, &response);
@@ -711,36 +713,44 @@ mod tests {
         // telemetry
         let query = Request {
             device_id: DeviceId::new(1).unwrap(),
-            data: RequestData::Telemetry { endpoint: Endpoint::Application2 },
+            data: RequestData::Telemetry {
+                endpoint: Endpoint::Application2,
+            },
         };
 
         let response = Response {
             device_id: DeviceId::new(1).unwrap(),
-            data: ResponseData::Telemetry { endpoint: Endpoint::Application2, payload: vec![] },
+            data: ResponseData::Telemetry {
+                endpoint: Endpoint::Application2,
+                payload: vec![],
+            },
         };
         assert!(is_response_to(&query, &response).is_valid_response());
 
         let response = Response {
             device_id: DeviceId::new(1).unwrap(),
-            data: ResponseData::Telemetry { endpoint: Endpoint::Application1, payload: vec![] },
+            data: ResponseData::Telemetry {
+                endpoint: Endpoint::Application1,
+                payload: vec![],
+            },
         };
         let m = is_response_to(&query, &response);
         assert!(!m.is_error() && !m.is_response());
 
         let response = Response {
             device_id: DeviceId::new(1).unwrap(),
-            data: ResponseData::Error { 
+            data: ResponseData::Error {
                 source: ErrorSource::Telemetry(Endpoint::Application2, None),
-                error: None
+                error: None,
             },
         };
         assert!(is_response_to(&query, &response).is_response_error());
 
         let response = Response {
             device_id: DeviceId::new(1).unwrap(),
-            data: ResponseData::Error { 
+            data: ResponseData::Error {
                 source: ErrorSource::Telemetry(Endpoint::BoardControl, None),
-                error: None
+                error: None,
             },
         };
         let m = is_response_to(&query, &response);

@@ -6,24 +6,24 @@ format:
 	cargo fmt
 
 build:
-	cargo build
+	cargo build --features "emu"
+
+run:
+	cargo run --features "emu"
 
 clean:
 	cargo clean
-
-run:
-	cargo run
 
 target:
 	./scripts/build.sh build debug
 
 deploy: deploy_config deploy_static
 	./scripts/build.sh build debug
-	scp target/armv7-unknown-linux-gnueabihf/debug/caniot-rctrl rpi:/home/root/caniot-rctrl
+	scp target/armv7-unknown-linux-gnueabihf/debug/caniot-rust-controller rpi:/home/root/caniot-rust-controller
 
 deploy_release: deploy_config deploy_static
 	./scripts/build.sh build release
-	scp target/armv7-unknown-linux-gnueabihf/release/caniot-rctrl rpi:/home/root/caniot-rctrl
+	scp target/armv7-unknown-linux-gnueabihf/release/caniot-rust-controller rpi:/home/root/caniot-rust-controller
 
 deploy_static:
 	ssh rpi "mkdir -p /home/root/static"
@@ -32,5 +32,5 @@ deploy_static:
 deploy_config:
 	scp scripts/caniot-controller.toml rpi:/home/root/caniot-controller.toml
 
-fmt:
-	cargo fmt && cargo clippy -- -D warnings
+clippy:
+	cargo clippy -- -D warnings

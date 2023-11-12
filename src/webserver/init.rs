@@ -27,12 +27,18 @@ impl Default for WebserverConfig {
 
 pub fn rocket(shared: SharedHandle) -> Rocket<Build> {
     let config = &shared.config.web;
+
     let static_path = config.static_path.clone();
     let static_path = Path::new(&static_path);
+    let static_routes = if static_path.exists() {
+        FileServer::from(static_path).into()
+    } else {
+        vec![]
+    };
 
     let config = Config {
         workers: 1,
-        log_level: LogLevel::Normal, // LogLevel::Critical
+        log_level: LogLevel::Off, // LogLevel::Critical
         port: config.port,
         address: config.listen.parse().unwrap(),
         cli_colors: false,
@@ -52,5 +58,5 @@ pub fn rocket(shared: SharedHandle) -> Rocket<Build> {
                 route_caniot_request_telemetry,
             ],
         )
-        .mount("/", FileServer::from(static_path))
+        .mount("/", static_routes)
 }

@@ -1,0 +1,12 @@
+[can]
+interface = "can0"
+
+[web]
+port = 8081
+listen = "0.0.0.0"
+static_path = "src/webserver/static"
+
+[grpc]
+listen = "[::]:50051"
+
+[caniot]
