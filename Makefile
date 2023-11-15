@@ -27,7 +27,9 @@ deploy_release: deploy_config deploy_static
 
 deploy_static:
 	ssh rpi "mkdir -p /home/root/static"
-	scp src/webserver/static/* rpi:/home/root/static
+	scp static/* rpi:/home/root/static
+	ssh rpi "mkdir -p /home/root/templates/tera"
+	scp templates/tera/* rpi:/home/root/templates/tera
 
 deploy_config:
 	scp scripts/caniot-controller.toml rpi:/home/root/caniot-controller.toml

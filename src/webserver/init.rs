@@ -1,11 +1,12 @@
-use std::ops::Deref;
 use std::path::Path;
 
 use rocket::fs::FileServer;
-use rocket::serde::{json::Json, Deserialize, Serialize};
+use rocket::serde::{Deserialize, Serialize};
 use rocket::{log::LogLevel, Build, Config, Rocket};
+use rocket_dyn_templates::Template;
 
 use super::rest::*;
+use super::web;
 use crate::shared::SharedHandle;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -13,6 +14,7 @@ pub struct WebserverConfig {
     pub port: u16,
     pub listen: String,
     pub static_path: String,
+    // pub templates_path: String,
 }
 
 impl Default for WebserverConfig {
@@ -21,6 +23,7 @@ impl Default for WebserverConfig {
             port: 8000,
             listen: "0.0.0.0".to_string(),
             static_path: "static".to_string(),
+            // templates_path: "templates".to_string(),
         }
     }
 }
@@ -59,4 +62,12 @@ pub fn rocket(shared: SharedHandle) -> Rocket<Build> {
             ],
         )
         .mount("/", static_routes)
+        .mount("/", routes![
+            web::web_hello,
+        ])
+        .attach(Template::fairing())
+        
+        // .attach(Template::custom(|engines| {
+        //     // engines.tera.add("/home/lucas/projects/caniot-rust-controller-full/src/webserver/templates/name.html.tera", Some("name")).unwrap();
+        // }))
 }

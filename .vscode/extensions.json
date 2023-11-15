@@ -2,6 +2,8 @@
     "recommendations": [
         "zhangyue.rust-mod-generator",
         "humao.rest-client",
-        "vadimcn.vscode-lldb"
+        "vadimcn.vscode-lldb",
+        // "wholroyd.jinja",
+        "samuelcolvin.jinjahtml"
     ]
 }

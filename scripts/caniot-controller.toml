@@ -5,6 +5,7 @@ interface = "can0"
 port = 8080
 listen = "0.0.0.0"
 static_path = "static"
+templates_path = "templates"
 
 [grpc]
 listen = "[::]:50051"

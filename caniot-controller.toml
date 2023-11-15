@@ -4,7 +4,8 @@ interface = "can0"
 [web]
 port = 8081
 listen = "0.0.0.0"
-static_path = "src/webserver/static"
+static_path = "static"
+templates_path = "templates"
 
 [grpc]
 listen = "[::]:50051"
