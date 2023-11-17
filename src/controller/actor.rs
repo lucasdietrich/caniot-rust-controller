@@ -12,16 +12,11 @@ pub enum ControllerMessage {
     GetStats {
         respond_to: oneshot::Sender<(ControllerStats, Vec<DeviceStatsEntry>, CanStats)>,
     },
-    QueryFrame {
+    Query {
         query: caniot::Request,
         timeout_ms: u32,
         respond_to: oneshot::Sender<Result<caniot::Response, ControllerError>>,
-    },
-    Query {
-        // query: caniot::Request,
-        // timeout_ms: u32,
-        respond_to: oneshot::Sender<()>,
-    },
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -37,13 +32,6 @@ pub struct DeviceStatsEntry {
 }
 
 impl ControllerHandle {
-    pub async fn query(&self) -> Result<(), ()> {
-        let (respond_to, recv) = oneshot::channel();
-        let msg = ControllerMessage::Query { respond_to };
-        self.sender.send(msg).await.unwrap();
-        recv.await.map_err(|_| ())
-    }
-
     pub async fn get_stats(
         &self,
     ) -> Result<(ControllerStats, Vec<DeviceStatsEntry>, CanStats), ()> {
@@ -53,13 +41,13 @@ impl ControllerHandle {
         recv.await.map_err(|_| ())
     }
 
-    pub async fn query_frame(
+    pub async fn query(
         &self,
         frame: caniot::Request,
         timeout_ms: u32,
     ) -> Result<caniot::Response, ControllerError> {
         let (respond_to, recv) = oneshot::channel();
-        let msg = ControllerMessage::QueryFrame {
+        let msg = ControllerMessage::Query {
             query: frame,
             timeout_ms,
             respond_to,
@@ -75,7 +63,7 @@ impl ControllerHandle {
         endpoint: caniot::Endpoint,
         timeout_ms: u32,
     ) -> Result<caniot::Response, ControllerError> {
-        self.query_frame(build_telemetry_request(device_id, endpoint), timeout_ms)
+        self.query(build_telemetry_request(device_id, endpoint), timeout_ms)
             .await
     }
 }
@@ -89,15 +77,12 @@ pub async fn handle_message(controller: &mut Controller, message: ControllerMess
                 controller.iface.stats,
             ));
         }
-        ControllerMessage::QueryFrame {
+        ControllerMessage::Query {
             query,
             timeout_ms,
             respond_to,
         } => {
             controller.query(query, timeout_ms, respond_to).await;
-        }
-        ControllerMessage::Query { respond_to } => {
-            let _ = respond_to.send(());
         }
     }
 }

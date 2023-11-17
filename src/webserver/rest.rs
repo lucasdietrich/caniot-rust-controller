@@ -129,17 +129,3 @@ pub fn route_config(shared: &State<SharedHandle>) -> Json<crate::config::AppConf
 // struct CanFrame {
 //     device_id: u8,
 // }
-
-#[post("/can/test/<did>")]
-pub async fn route_can(did: u8, shared: &State<SharedHandle>) -> Result<(), String> {
-    let caniot_request = caniot::Request {
-        device_id: DeviceId::try_from(did).unwrap(),
-        data: crate::caniot::RequestData::Telemetry {
-            endpoint: crate::caniot::Endpoint::BoardControl,
-        },
-    };
-
-    let z = shared.controller_handle.query().await;
-
-    Ok(())
-}
