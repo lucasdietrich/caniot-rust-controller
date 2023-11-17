@@ -10,6 +10,8 @@ homepage = "https://github.com/lucasdietrich/caniot-rust-controller.git"
 [features]
 default = []
 
+grpc = []
+
 # feature for emulated can interface and devices
 emu = []
 

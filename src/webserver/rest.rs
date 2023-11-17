@@ -1,16 +1,22 @@
+use std::collections::HashMap;
+
 use rocket::{
     response::content::{self, RawJson},
     serde::{json::Json, Deserialize, Serialize},
     Responder, State,
 };
 
-use crate::{caniot, controller::ControllerError, shared};
+use crate::controller::{self, DeviceStatsEntry};
+use crate::{
+    can::CanStats,
+    caniot,
+    controller::ControllerError,
+    shared::{self, ServerStats},
+};
 use crate::{
     caniot::{DeviceId, Endpoint},
-    shared::{SharedHandle, Stats},
+    shared::SharedHandle,
 };
-
-use num_derive::FromPrimitive;
 
 #[get("/test")]
 pub fn route_test() -> &'static str {
@@ -23,12 +29,21 @@ pub fn route_test_id_name(id: u32, name: &str) -> String {
     format!("Hello {}! Your id is {}", name, id)
 }
 
+#[derive(Serialize, Debug, Clone)]
+pub struct Stats {
+    pub controller: controller::ControllerStats,
+    pub devices: Vec<DeviceStatsEntry>,
+    pub can: CanStats,
+    pub server: ServerStats,
+}
+
 #[get("/stats")]
 pub async fn route_stats(shared: &State<SharedHandle>) -> Json<Stats> {
-    let (caniot, can) = shared.controller_handle.get_stats().await.unwrap();
+    let (controller, devices, can) = shared.controller_handle.get_stats().await.unwrap();
 
     let stats = Stats {
-        caniot,
+        controller,
+        devices,
         can,
         server: shared::ServerStats {},
     };

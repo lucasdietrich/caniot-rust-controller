@@ -1,13 +1,17 @@
 use std::sync::Arc;
 use std::time::Duration;
 
+use futures_util::future::join_all;
 use log::info;
 use tokio::sync::broadcast;
 use tokio::{self, time::sleep};
 
 use crate::controller::ControllerHandle;
 use crate::shutdown::Shutdown;
-use crate::{can, caniot, config, controller, grpcserver, logger, shared, webserver};
+use crate::{can, caniot, config, controller, logger, shared, webserver};
+
+#[cfg(feature = "grpc")]
+use crate::grpcserver;
 
 fn get_tokio_rt() -> tokio::runtime::Runtime {
     tokio::runtime::Builder::new_current_thread()
@@ -56,7 +60,13 @@ pub fn run_controller() {
 
     let h_ctrl = rt.spawn(caniot_controller.run());
     let h_rocket = rt.spawn(webserver::rocket(shared.clone()).launch());
+
+    #[cfg(feature = "grpc")]
     let h_grpc = rt.spawn(grpcserver::grpc_server(shared.clone()));
 
+    #[cfg(feature = "grpc")]
     let _ = rt.block_on(async { tokio::join!(h_ctrl, h_rocket, h_grpc) });
+
+    #[cfg(not(feature = "grpc"))]
+    let _ = rt.block_on(async { tokio::join!(h_ctrl, h_rocket) });
 }

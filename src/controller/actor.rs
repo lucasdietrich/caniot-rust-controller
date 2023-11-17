@@ -4,12 +4,13 @@ use crate::{
     can::CanStats,
     caniot::{self, build_telemetry_request},
 };
+use serde::Serialize;
 
-use super::{CaniotStats, Controller, ControllerError};
+use super::{Controller, ControllerError, ControllerStats, DeviceStats};
 
 pub enum ControllerMessage {
     GetStats {
-        respond_to: oneshot::Sender<(CaniotStats, CanStats)>,
+        respond_to: oneshot::Sender<(ControllerStats, Vec<DeviceStatsEntry>, CanStats)>,
     },
     QueryFrame {
         query: caniot::Request,
@@ -28,6 +29,13 @@ pub struct ControllerHandle {
     pub sender: mpsc::Sender<ControllerMessage>,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct DeviceStatsEntry {
+    pub device_id_did: u8,
+    pub device_id: caniot::DeviceId,
+    pub stats: DeviceStats,
+}
+
 impl ControllerHandle {
     pub async fn query(&self) -> Result<(), ()> {
         let (respond_to, recv) = oneshot::channel();
@@ -36,7 +44,9 @@ impl ControllerHandle {
         recv.await.map_err(|_| ())
     }
 
-    pub async fn get_stats(&self) -> Result<(CaniotStats, CanStats), ()> {
+    pub async fn get_stats(
+        &self,
+    ) -> Result<(ControllerStats, Vec<DeviceStatsEntry>, CanStats), ()> {
         let (respond_to, recv) = oneshot::channel();
         let msg = ControllerMessage::GetStats { respond_to };
         self.sender.send(msg).await.unwrap();
@@ -73,7 +83,11 @@ impl ControllerHandle {
 pub async fn handle_message(controller: &mut Controller, message: ControllerMessage) {
     match message {
         ControllerMessage::GetStats { respond_to } => {
-            let _ = respond_to.send((controller.stats, controller.iface.stats));
+            let _ = respond_to.send((
+                controller.stats,
+                controller.get_devices_stats(),
+                controller.iface.stats,
+            ));
         }
         ControllerMessage::QueryFrame {
             query,

@@ -7,7 +7,7 @@ use serde::Serialize;
 use crate::can::CanStats;
 use crate::caniot::Request as CaniotRequest;
 use crate::config::AppConfig;
-use crate::controller::{CaniotStats, ControllerHandle};
+use crate::controller::{ControllerHandle, ControllerStats, DeviceStats};
 
 pub type SharedHandle = Arc<Shared>;
 
@@ -26,13 +26,6 @@ pub struct Shared {
     /// Used to signal the asynchronous task to shutdown
     /// The task subscribes to this channel
     pub notify_shutdown: broadcast::Sender<()>,
-}
-
-#[derive(Serialize, Debug, Clone, Copy)]
-pub struct Stats {
-    pub caniot: CaniotStats,
-    pub can: CanStats,
-    pub server: ServerStats,
 }
 
 #[derive(Serialize, Debug, Clone, Copy)]

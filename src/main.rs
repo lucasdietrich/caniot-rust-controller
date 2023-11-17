@@ -8,13 +8,15 @@ mod can;
 mod caniot;
 mod config;
 mod controller;
-mod grpcserver;
 mod init;
 mod logger;
 mod shared;
 mod shutdown;
 mod webserver;
 // mod devices;
+
+#[cfg(feature = "grpc")]
+mod grpcserver;
 
 fn main() {
     init::run_controller();

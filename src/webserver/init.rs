@@ -62,12 +62,6 @@ pub fn rocket(shared: SharedHandle) -> Rocket<Build> {
             ],
         )
         .mount("/", static_routes)
-        .mount("/", routes![
-            web::web_hello,
-        ])
+        .mount("/", routes![web::web_hello,])
         .attach(Template::fairing())
-        
-        // .attach(Template::custom(|engines| {
-        //     // engines.tera.add("/home/lucas/projects/caniot-rust-controller-full/src/webserver/templates/name.html.tera", Some("name")).unwrap();
-        // }))
 }

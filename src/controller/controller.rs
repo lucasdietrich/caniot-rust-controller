@@ -1,18 +1,15 @@
-use std::pin::Pin;
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use itertools::{partition, Itertools};
 
-use crate::can::{CanInterface, CanInterfaceError, CanStats};
+use crate::can::{CanInterface, CanInterfaceError};
 use crate::caniot::{
     is_response_to, ConversionError as CaniotConversionError, DeviceId, EmbeddedFrameWrapper,
-    ProtocolError as CaniotProtocolError, Request as CaniotRequest, RequestData,
-    Response as CaniotResponse, ResponseData,
+    ProtocolError as CaniotProtocolError, Request as CaniotRequest, Response as CaniotResponse,
+    ResponseData,
 };
-use crate::controller;
-use crate::shared::{Shared, SharedHandle};
-use crate::shutdown::{self, Shutdown};
+use crate::shutdown::Shutdown;
 use log::info;
 use serde::{Deserialize, Serialize};
 
@@ -23,13 +20,13 @@ use tokio::select;
 use tokio::sync::{mpsc, oneshot};
 use tokio::time::sleep;
 
-use super::actor::{handle_message, ControllerHandle, ControllerMessage};
+use super::actor::{handle_message, ControllerHandle, ControllerMessage, DeviceStatsEntry};
 
 const CHANNEL_SIZE: usize = 10;
 const DEVICES_COUNT: usize = 63;
 
 #[derive(Serialize, Debug, Clone, Copy, Default)]
-pub struct CaniotStats {
+pub struct ControllerStats {
     pub rx: usize,
     pub tx: usize,
     pub err: usize,
@@ -63,9 +60,40 @@ pub enum ControllerError {
     CaniotConversionError(#[from] CaniotConversionError),
 }
 
+#[derive(Serialize, Debug, Clone, Copy, Default)]
+pub struct DeviceStats {
+    pub rx: usize,
+    pub tx: usize,
+    pub telemetry_rx: usize,
+    pub command_tx: usize,
+    pub attribute_write: usize,
+    pub attribute_read: usize,
+    pub err_rx: usize,
+}
+
 #[derive(Clone, Copy, Debug)]
 struct Device {
-    device_id: DeviceId,
+    pub device_id: DeviceId,
+    pub last_seen: Option<Instant>,
+    pub stats: DeviceStats,
+}
+
+impl Device {
+    pub fn process_incoming_response(&mut self, frame: &CaniotResponse) {
+        match frame.data {
+            ResponseData::Attribute { .. } => {
+                self.stats.attribute_read += 1;
+            }
+            ResponseData::Telemetry { .. } => {
+                self.stats.telemetry_rx += 1;
+            }
+            ResponseData::Error { .. } => {
+                self.stats.err_rx += 1;
+            }
+        }
+
+        self.last_seen = Some(std::time::Instant::now());
+    }
 }
 
 #[derive(Debug)]
@@ -85,12 +113,12 @@ struct PendingQuery {
 
 pub struct Controller {
     pub iface: CanInterface,
-    pub stats: CaniotStats,
+    pub stats: ControllerStats,
 
     devices: [Device; DEVICES_COUNT],
     pending_queries: Vec<PendingQuery>,
 
-    rt: Arc<Runtime>,
+    // rt: Arc<Runtime>,
     shutdown: Shutdown,
 
     receiver: mpsc::Receiver<ControllerMessage>,
@@ -100,10 +128,14 @@ pub struct Controller {
 impl Controller {
     pub(crate) fn new(iface: CanInterface, rt: Arc<Runtime>, shutdown: Shutdown) -> Self {
         let (sender, receiver) = mpsc::channel(CHANNEL_SIZE);
+
+        // initialize devices
         let devices = (0..DEVICES_COUNT)
             .into_iter()
             .map(|did| Device {
                 device_id: DeviceId::new(did as u8).unwrap(),
+                last_seen: None,
+                stats: DeviceStats::default(),
             })
             .collect::<Vec<_>>()
             .try_into()
@@ -111,10 +143,10 @@ impl Controller {
 
         Self {
             iface,
-            stats: CaniotStats::default(),
+            stats: ControllerStats::default(),
             devices,
             pending_queries: Vec::new(),
-            rt,
+            // rt,
             shutdown,
             receiver,
             handle: ControllerHandle { sender },
@@ -163,17 +195,20 @@ impl Controller {
         // update stats
         self.stats.rx += 1;
 
-        // TODO if a frame can answer multiple pending queries, remove all of them
+        let device_index = frame.device_id.get_did() as usize;
+        let device = &mut self.devices[device_index];
+
+        device.process_incoming_response(&frame);
+
         // TODO broadcast should be handled differently as the oneshot channel cannot be used to send multiple responses
 
-        let pq = self
+        let pivot = self
             .pending_queries
-            .iter()
-            .position(|pq| is_response_to(&pq.query, &frame).is_response())
-            .map(|idx| self.pending_queries.remove(idx));
+            .partition_point(|pq| is_response_to(&pq.query, &frame).is_response());
 
-        if let Some(pq) = pq {
-            let _ = pq.sender.send(Ok(frame)); // Do not panic if receiver is dropped
+        // if a frame can answer multiple pending queries, remove all of them
+        for pq in self.pending_queries.drain(..pivot) {
+            let _ = pq.sender.send(Ok(frame.clone())); // Do not panic if receiver is dropped
         }
 
         Ok(())
@@ -254,9 +289,23 @@ impl Controller {
 
         Ok(())
     }
+
+    pub fn get_devices_stats(&self) -> Vec<DeviceStatsEntry> {
+        self.devices
+            .iter()
+            .filter(|device| device.last_seen.is_some())
+            .sorted_by_key(|device| device.last_seen.unwrap())
+            .rev()
+            .map(|device| DeviceStatsEntry {
+                device_id_did: device.device_id.get_did(),
+                device_id: device.device_id,
+                stats: device.stats,
+            })
+            .collect()
+    }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-}
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+// }

@@ -77,10 +77,19 @@ impl CaniotError {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct DeviceId {
     pub class: u8,
     pub sub_id: u8,
+}
+
+impl Serialize for DeviceId {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        format!("{}: ({},{})", self.get_did(), self.class, self.sub_id).serialize(serializer)
+    }
 }
 
 impl TryFrom<u8> for DeviceId {

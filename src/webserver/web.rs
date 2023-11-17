@@ -4,13 +4,16 @@ use rocket::{
     Responder, State,
 };
 
-use rocket_dyn_templates::{Template, tera::Tera, context};
+use rocket_dyn_templates::{context, tera::Tera, Template};
 
 #[get("/hello/<name>")]
 pub fn web_hello(name: &str) -> Template {
-    Template::render("tera/index", context! { 
-        title: "Hello",
-        name: Some(name),
-        items: vec!["One", "Two", "Three"],
-    })
+    Template::render(
+        "tera/index",
+        context! {
+            title: "Hello",
+            name: Some(name),
+            items: vec!["One", "Two", "Three"],
+        },
+    )
 }
