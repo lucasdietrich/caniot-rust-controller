@@ -1,8 +1,7 @@
-pub mod decenc;
 pub mod protocol;
 pub mod types;
 
-pub mod devices;
+pub mod mdev;
 
 pub use protocol::*;
 

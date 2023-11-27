@@ -1,4 +1,3 @@
-use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use itertools::{partition, Itertools};
@@ -15,12 +14,13 @@ use serde::{Deserialize, Serialize};
 
 use socketcan::CanDataFrame;
 use thiserror::Error;
-use tokio::runtime::Runtime;
 use tokio::select;
 use tokio::sync::{mpsc, oneshot};
 use tokio::time::sleep;
 
-use super::actor::{handle_message, ControllerHandle, ControllerMessage, DeviceStatsEntry};
+use super::actor::{
+    handle_message, ControllerHandle, ControllerMessage, DeviceHandle, DeviceStatsEntry,
+};
 
 const CHANNEL_SIZE: usize = 10;
 const DEVICES_COUNT: usize = 63;
@@ -122,11 +122,11 @@ pub struct Controller {
     shutdown: Shutdown,
 
     receiver: mpsc::Receiver<ControllerMessage>,
-    pub handle: ControllerHandle,
+    handle: ControllerHandle,
 }
 
 impl Controller {
-    pub(crate) fn new(iface: CanInterface, rt: Arc<Runtime>, shutdown: Shutdown) -> Self {
+    pub(crate) fn new(iface: CanInterface, shutdown: Shutdown) -> Self {
         let (sender, receiver) = mpsc::channel(CHANNEL_SIZE);
 
         // initialize devices
@@ -146,7 +146,6 @@ impl Controller {
             stats: ControllerStats::default(),
             devices,
             pending_queries: Vec::new(),
-            // rt,
             shutdown,
             receiver,
             handle: ControllerHandle { sender },
@@ -155,6 +154,10 @@ impl Controller {
 
     pub fn get_handle(&self) -> ControllerHandle {
         self.handle.clone()
+    }
+
+    pub fn get_device_handle(&self, did: DeviceId) -> DeviceHandle {
+        self.handle.get_device(did)
     }
 
     async fn send_caniot_frame(&mut self, request: &CaniotRequest) -> Result<(), ControllerError> {
@@ -235,7 +238,7 @@ impl Controller {
         }
     }
 
-    async fn handle_pending_queries(&mut self) {
+    async fn handle_pending_queries_timeout(&mut self) {
         let now = std::time::Instant::now();
 
         // place all timed out queries at the end of the vector
@@ -267,6 +270,7 @@ impl Controller {
                 Some(frame) = self.iface.recv_poll() => {
                     match self.handle_can_frame(frame).await {
                         Ok(_) => {
+                            // nothing more to do
                         },
                         Err(ControllerError::CaniotConversionError(err)) => {
                             self.stats.malformed += 1;
@@ -276,7 +280,7 @@ impl Controller {
                     }
                 },
                 _ = sleep(time_to_next_timeout) => {
-                    // timeout handled in handle_pending_queries()
+                    // timeout handled in handle_pending_queries_timeout()
                 },
                 _ = self.shutdown.recv() => {
                     warn!("Received shutdown signal");
@@ -284,7 +288,7 @@ impl Controller {
                 }
             }
 
-            self.handle_pending_queries().await;
+            self.handle_pending_queries_timeout().await;
         }
 
         Ok(())

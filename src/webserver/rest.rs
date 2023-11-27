@@ -39,7 +39,7 @@ pub struct Stats {
 
 #[get("/stats")]
 pub async fn route_stats(shared: &State<SharedHandle>) -> Json<Stats> {
-    let (controller, devices, can) = shared.controller_handle.get_stats().await.unwrap();
+    let (controller, devices, can) = shared.controller_handle.get_stats().await;
 
     let stats = Stats {
         controller,
@@ -74,10 +74,9 @@ pub async fn route_caniot_request_telemetry(
     endpoint: u8,
     shared: &State<SharedHandle>,
 ) -> CaniotRestResponse {
-    let did = if let Ok(did) = DeviceId::try_from(did) {
-        did
-    } else {
-        return CaniotRestResponse::Error("Invalid device id".to_string());
+    let did = match DeviceId::try_from(did) {
+        Ok(did) => did,
+        Err(_) => return CaniotRestResponse::Error("Invalid device id".to_string()), // willingly ignoring protocol error
     };
 
     let endpoint = if let Some(endpoint) = num::FromPrimitive::from_u8(endpoint) {
@@ -88,7 +87,8 @@ pub async fn route_caniot_request_telemetry(
 
     match shared
         .controller_handle
-        .query_telemetry(did, endpoint, 1000)
+        .get_device(did)
+        .request_telemetry(endpoint, 1000)
         .await
     {
         Ok(response) => CaniotRestResponse::Ok(Json(response)),

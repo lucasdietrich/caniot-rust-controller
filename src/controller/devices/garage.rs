@@ -1,4 +1,8 @@
-use super::super::types::*;
+use crate::{controller::{ControllerHandle, ControllerError}, caniot::{self, DeviceId, Frame, CaniotError, Response}};
+
+use super::super::super::caniot::types::*;
+
+pub const DEVICE_ID: DeviceId = DeviceId { class: 0, sub_id: 1 };
 
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub struct GarageDoorCommand {
@@ -41,6 +45,50 @@ impl From<Class0Payload> for GarageDoorStatus {
             right_door_status: payload.in4,
             garage_light_status: payload.in2,
         }
+    }
+}
+
+#[derive(Debug)]
+pub struct GarageController {
+    device_id: caniot::DeviceId,
+}
+
+#[derive(Debug, Clone)]
+pub struct GarageHandle<'a> {
+    device_id: caniot::DeviceId,
+    controller_handler: &'a ControllerHandle,
+}
+
+impl GarageHandle<'_> {
+    pub fn new(controller_handler: &ControllerHandle) -> GarageHandle {
+        GarageHandle {
+            device_id: DEVICE_ID, // TODO
+            controller_handler,
+        }
+    }
+
+    pub async fn send_command(&self, activate_left: bool, activate_right: bool) -> Result<Response, ControllerError> {
+        let command = GarageDoorCommand {
+            left_door_activate: activate_left,
+            right_door_activate: activate_right,
+        };
+        let command = BlcCommand {
+            class_payload: BlcClassCommand::Class0(command.into()),
+            sys: SystemCommand::default(),
+        };
+        let payload: [u8; 8] = command.into();
+        let request = caniot::RequestData::Command { 
+            endpoint: caniot::Endpoint::BoardControl,
+            payload: payload.into(),
+        };
+        let frame = Frame {
+            device_id: self.device_id,
+            data: request,
+        };
+        
+        self.controller_handler
+            .query(frame, 1000)
+            .await
     }
 }
 

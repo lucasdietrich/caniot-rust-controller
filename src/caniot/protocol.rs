@@ -16,8 +16,12 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum ProtocolError {
-    #[error("DeviceIdCreationError")]
+    #[error("Invalid device id")]
     DeviceIdCreationError,
+    #[error("Payload format error")]
+    PayloadDecodeError,
+    #[error("Command format error")]
+    CommandEncodeError,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, FromPrimitive, Serialize)]
@@ -305,7 +309,7 @@ pub enum RequestData {
 }
 
 impl RequestData {
-    pub fn to_data(&self) -> Vec<u8> {
+    fn to_data(&self) -> Vec<u8> {
         match self {
             RequestData::Telemetry { .. } => vec![],
             RequestData::Command { payload, .. } => payload.clone(),

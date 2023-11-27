@@ -1,12 +1,15 @@
-use tokio::sync::{mpsc, oneshot};
+use tokio::{
+    net::unix::pipe::Receiver,
+    sync::{mpsc, oneshot},
+};
 
 use crate::{
     can::CanStats,
-    caniot::{self, build_telemetry_request},
+    caniot::{self, build_telemetry_request, DeviceId, Endpoint, Response},
 };
 use serde::Serialize;
 
-use super::{Controller, ControllerError, ControllerStats, DeviceStats};
+use super::{Controller, ControllerError, ControllerStats, DeviceStats, GarageHandle};
 
 pub enum ControllerMessage {
     GetStats {
@@ -16,7 +19,7 @@ pub enum ControllerMessage {
         query: caniot::Request,
         timeout_ms: u32,
         respond_to: oneshot::Sender<Result<caniot::Response, ControllerError>>,
-    }
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -31,14 +34,33 @@ pub struct DeviceStatsEntry {
     pub stats: DeviceStats,
 }
 
+// trait ControllerAPI {
+// async fn query(&self, frame: caniot::Request,
+//     timeout_ms: u32,
+// ) -> Result<caniot::Response, ControllerError>;
+
+// pub async fn query_telemetry(
+//     &self,
+//     device_id: caniot::DeviceId,
+//     endpoint: caniot::Endpoint,
+//     timeout_ms: u32,
+// ) -> Result<caniot::Response, ControllerError> {
+//     self.query(build_telemetry_request(device_id, endpoint), timeout_ms)
+//         .await
+// }
+// }
+
 impl ControllerHandle {
-    pub async fn get_stats(
-        &self,
-    ) -> Result<(ControllerStats, Vec<DeviceStatsEntry>, CanStats), ()> {
-        let (respond_to, recv) = oneshot::channel();
-        let msg = ControllerMessage::GetStats { respond_to };
-        self.sender.send(msg).await.unwrap();
-        recv.await.map_err(|_| ())
+    async fn execute<R>(&self, closure: impl FnOnce(oneshot::Sender<R>) -> ControllerMessage) -> R {
+        let (sender, receiver) = oneshot::channel();
+        let message = closure(sender);
+        self.sender.send(message).await.unwrap();
+        receiver.await.unwrap()
+    }
+
+    pub async fn get_stats(&self) -> (ControllerStats, Vec<DeviceStatsEntry>, CanStats) {
+        self.execute(|respond_to| ControllerMessage::GetStats { respond_to })
+            .await
     }
 
     pub async fn query(
@@ -46,15 +68,12 @@ impl ControllerHandle {
         frame: caniot::Request,
         timeout_ms: u32,
     ) -> Result<caniot::Response, ControllerError> {
-        let (respond_to, recv) = oneshot::channel();
-        let msg = ControllerMessage::Query {
+        self.execute(|sender| ControllerMessage::Query {
             query: frame,
             timeout_ms,
-            respond_to,
-        };
-        self.sender.send(msg).await.unwrap();
-        let response = recv.await.unwrap();
-        response
+            respond_to: sender,
+        })
+        .await
     }
 
     pub async fn query_telemetry(
@@ -65,6 +84,14 @@ impl ControllerHandle {
     ) -> Result<caniot::Response, ControllerError> {
         self.query(build_telemetry_request(device_id, endpoint), timeout_ms)
             .await
+    }
+
+    pub fn get_device(&self, did: DeviceId) -> DeviceHandle {
+        DeviceHandle::new(did, self)
+    }
+
+    pub fn get_garage_handle(&self) -> GarageHandle {
+        GarageHandle::new(self)
     }
 }
 
@@ -84,5 +111,30 @@ pub async fn handle_message(controller: &mut Controller, message: ControllerMess
         } => {
             controller.query(query, timeout_ms, respond_to).await;
         }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct DeviceHandle<'a> {
+    did: DeviceId,
+    controller_handle: &'a ControllerHandle,
+}
+
+impl<'a> DeviceHandle<'a> {
+    fn new(did: DeviceId, controller_handle: &'a ControllerHandle) -> DeviceHandle {
+        DeviceHandle {
+            did,
+            controller_handle,
+        }
+    }
+
+    pub async fn request_telemetry(
+        &self,
+        endpoint: Endpoint,
+        timeout_ms: u32,
+    ) -> Result<Response, ControllerError> {
+        self.controller_handle
+            .query_telemetry(self.did, endpoint, timeout_ms)
+            .await
     }
 }

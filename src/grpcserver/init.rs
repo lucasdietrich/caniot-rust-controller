@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use super::ng::get_ng_caniot_controller;
-use crate::shared::SharedHandle;
+use crate::{shared::SharedHandle, grpcserver::legacy::get_legacy_caniot_controller};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GrpcConfig {
@@ -34,7 +34,8 @@ pub enum GrpcServerInitError {
 pub async fn grpc_server(shared: SharedHandle) -> Result<(), GrpcServerInitError> {
     let addr = &shared.config.grpc.listen;
     let addr = addr.parse().expect("gRPC: Could not parse listen address");
-    let ng_controller = get_ng_caniot_controller();
+    let ng_controller = get_ng_caniot_controller(shared.clone());
+    let legacy_controller = get_legacy_caniot_controller(shared.clone());
 
     let mut rx: tokio::sync::broadcast::Receiver<()> = shared.notify_shutdown.subscribe();
     let shutdown_future = async move {
@@ -46,6 +47,7 @@ pub async fn grpc_server(shared: SharedHandle) -> Result<(), GrpcServerInitError
 
     Server::builder()
         .add_service(ng_controller)
+        .add_service(legacy_controller)
         .serve_with_shutdown(addr, shutdown_future)
         .await?;
 

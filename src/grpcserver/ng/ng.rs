@@ -14,8 +14,12 @@ pub mod model {
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-#[derive(Debug, Default)]
-pub struct NgCaniotController {}
+use crate::shared::SharedHandle;
+
+#[derive(Debug)]
+pub struct NgCaniotController {
+    pub shared: SharedHandle,
+}
 
 #[tonic::async_trait]
 impl CaniotController for NgCaniotController {
@@ -50,6 +54,8 @@ impl CaniotController for NgCaniotController {
     }
 }
 
-pub fn get_ng_caniot_controller() -> CaniotControllerServer<NgCaniotController> {
-    CaniotControllerServer::new(NgCaniotController::default())
+pub fn get_ng_caniot_controller(shared: SharedHandle) -> CaniotControllerServer<NgCaniotController> {
+    CaniotControllerServer::new(NgCaniotController {
+        shared
+    })
 }

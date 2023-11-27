@@ -4,5 +4,6 @@
     ],
     "files.associations": {
         "*.html.tera": "jinja-html"
-    }
+    },
+    "rust-analyzer.showUnlinkedFileNotification": false
 }
