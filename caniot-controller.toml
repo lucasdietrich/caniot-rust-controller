@@ -8,6 +8,6 @@ static_path = "static"
 templates_path = "templates"
 
 [grpc]
-listen = "[::]:50051"
+listen = "0.0.0.0:50051"
 
 [caniot]

@@ -9,7 +9,7 @@ use crate::caniot;
 use crate::caniot::DeviceId;
 use crate::shutdown::Shutdown;
 
-use super::actor;
+use super::{actor, DeviceTrait, DeviceError};
 use super::device::{Device, DeviceStats};
 use super::traits::ControllerAPI;
 
@@ -78,8 +78,9 @@ struct PendingQuery {
 pub struct Controller {
     pub iface: CanInterface,
     pub stats: ControllerStats,
+    pub config: CaniotConfig,
 
-    devices: [Device; DEVICES_COUNT],
+    // devices: [Device; DEVICES_COUNT],
     pending_queries: Vec<PendingQuery>,
 
     rt: Arc<Runtime>,
@@ -90,25 +91,33 @@ pub struct Controller {
 }
 
 impl Controller {
-    pub(crate) fn new(iface: CanInterface, shutdown: Shutdown, rt: Arc<Runtime>) -> Self {
+    pub(crate) fn new(
+        iface: CanInterface,
+        config: CaniotConfig,
+        manageed_devices: Vec<&mut dyn DeviceTrait<Error = DeviceError>>,
+        shutdown: Shutdown,
+        rt: Arc<Runtime>,
+    ) -> Self {
+
         let (sender, receiver) = mpsc::channel(CHANNEL_SIZE);
 
-        // initialize devices
-        let devices = (0..DEVICES_COUNT)
-            .into_iter()
-            .map(|did| Device {
-                device_id: DeviceId::new(did as u8).unwrap(),
-                last_seen: None,
-                stats: DeviceStats::default(),
-            })
-            .collect::<Vec<_>>()
-            .try_into()
-            .unwrap();
+        // // initialize devices
+        // let devices = (0..DEVICES_COUNT)
+        //     .into_iter()
+        //     .map(|did| Device {
+        //         device_id: DeviceId::new(did as u8).unwrap(),
+        //         last_seen: None,
+        //         stats: DeviceStats::default(),
+        //     })
+        //     .collect::<Vec<_>>()
+        //     .try_into()
+        //     .unwrap();
 
         Self {
             iface,
             stats: ControllerStats::default(),
-            devices,
+            config,
+            // devices,
             pending_queries: Vec::new(),
             rt,
             shutdown,
@@ -166,10 +175,10 @@ impl Controller {
         // update stats
         self.stats.rx += 1;
 
-        let device_index = frame.device_id.get_did() as usize;
-        let device = &mut self.devices[device_index];
+        // let device_index = frame.device_id.get_did() as usize;
+        // let device = &mut self.devices[device_index];
 
-        device.process_incoming_response(&frame);
+        // device.process_incoming_response(&frame);
 
         // TODO broadcast should be handled differently as the oneshot channel cannot be used to send multiple responses
 
@@ -263,17 +272,18 @@ impl Controller {
     }
 
     pub fn get_devices_stats(&self) -> Vec<actor::DeviceStatsEntry> {
-        self.devices
-            .iter()
-            .filter(|device| device.last_seen.is_some())
-            .sorted_by_key(|device| device.last_seen.unwrap())
-            .rev()
-            .map(|device| actor::DeviceStatsEntry {
-                device_id_did: device.device_id.get_did(),
-                device_id: device.device_id,
-                stats: device.stats,
-            })
-            .collect()
+        vec![]
+        // self.devices
+        //     .iter()
+        //     .filter(|device| device.last_seen.is_some())
+        //     .sorted_by_key(|device| device.last_seen.unwrap())
+        //     .rev()
+        //     .map(|device| actor::DeviceStatsEntry {
+        //         device_id_did: device.device_id.get_did(),
+        //         device_id: device.device_id,
+        //         stats: device.stats,
+        //     })
+        //     .collect()
     }
 }
 

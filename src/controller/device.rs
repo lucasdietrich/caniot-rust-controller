@@ -1,7 +1,19 @@
-use std::time::{Duration, Instant};
+use std::{
+    fmt::Debug,
+    time::{Duration, Instant},
+};
 
 use crate::caniot as ct;
 use serde::{Deserialize, Serialize};
+
+use super::traits::ControllerAPI;
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum DeviceError {
+    #[error("Unsupported query Error")]
+    UnsupportedFrame,
+}
 
 #[derive(Serialize, Debug, Clone, Copy, Default)]
 pub struct DeviceStats {
@@ -14,21 +26,30 @@ pub struct DeviceStats {
     pub err_rx: usize,
 }
 
-#[derive(Clone, Copy, Debug)]
-pub struct Device {
+pub struct Device<T>
+where
+    T: DeviceTrait + Send + Sync + 'static,
+{
     pub device_id: ct::DeviceId,
     pub last_seen: Option<Instant>,
     pub stats: DeviceStats,
 
-    
+    specific: T,
 }
 
-trait DeviceTrait {
-    fn handler_frame(&mut self, frame: ct::Response);
+pub trait DeviceTrait {
+    type Error;
+
+    fn handler_frame(&mut self, frame: &ct::Response) -> Result<(), Self::Error>;
 }
 
-impl Device {
-    pub fn process_incoming_response(&mut self, frame: &ct::Response) {
+impl<T> DeviceTrait for Device<T>
+where
+    T: DeviceTrait + Send + Sync + 'static,
+{
+    type Error = DeviceError;
+
+    fn handler_frame(&mut self, frame: &ct::Response) -> Result<(), DeviceError> {
         match frame.data {
             ct::ResponseData::Attribute { .. } => {
                 self.stats.attribute_read += 1;
@@ -42,5 +63,9 @@ impl Device {
         }
 
         self.last_seen = Some(std::time::Instant::now());
+
+        let z = self.specific.handler_frame(frame);
+
+        Ok(())
     }
 }

@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use super::controller::ControllerError;
 use crate::caniot as ct;
 

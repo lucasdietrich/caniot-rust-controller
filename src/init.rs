@@ -24,24 +24,17 @@ pub fn run_controller() {
     logger::init_logger();
 
     let config = config::load_config();
-    println!("AppConfig: {:?}", config);
-
-    let (notify_shutdown, _) = broadcast::channel(1);
+    println!("AppConfig: {:#?}", config);
 
     let rt = get_tokio_rt();
     let rt = Arc::new(rt);
-
-    let can_iface = rt.block_on(can::init_interface(&config.can));
-    let caniot_controller = controller::Controller::new(
-        can_iface,
-        Shutdown::new(notify_shutdown.subscribe()),
-        rt.clone(),
-    );
-    let caniot_controller_handle = caniot_controller.get_handle();
+    let (notify_shutdown, _) = broadcast::channel(1);
+    
+    let controller = controller::init(&config, &rt, &notify_shutdown);
 
     let shared = shared::new_context(
         rt.clone(),
-        Arc::new(caniot_controller_handle),
+        Arc::new(controller.get_handle()),
         &config,
         notify_shutdown.clone(),
     );
@@ -56,7 +49,7 @@ pub fn run_controller() {
         let _ = notify_shutdown.send(());
     });
 
-    let h_ctrl = rt.spawn(caniot_controller.run());
+    let h_ctrl = rt.spawn(controller.run());
     let h_rocket = rt.spawn(webserver::rocket(shared.clone()).launch());
 
     #[cfg(feature = "grpc")]
