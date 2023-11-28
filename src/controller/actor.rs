@@ -1,15 +1,15 @@
-use tokio::{
-    net::unix::pipe::Receiver,
-    sync::{mpsc, oneshot},
-};
+use tokio::sync::{mpsc, oneshot};
 
 use crate::{
     can::CanStats,
+    caniot as ct,
     caniot::{self, build_telemetry_request, DeviceId, Endpoint, Response},
 };
 use serde::Serialize;
 
-use super::{Controller, ControllerError, ControllerStats, DeviceStats, GarageHandle};
+use super::{
+    traits::ControllerAPI, Controller, ControllerError, ControllerStats, DeviceStats, GarageHandle,
+};
 
 pub enum ControllerMessage {
     GetStats {
@@ -18,7 +18,7 @@ pub enum ControllerMessage {
     Query {
         query: caniot::Request,
         timeout_ms: u32,
-        respond_to: oneshot::Sender<Result<caniot::Response, ControllerError>>,
+        respond_to: Option<oneshot::Sender<Result<caniot::Response, ControllerError>>>,
     },
 }
 
@@ -34,22 +34,6 @@ pub struct DeviceStatsEntry {
     pub stats: DeviceStats,
 }
 
-// trait ControllerAPI {
-// async fn query(&self, frame: caniot::Request,
-//     timeout_ms: u32,
-// ) -> Result<caniot::Response, ControllerError>;
-
-// pub async fn query_telemetry(
-//     &self,
-//     device_id: caniot::DeviceId,
-//     endpoint: caniot::Endpoint,
-//     timeout_ms: u32,
-// ) -> Result<caniot::Response, ControllerError> {
-//     self.query(build_telemetry_request(device_id, endpoint), timeout_ms)
-//         .await
-// }
-// }
-
 impl ControllerHandle {
     async fn execute<R>(&self, closure: impl FnOnce(oneshot::Sender<R>) -> ControllerMessage) -> R {
         let (sender, receiver) = oneshot::channel();
@@ -63,32 +47,9 @@ impl ControllerHandle {
             .await
     }
 
-    pub async fn query(
-        &self,
-        frame: caniot::Request,
-        timeout_ms: u32,
-    ) -> Result<caniot::Response, ControllerError> {
-        self.execute(|sender| ControllerMessage::Query {
-            query: frame,
-            timeout_ms,
-            respond_to: sender,
-        })
-        .await
-    }
-
-    pub async fn query_telemetry(
-        &self,
-        device_id: caniot::DeviceId,
-        endpoint: caniot::Endpoint,
-        timeout_ms: u32,
-    ) -> Result<caniot::Response, ControllerError> {
-        self.query(build_telemetry_request(device_id, endpoint), timeout_ms)
-            .await
-    }
-
-    pub fn get_device(&self, did: DeviceId) -> DeviceHandle {
-        DeviceHandle::new(did, self)
-    }
+    // pub fn get_device(&self, did: DeviceId) -> DeviceHandle {
+    //     DeviceHandle::new(did, self)
+    // }
 
     pub fn get_garage_handle(&self) -> GarageHandle {
         GarageHandle::new(self)
@@ -109,32 +70,61 @@ pub async fn handle_message(controller: &mut Controller, message: ControllerMess
             timeout_ms,
             respond_to,
         } => {
-            controller.query(query, timeout_ms, respond_to).await;
+            if let Some(respond_to) = respond_to {
+                controller.query_sched(query, timeout_ms, respond_to).await;
+            } else {
+                let _ = controller.send(query).await;
+            }
         }
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct DeviceHandle<'a> {
-    did: DeviceId,
-    controller_handle: &'a ControllerHandle,
-}
-
-impl<'a> DeviceHandle<'a> {
-    fn new(did: DeviceId, controller_handle: &'a ControllerHandle) -> DeviceHandle {
-        DeviceHandle {
-            did,
-            controller_handle,
-        }
-    }
-
-    pub async fn request_telemetry(
-        &self,
-        endpoint: Endpoint,
+#[async_trait]
+impl ControllerAPI for ControllerHandle {
+    async fn query(
+        &mut self,
+        frame: ct::Request,
         timeout_ms: u32,
-    ) -> Result<Response, ControllerError> {
-        self.controller_handle
-            .query_telemetry(self.did, endpoint, timeout_ms)
-            .await
+    ) -> Result<ct::Response, ControllerError> {
+        self.execute(|sender| ControllerMessage::Query {
+            query: frame,
+            timeout_ms,
+            respond_to: Some(sender),
+        })
+        .await
+    }
+
+    async fn send(&mut self, frame: ct::Request) -> Result<(), ControllerError> {
+        self.execute(|_sender| ControllerMessage::Query {
+            query: frame,
+            timeout_ms: 0,
+            respond_to: None,
+        })
+        .await
     }
 }
+
+// #[derive(Debug, Clone)]
+// pub struct DeviceHandle<'a> {
+//     did: DeviceId,
+//     controller_handle: &'a ControllerHandle,
+// }
+
+// impl<'a> DeviceHandle<'a> {
+//     fn new(did: DeviceId, controller_handle: &'a ControllerHandle) -> DeviceHandle {
+//         DeviceHandle {
+//             did,
+//             controller_handle,
+//         }
+//     }
+
+//     pub async fn request_telemetry(
+//         &mutself,
+//         endpoint: Endpoint,
+//         timeout_ms: u32,
+//     ) -> Result<Response, ControllerError> {
+//         self.controller_handle
+//             .query_telemetry(self.did, endpoint, timeout_ms)
+//             .await
+//     }
+// }

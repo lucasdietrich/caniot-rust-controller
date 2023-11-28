@@ -1,14 +1,18 @@
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use itertools::{partition, Itertools};
+use tokio::runtime::Runtime;
 
 use crate::can::{CanInterface, CanInterfaceError};
-use crate::caniot::{
-    is_response_to, ConversionError as CaniotConversionError, DeviceId, EmbeddedFrameWrapper,
-    ProtocolError as CaniotProtocolError, Request as CaniotRequest, Response as CaniotResponse,
-    ResponseData,
-};
+use crate::caniot;
+use crate::caniot::DeviceId;
 use crate::shutdown::Shutdown;
+
+use super::actor;
+use super::device::{Device, DeviceStats};
+use super::traits::ControllerAPI;
+
 use log::info;
 use serde::{Deserialize, Serialize};
 
@@ -17,10 +21,6 @@ use thiserror::Error;
 use tokio::select;
 use tokio::sync::{mpsc, oneshot};
 use tokio::time::sleep;
-
-use super::actor::{
-    handle_message, ControllerHandle, ControllerMessage, DeviceHandle, DeviceStatsEntry,
-};
 
 const CHANNEL_SIZE: usize = 10;
 const DEVICES_COUNT: usize = 63;
@@ -54,55 +54,19 @@ pub enum ControllerError {
     CanError(#[from] CanInterfaceError),
 
     #[error("CANIOT Error: {0}")]
-    CaniotProtocolError(#[from] CaniotProtocolError),
+    CaniotProtocolError(#[from] caniot::ProtocolError),
 
     #[error("Conversion Error: {0}")]
-    CaniotConversionError(#[from] CaniotConversionError),
-}
-
-#[derive(Serialize, Debug, Clone, Copy, Default)]
-pub struct DeviceStats {
-    pub rx: usize,
-    pub tx: usize,
-    pub telemetry_rx: usize,
-    pub command_tx: usize,
-    pub attribute_write: usize,
-    pub attribute_read: usize,
-    pub err_rx: usize,
-}
-
-#[derive(Clone, Copy, Debug)]
-struct Device {
-    pub device_id: DeviceId,
-    pub last_seen: Option<Instant>,
-    pub stats: DeviceStats,
-}
-
-impl Device {
-    pub fn process_incoming_response(&mut self, frame: &CaniotResponse) {
-        match frame.data {
-            ResponseData::Attribute { .. } => {
-                self.stats.attribute_read += 1;
-            }
-            ResponseData::Telemetry { .. } => {
-                self.stats.telemetry_rx += 1;
-            }
-            ResponseData::Error { .. } => {
-                self.stats.err_rx += 1;
-            }
-        }
-
-        self.last_seen = Some(std::time::Instant::now());
-    }
+    CaniotConversionError(#[from] caniot::ConversionError),
 }
 
 #[derive(Debug)]
 struct PendingQuery {
     // query pending
-    query: CaniotRequest,
+    query: caniot::Request,
 
     // closure to call when response is received
-    sender: oneshot::Sender<Result<CaniotResponse, ControllerError>>,
+    sender: oneshot::Sender<Result<caniot::Response, ControllerError>>,
 
     // timeout in milliseconds
     timeout_ms: u32,
@@ -118,15 +82,15 @@ pub struct Controller {
     devices: [Device; DEVICES_COUNT],
     pending_queries: Vec<PendingQuery>,
 
-    // rt: Arc<Runtime>,
+    rt: Arc<Runtime>,
     shutdown: Shutdown,
 
-    receiver: mpsc::Receiver<ControllerMessage>,
-    handle: ControllerHandle,
+    receiver: mpsc::Receiver<actor::ControllerMessage>,
+    handle: actor::ControllerHandle,
 }
 
 impl Controller {
-    pub(crate) fn new(iface: CanInterface, shutdown: Shutdown) -> Self {
+    pub(crate) fn new(iface: CanInterface, shutdown: Shutdown, rt: Arc<Runtime>) -> Self {
         let (sender, receiver) = mpsc::channel(CHANNEL_SIZE);
 
         // initialize devices
@@ -146,21 +110,25 @@ impl Controller {
             stats: ControllerStats::default(),
             devices,
             pending_queries: Vec::new(),
+            rt,
             shutdown,
             receiver,
-            handle: ControllerHandle { sender },
+            handle: actor::ControllerHandle { sender },
         }
     }
 
-    pub fn get_handle(&self) -> ControllerHandle {
+    pub fn get_handle(&self) -> actor::ControllerHandle {
         self.handle.clone()
     }
 
-    pub fn get_device_handle(&self, did: DeviceId) -> DeviceHandle {
-        self.handle.get_device(did)
-    }
+    // pub fn get_device_handle(&self, did: DeviceId) -> DeviceHandle {
+    //     self.handle.get_device(did)
+    // }
 
-    async fn send_caniot_frame(&mut self, request: &CaniotRequest) -> Result<(), ControllerError> {
+    async fn send_caniot_frame(
+        &mut self,
+        request: &caniot::Request,
+    ) -> Result<(), ControllerError> {
         info!("TX {}", request);
         let can_frame = request.to_can_frame()?;
         self.iface.send(can_frame).await?;
@@ -168,11 +136,11 @@ impl Controller {
         Ok(())
     }
 
-    pub async fn query(
+    pub async fn query_sched(
         &mut self,
-        request: CaniotRequest,
+        request: caniot::Request,
         timeout_ms: u32,
-        sender: oneshot::Sender<Result<CaniotResponse, ControllerError>>,
+        sender: oneshot::Sender<Result<caniot::Response, ControllerError>>,
     ) {
         if request.device_id == DeviceId::BROADCAST {
             error!("BROADCAST query not supported");
@@ -191,7 +159,7 @@ impl Controller {
     }
 
     async fn handle_can_frame(&mut self, frame: CanDataFrame) -> Result<(), ControllerError> {
-        let frame: CaniotResponse = EmbeddedFrameWrapper(frame).try_into()?;
+        let frame: caniot::Response = caniot::EmbeddedFrameWrapper(frame).try_into()?;
 
         info!("RX {}", frame);
 
@@ -207,7 +175,7 @@ impl Controller {
 
         let pivot = self
             .pending_queries
-            .partition_point(|pq| is_response_to(&pq.query, &frame).is_response());
+            .partition_point(|pq| caniot::is_response_to(&pq.query, &frame).is_response());
 
         // if a frame can answer multiple pending queries, remove all of them
         for pq in self.pending_queries.drain(..pivot) {
@@ -265,7 +233,7 @@ impl Controller {
 
             select! {
                 Some(message) = self.receiver.recv() => {
-                    handle_message(&mut self, message).await;
+                    actor::handle_message(&mut self, message).await;
                 },
                 Some(frame) = self.iface.recv_poll() => {
                     match self.handle_can_frame(frame).await {
@@ -294,13 +262,13 @@ impl Controller {
         Ok(())
     }
 
-    pub fn get_devices_stats(&self) -> Vec<DeviceStatsEntry> {
+    pub fn get_devices_stats(&self) -> Vec<actor::DeviceStatsEntry> {
         self.devices
             .iter()
             .filter(|device| device.last_seen.is_some())
             .sorted_by_key(|device| device.last_seen.unwrap())
             .rev()
-            .map(|device| DeviceStatsEntry {
+            .map(|device| actor::DeviceStatsEntry {
                 device_id_did: device.device_id.get_did(),
                 device_id: device.device_id,
                 stats: device.stats,
@@ -309,7 +277,22 @@ impl Controller {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-// }
+#[async_trait]
+impl ControllerAPI for Controller {
+    async fn query(
+        &mut self,
+        frame: caniot::Request,
+        timeout_ms: u32,
+    ) -> Result<caniot::Response, ControllerError> {
+        let (sender, receiver) = oneshot::channel();
+        self.query_sched(frame, timeout_ms, sender).await;
+        self.rt
+            .spawn(async move { receiver.await.unwrap() })
+            .await
+            .unwrap()
+    }
+
+    async fn send(&mut self, frame: caniot::Request) -> Result<(), ControllerError> {
+        self.send_caniot_frame(&frame).await
+    }
+}

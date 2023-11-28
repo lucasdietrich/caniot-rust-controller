@@ -32,8 +32,11 @@ pub fn run_controller() {
     let rt = Arc::new(rt);
 
     let can_iface = rt.block_on(can::init_interface(&config.can));
-    let caniot_controller =
-        controller::Controller::new(can_iface, Shutdown::new(notify_shutdown.subscribe()));
+    let caniot_controller = controller::Controller::new(
+        can_iface,
+        Shutdown::new(notify_shutdown.subscribe()),
+        rt.clone(),
+    );
     let caniot_controller_handle = caniot_controller.get_handle();
 
     let shared = shared::new_context(

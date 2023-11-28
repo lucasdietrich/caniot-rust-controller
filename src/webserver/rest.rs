@@ -79,22 +79,24 @@ pub async fn route_caniot_request_telemetry(
         Err(_) => return CaniotRestResponse::Error("Invalid device id".to_string()), // willingly ignoring protocol error
     };
 
-    let endpoint = if let Some(endpoint) = num::FromPrimitive::from_u8(endpoint) {
-        endpoint
-    } else {
-        return CaniotRestResponse::Error("Invalid endpoint".to_string());
-    };
+    // let endpoint = if let Some(endpoint) = num::FromPrimitive::from_u8(endpoint) {
+    //     endpoint
+    // } else {
+    //     return CaniotRestResponse::Error("Invalid endpoint".to_string());
+    // };
 
-    match shared
-        .controller_handle
-        .get_device(did)
-        .request_telemetry(endpoint, 1000)
-        .await
-    {
-        Ok(response) => CaniotRestResponse::Ok(Json(response)),
-        Err(ControllerError::Timeout) => CaniotRestResponse::Timeout("Error: Timeout".to_string()),
-        Err(e) => CaniotRestResponse::Error(format!("Error: {}", e)),
-    }
+    // match shared
+    //     .controller_handle
+    //     .get_device(did)
+    //     .request_telemetry(endpoint, 1000)
+    //     .await
+    // {
+    //     Ok(response) => CaniotRestResponse::Ok(Json(response)),
+    //     Err(ControllerError::Timeout) => CaniotRestResponse::Timeout("Error: Timeout".to_string()),
+    //     Err(e) => CaniotRestResponse::Error(format!("Error: {}", e)),
+    // }
+
+    CaniotRestResponse::Error(format!("Error"))
 }
 
 // #[get("/caniot/request_telemetry/<did>/<endpoint>")]

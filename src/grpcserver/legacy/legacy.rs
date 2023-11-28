@@ -5,7 +5,7 @@ use tonic::{
 };
 
 use model::can_controller_server::{CanController, CanControllerServer};
-use model::{Status as CommandStatus};
+use model::Status as CommandStatus;
 use model::*;
 
 pub mod model {
@@ -14,7 +14,7 @@ pub mod model {
 
 use serde::{Deserialize, Serialize};
 
-use crate::{shared::SharedHandle, controller, caniot};
+use crate::{caniot, controller, shared::SharedHandle};
 
 #[derive(Debug)]
 pub struct LegacyCaniotController {
@@ -30,7 +30,7 @@ impl CanController for LegacyCaniotController {
         let message = request.into_inner();
         let command = GarageDoorCommand::try_from(message.command)
             .unwrap_or(GarageDoorCommand::CommandUnspecified);
-        let (left, right)= match command {
+        let (left, right) = match command {
             GarageDoorCommand::CommandUnspecified => (false, false),
             GarageDoorCommand::CommandAll => (true, true),
             GarageDoorCommand::CommandLeft => (true, false),
@@ -43,93 +43,85 @@ impl CanController for LegacyCaniotController {
             Err(controller::ControllerError::Timeout) => CommandStatus::Timeout,
             Err(_error) => CommandStatus::Nok,
         };
-        
+
         Ok(Response::new(CommandResponse {
-            status: status.into()
+            status: status.into(),
         }))
     }
 
     async fn get_alarm(
         &self,
         request: Request<AlarmCommand>,
-    ) -> Result<Response<CommandResponse>, Status>{
+    ) -> Result<Response<CommandResponse>, Status> {
         todo!();
     }
 
     async fn send_alarm(
         &self,
         request: Request<AlarmCommand>,
-    ) -> Result<Response<CommandResponse>, Status>{
+    ) -> Result<Response<CommandResponse>, Status> {
         todo!();
     }
 
     async fn set_heaters(
         &self,
         request: Request<HeatersCommand>,
-    ) -> Result<Response<CommandResponse>, Status>{
+    ) -> Result<Response<CommandResponse>, Status> {
         todo!();
     }
 
     async fn request_telemetry(
         &self,
         request: Request<TelemetryTarget>,
-    ) -> Result<Response<Empty>, Status>{
+    ) -> Result<Response<Empty>, Status> {
         todo!();
     }
 
     async fn command_device(
         &self,
         request: Request<BoardLevelCommand>,
-    ) -> Result<Response<CommandResponse>, Status>{
+    ) -> Result<Response<CommandResponse>, Status> {
         todo!();
     }
 
     async fn read_attribute(
         &self,
         request: Request<AttributeRequest>,
-    ) -> Result<Response<AttributeResponse>, Status>{
+    ) -> Result<Response<AttributeResponse>, Status> {
         todo!();
     }
 
     async fn write_attribute(
         &self,
         request: Request<AttributeRequest>,
-    ) -> Result<Response<AttributeResponse>, Status>{
+    ) -> Result<Response<AttributeResponse>, Status> {
         todo!();
     }
 
-    async fn reset(
-        &self,
-        request: Request<DeviceId>,
-    ) -> Result<Response<CommandResponse>, Status>{
+    async fn reset(&self, request: Request<DeviceId>) -> Result<Response<CommandResponse>, Status> {
         todo!();
     }
 
     async fn reset_factory_defaults(
         &self,
         request: Request<DeviceId>,
-    ) -> Result<Response<CommandResponse>, Status>{
+    ) -> Result<Response<CommandResponse>, Status> {
         todo!();
     }
 
-    async fn get_devices(
-        &self,
-        request: Request<Empty>,
-    ) -> Result<Response<Devices>, Status>{
+    async fn get_devices(&self, request: Request<Empty>) -> Result<Response<Devices>, Status> {
         todo!();
     }
 
-    async fn get_device(
-        &self,
-        request: Request<DeviceId>,
-    ) -> Result<Response<Device>, Status>{
-        todo!();
+    async fn get_device(&self, request: Request<DeviceId>) -> Result<Response<Device>, Status> {
+        Ok(Response::new(Device {
+            ..Default::default()
+        }))
     }
 }
 
-
-pub fn get_legacy_caniot_controller(shared: SharedHandle) -> CanControllerServer<LegacyCaniotController> {
-    CanControllerServer::new(LegacyCaniotController {
-        shared,
-    })
+pub fn get_legacy_caniot_controller(
+    shared: SharedHandle,
+) -> CanControllerServer<LegacyCaniotController> {
+    CanControllerServer::new(LegacyCaniotController { shared })
 }

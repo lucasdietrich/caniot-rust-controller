@@ -1,9 +1,7 @@
-use std::default;
-
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 
-use super::{ProtocolError, Response, ResponseData};
+use super::*;
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, FromPrimitive)]
 pub enum Xps {
@@ -67,12 +65,9 @@ pub enum HeatingMode {
     // unused
 }
 
-trait TelemetryPayload<'a>: TryFrom<&'a [u8]>
-{
-}
+trait TelemetryPayload<'a>: TryFrom<&'a [u8]> {}
 
-trait TelemetryCommand: Into<[u8; 7]> {
-}
+trait TelemetryCommand: Into<[u8; 7]> {}
 
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub struct SystemCommand {
@@ -87,14 +82,14 @@ pub struct SystemCommand {
 impl Into<u8> for SystemCommand {
     fn into(self) -> u8 {
         let mut payload = 0_u8;
-        
+
         payload |= self.hardware_reset as u8;
         payload |= (self._software_reset as u8) << 1;
         payload |= (self._watchdog_reset as u8) << 2;
         payload |= (self.watchdog_enable as u8) << 3;
         payload |= (self.factory_reset as u8) << 5;
         payload |= (self.inhibit as u8) << 6;
-    
+
         payload
     }
 }
@@ -172,7 +167,7 @@ pub struct Class0Command {
     pub crl2: Xps,
 }
 
-impl TelemetryCommand for Class0Command { }
+impl TelemetryCommand for Class0Command {}
 impl Into<[u8; 7]> for Class0Command {
     fn into(self) -> [u8; 7] {
         let mut payload = [0_u8; 7];
@@ -182,7 +177,7 @@ impl Into<[u8; 7]> for Class0Command {
         payload[0] |= ((self.crl1 as u8) & 0b11) << 6;
         payload[1] = ((self.crl1 as u8) & 0b100) >> 2;
         payload[1] |= (self.crl2 as u8) << 1;
-    
+
         payload
     }
 }
@@ -265,7 +260,7 @@ pub struct Class1Command {
     pub ios: [Xps; CLASS1_IO_COUNT],
 }
 
-impl TelemetryCommand for Class1Command { }
+impl TelemetryCommand for Class1Command {}
 impl Into<[u8; 7]> for Class1Command {
     fn into(self) -> [u8; 7] {
         let mut payload = [0; 7];
@@ -275,7 +270,6 @@ impl Into<[u8; 7]> for Class1Command {
         payload
     }
 }
-
 
 pub enum BlcClassCommand {
     Class0(Class0Command),
@@ -344,8 +338,23 @@ mod tests {
         test(Xps::PulseCancel, 2, 3, &[0b0000_0000, 0b0000_1110]);
         test(Xps::PulseCancel, 2, 4, &[0b0000_0000, 0b0111_0000]);
         test(Xps::PulseCancel, 2, 5, &[0b0000_0000, 0b1000_0000]);
-        test(Xps::PulseCancel, 3, 5, &[0b0000_0000, 0b1000_0000, 0b0000_0011]);
-        test(Xps::PulseCancel, 3, 6, &[0b0000_0000, 0b0000_0000, 0b0001_1100]);
-        test(Xps::PulseCancel, 3, 7, &[0b0000_0000, 0b0000_0000, 0b1110_0000]);
+        test(
+            Xps::PulseCancel,
+            3,
+            5,
+            &[0b0000_0000, 0b1000_0000, 0b0000_0011],
+        );
+        test(
+            Xps::PulseCancel,
+            3,
+            6,
+            &[0b0000_0000, 0b0000_0000, 0b0001_1100],
+        );
+        test(
+            Xps::PulseCancel,
+            3,
+            7,
+            &[0b0000_0000, 0b0000_0000, 0b1110_0000],
+        );
     }
 }

@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use super::ng::get_ng_caniot_controller;
-use crate::{shared::SharedHandle, grpcserver::legacy::get_legacy_caniot_controller};
+use crate::{grpcserver::legacy::get_legacy_caniot_controller, shared::SharedHandle};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GrpcConfig {

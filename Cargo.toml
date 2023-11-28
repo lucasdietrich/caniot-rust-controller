@@ -18,6 +18,8 @@ emu = []
 [dependencies]
 tokio = { version = "1", features = ["net"]}
 async-std = "1.12"
+async-trait = "0.1.74"
+
 rocket = { version = "0.5.0-rc.1", features = ["json"] }
 serde = { version = "1.0.188", features = ["derive"] }
 toml = "0.8.0"
@@ -49,7 +51,25 @@ rocket_dyn_templates = { version = "0.1.0-rc.1", features = ["tera"] }
 tonic-build = { version = "0.10.1", features = ["prost"] }
 
 [profile.release]
-# panic = "abort" / "unwind"
-lto = true
-opt-level = "z"
-strip = "debuginfo"
+opt-level = 3
+lto = false
+codegen-units = 1
+debug = false
+strip = false # "debuginfo"
+debug-assertions = false
+overflow-checks = false
+panic = 'abort' # might be 'abort'
+incremental = false
+rpath = false
+
+[profile.dev]
+opt-level = 0
+lto = false
+codegen-units = 256
+debug = true
+strip = false
+debug-assertions = true
+overflow-checks = true
+panic = 'abort'
+incremental = true
+rpath = false

@@ -54,8 +54,8 @@ impl CaniotController for NgCaniotController {
     }
 }
 
-pub fn get_ng_caniot_controller(shared: SharedHandle) -> CaniotControllerServer<NgCaniotController> {
-    CaniotControllerServer::new(NgCaniotController {
-        shared
-    })
+pub fn get_ng_caniot_controller(
+    shared: SharedHandle,
+) -> CaniotControllerServer<NgCaniotController> {
+    CaniotControllerServer::new(NgCaniotController { shared })
 }

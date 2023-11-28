@@ -19,20 +19,21 @@ target:
 
 deploy: deploy_config deploy_static
 	./scripts/build.sh build debug
-	scp target/armv7-unknown-linux-gnueabihf/debug/caniot-rust-controller rpi:/home/root/caniot-rust-controller
+	scp target/armv7-unknown-linux-gnueabihf/debug/caniot-rust-controller rpi:/home/root/rust-controller/caniot-rust-controller
 
 deploy_release: deploy_config deploy_static
 	./scripts/build.sh build release
-	scp target/armv7-unknown-linux-gnueabihf/release/caniot-rust-controller rpi:/home/root/caniot-rust-controller
+	scp target/armv7-unknown-linux-gnueabihf/release/caniot-rust-controller rpi:/home/root/rust-controller/caniot-rust-controller
 
 deploy_static:
-	ssh rpi "mkdir -p /home/root/static"
-	scp static/* rpi:/home/root/static
-	ssh rpi "mkdir -p /home/root/templates/tera"
-	scp templates/tera/* rpi:/home/root/templates/tera
+	ssh rpi "mkdir -p /home/root/rust-controller/static"
+	scp static/* rpi:/home/root/rust-controller/static
+	ssh rpi "mkdir -p /home/root/rust-controller/templates/tera"
+	scp templates/tera/* rpi:/home/root/rust-controller/templates/tera
 
 deploy_config:
-	scp scripts/caniot-controller.toml rpi:/home/root/caniot-controller.toml
+	ssh rpi "mkdir -p /home/root/rust-controller"
+	scp scripts/caniot-controller.toml rpi:/home/root/rust-controller/caniot-controller.toml
 
 clippy:
 	cargo clippy -- -D warnings

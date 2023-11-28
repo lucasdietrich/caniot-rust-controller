@@ -1,8 +1,14 @@
-use crate::{controller::{ControllerHandle, ControllerError}, caniot::{self, DeviceId, Frame, CaniotError, Response}};
+use crate::{
+    caniot::{self, CaniotError, DeviceId, Frame, Response},
+    controller::{ControllerError, ControllerHandle},
+};
 
 use super::super::super::caniot::types::*;
 
-pub const DEVICE_ID: DeviceId = DeviceId { class: 0, sub_id: 1 };
+pub const DEVICE_ID: DeviceId = DeviceId {
+    class: 0,
+    sub_id: 1,
+};
 
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub struct GarageDoorCommand {
@@ -67,7 +73,11 @@ impl GarageHandle<'_> {
         }
     }
 
-    pub async fn send_command(&self, activate_left: bool, activate_right: bool) -> Result<Response, ControllerError> {
+    pub async fn send_command(
+        &self,
+        activate_left: bool,
+        activate_right: bool,
+    ) -> Result<Response, ControllerError> {
         let command = GarageDoorCommand {
             left_door_activate: activate_left,
             right_door_activate: activate_right,
@@ -77,7 +87,7 @@ impl GarageHandle<'_> {
             sys: SystemCommand::default(),
         };
         let payload: [u8; 8] = command.into();
-        let request = caniot::RequestData::Command { 
+        let request = caniot::RequestData::Command {
             endpoint: caniot::Endpoint::BoardControl,
             payload: payload.into(),
         };
@@ -85,10 +95,12 @@ impl GarageHandle<'_> {
             device_id: self.device_id,
             data: request,
         };
-        
-        self.controller_handler
-            .query(frame, 1000)
-            .await
+
+        // self.controller_handler
+        //     .query(frame, 1000)
+        //     .await
+
+        Err(ControllerError::UnsupportedQuery)
     }
 }
 
