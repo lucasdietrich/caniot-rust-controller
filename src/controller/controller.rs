@@ -10,7 +10,7 @@ use crate::caniot::DeviceId;
 use crate::shutdown::Shutdown;
 
 use super::{actor, DeviceTrait, DeviceError};
-use super::device::{Device, DeviceStats};
+use super::device::{ManagedDevice, DeviceStats};
 use super::traits::ControllerAPI;
 
 use log::info;
@@ -80,7 +80,7 @@ pub struct Controller {
     pub stats: ControllerStats,
     pub config: CaniotConfig,
 
-    // devices: [Device; DEVICES_COUNT],
+    managed_devices: Vec<Box<dyn DeviceTrait<Error = DeviceError>>>,
     pending_queries: Vec<PendingQuery>,
 
     rt: Arc<Runtime>,
@@ -94,7 +94,7 @@ impl Controller {
     pub(crate) fn new(
         iface: CanInterface,
         config: CaniotConfig,
-        manageed_devices: Vec<&mut dyn DeviceTrait<Error = DeviceError>>,
+        managed_devices: Vec<Box<dyn DeviceTrait<Error = DeviceError>>>,
         shutdown: Shutdown,
         rt: Arc<Runtime>,
     ) -> Self {
@@ -104,7 +104,7 @@ impl Controller {
         // // initialize devices
         // let devices = (0..DEVICES_COUNT)
         //     .into_iter()
-        //     .map(|did| Device {
+        //     .map(|did| ManagedDevice {
         //         device_id: DeviceId::new(did as u8).unwrap(),
         //         last_seen: None,
         //         stats: DeviceStats::default(),
@@ -117,7 +117,7 @@ impl Controller {
             iface,
             stats: ControllerStats::default(),
             config,
-            // devices,
+            managed_devices,
             pending_queries: Vec::new(),
             rt,
             shutdown,

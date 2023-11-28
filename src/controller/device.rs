@@ -26,9 +26,9 @@ pub struct DeviceStats {
     pub err_rx: usize,
 }
 
-pub struct Device<T>
+pub struct ManagedDevice<T>
 where
-    T: DeviceTrait + Send + Sync + 'static,
+    T: DeviceTrait + Send + Sync + Default + 'static,
 {
     pub device_id: ct::DeviceId,
     pub last_seen: Option<Instant>,
@@ -37,19 +37,19 @@ where
     specific: T,
 }
 
-pub trait DeviceTrait {
+pub trait DeviceTrait: Send {
     type Error;
 
-    fn handler_frame(&mut self, frame: &ct::Response) -> Result<(), Self::Error>;
+    fn handle_frame(&mut self, frame: &ct::Response) -> Result<(), Self::Error>;
 }
 
-impl<T> DeviceTrait for Device<T>
+impl<T> DeviceTrait for ManagedDevice<T>
 where
-    T: DeviceTrait + Send + Sync + 'static,
+    T: DeviceTrait + Send + Sync + Default + 'static,
 {
     type Error = DeviceError;
 
-    fn handler_frame(&mut self, frame: &ct::Response) -> Result<(), DeviceError> {
+    fn handle_frame(&mut self, frame: &ct::Response) -> Result<(), DeviceError> {
         match frame.data {
             ct::ResponseData::Attribute { .. } => {
                 self.stats.attribute_read += 1;
@@ -64,8 +64,22 @@ where
 
         self.last_seen = Some(std::time::Instant::now());
 
-        let z = self.specific.handler_frame(frame);
+        let z = self.specific.handle_frame(frame);
 
         Ok(())
+    }
+}
+
+impl<T> ManagedDevice<T>
+where
+    T: DeviceTrait + Send + Sync + Default + 'static,
+{
+    pub fn new(device_id: ct::DeviceId) -> Self {
+        ManagedDevice {
+            device_id: device_id,
+            last_seen: None,
+            stats: DeviceStats::default(),
+            specific: T::default(),
+        }
     }
 }
