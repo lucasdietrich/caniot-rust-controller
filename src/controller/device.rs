@@ -3,16 +3,19 @@ use std::{
     time::{Duration, Instant},
 };
 
-use crate::caniot as ct;
+use crate::caniot::{self as ct};
 use serde::{Deserialize, Serialize};
 
-use super::traits::ControllerAPI;
+use super::{traits::ControllerAPI, Unmanaged};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-pub enum DeviceError {
+pub enum ManagedDeviceError {
     #[error("Unsupported query Error")]
     UnsupportedFrame,
+
+    #[error("Unimplemented Error")]
+    NotImplemented,
 }
 
 #[derive(Serialize, Debug, Clone, Copy, Default)]
@@ -26,30 +29,40 @@ pub struct DeviceStats {
     pub err_rx: usize,
 }
 
-pub struct ManagedDevice<T>
-where
-    T: DeviceTrait + Send + Sync + Default + 'static,
-{
-    pub device_id: ct::DeviceId,
-    pub last_seen: Option<Instant>,
-    pub stats: DeviceStats,
-
-    specific: T,
-}
-
-pub trait DeviceTrait: Send {
+pub trait ManagedDeviceTrait: Send {
     type Error;
 
     fn handle_frame(&mut self, frame: &ct::Response) -> Result<(), Self::Error>;
 }
 
-impl<T> DeviceTrait for ManagedDevice<T>
-where
-    T: DeviceTrait + Send + Sync + Default + 'static,
-{
-    type Error = DeviceError;
+pub trait DeviceTrait: ManagedDeviceTrait {
+    fn get_did(&self) -> ct::DeviceId;
+    fn is_managed(&self) -> bool;
+}
 
-    fn handle_frame(&mut self, frame: &ct::Response) -> Result<(), DeviceError> {
+// pub enum Device {
+//     Managed(Box<dyn ManagedDeviceTrait<Error = ManagedDeviceError>>),
+//     Unmanaged(Box<dyn DeviceTrait<Error = ManagedDeviceError>>),
+// }
+
+pub struct Device<T>
+where
+    T: ManagedDeviceTrait + Send + Sync + Default + 'static,
+{
+    pub device_id: ct::DeviceId,
+    pub last_seen: Option<Instant>,
+    pub stats: DeviceStats,
+
+    specific: Option<T>,
+}
+
+impl<T> ManagedDeviceTrait for Device<T>
+where
+    T: ManagedDeviceTrait + Send + Sync + Default + 'static,
+{
+    type Error = ManagedDeviceError;
+
+    fn handle_frame(&mut self, frame: &ct::Response) -> Result<(), ManagedDeviceError> {
         match frame.data {
             ct::ResponseData::Attribute { .. } => {
                 self.stats.attribute_read += 1;
@@ -64,22 +77,46 @@ where
 
         self.last_seen = Some(std::time::Instant::now());
 
-        let z = self.specific.handle_frame(frame);
+        if let Some(managed) = &mut self.specific {
+            let z = managed.handle_frame(frame);
+        }
 
         Ok(())
     }
 }
 
-impl<T> ManagedDevice<T>
+impl<T> DeviceTrait for Device<T>
 where
-    T: DeviceTrait + Send + Sync + Default + 'static,
+    T: ManagedDeviceTrait + Send + Sync + Default + 'static,
+{
+    fn get_did(&self) -> ct::DeviceId {
+        self.device_id
+    }
+
+    fn is_managed(&self) -> bool {
+        self.specific.is_some()
+    }
+}
+
+impl<T> Device<T>
+where
+    T: ManagedDeviceTrait + Send + Sync + Default + 'static,
 {
     pub fn new(device_id: ct::DeviceId) -> Self {
-        ManagedDevice {
+        Device {
             device_id: device_id,
             last_seen: None,
             stats: DeviceStats::default(),
-            specific: T::default(),
+            specific: Some(T::default()),
         }
+    }
+}
+
+fn new_unmanaged(device_id: ct::DeviceId) -> Device<Unmanaged> {
+    Device {
+        device_id: device_id,
+        last_seen: None,
+        stats: DeviceStats::default(),
+        specific: None,
     }
 }

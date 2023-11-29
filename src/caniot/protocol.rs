@@ -92,7 +92,7 @@ impl Serialize for DeviceId {
     where
         S: serde::Serializer,
     {
-        format!("{}: ({},{})", self.get_did(), self.class, self.sub_id).serialize(serializer)
+        format!("{}: ({},{})", self.as_u8(), self.class, self.sub_id).serialize(serializer)
     }
 }
 
@@ -121,14 +121,14 @@ impl DeviceId {
         Self::try_from(did)
     }
 
-    pub fn get_did(&self) -> u8 {
+    pub fn as_u8(&self) -> u8 {
         (self.sub_id << 3) | self.class
     }
 }
 
 impl fmt::Display for DeviceId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "({}: {},{})", self.get_did(), self.class, self.sub_id)
+        write!(f, "({}: {},{})", self.as_u8(), self.class, self.sub_id)
     }
 }
 

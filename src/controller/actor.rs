@@ -8,7 +8,7 @@ use crate::{
 use serde::Serialize;
 
 use super::{
-    traits::ControllerAPI, Controller, ControllerError, ControllerStats, DeviceStats, GarageHandle,
+    traits::ControllerAPI, Controller, ControllerError, ControllerStats, DeviceStats, GarageHandle, Device,
 };
 
 pub enum ControllerMessage {
@@ -105,8 +105,8 @@ impl ControllerAPI for ControllerHandle {
 }
 
 // #[derive(Debug, Clone)]
-// pub struct DeviceHandle<'a> {
-//     did: DeviceId,
+// pub struct DeviceHandle<'a, T> {
+//     device: &'a mut Device<T>,
 //     controller_handle: &'a ControllerHandle,
 // }
 

@@ -9,8 +9,8 @@ use crate::caniot;
 use crate::caniot::DeviceId;
 use crate::shutdown::Shutdown;
 
-use super::{actor, DeviceTrait, DeviceError};
-use super::device::{ManagedDevice, DeviceStats};
+use super::{actor, ManagedDeviceTrait, ManagedDeviceError, DeviceTrait};
+use super::device::{Device, DeviceStats};
 use super::traits::ControllerAPI;
 
 use log::info;
@@ -50,6 +50,9 @@ pub enum ControllerError {
     #[error("Unsupported query Error")]
     UnsupportedQuery,
 
+    #[error("Duplicate device Error")]
+    DuplicateDID,
+
     #[error("CAN Interface Error: {0}")]
     CanError(#[from] CanInterfaceError),
 
@@ -80,7 +83,8 @@ pub struct Controller {
     pub stats: ControllerStats,
     pub config: CaniotConfig,
 
-    managed_devices: Vec<Box<dyn DeviceTrait<Error = DeviceError>>>,
+    // managed_devices: Vec<Box<dyn ManagedDeviceTrait<Error = ManagedDeviceError>>>,
+    devices: Vec<Box<dyn DeviceTrait<Error = ManagedDeviceError>>>,
     pending_queries: Vec<PendingQuery>,
 
     rt: Arc<Runtime>,
@@ -94,17 +98,32 @@ impl Controller {
     pub(crate) fn new(
         iface: CanInterface,
         config: CaniotConfig,
-        managed_devices: Vec<Box<dyn DeviceTrait<Error = DeviceError>>>,
+        // managed_devices: Vec<Box<dyn ManagedDeviceTrait<Error = ManagedDeviceError>>>,
+        managed_devices: Vec<Box<dyn DeviceTrait<Error = ManagedDeviceError>>>,
         shutdown: Shutdown,
         rt: Arc<Runtime>,
-    ) -> Self {
+    ) -> Result<Self, ControllerError> {
 
         let (sender, receiver) = mpsc::channel(CHANNEL_SIZE);
+
+        // sanity check on managed devices
+        if managed_devices.len() > DEVICES_COUNT {
+            return Err(ControllerError::DuplicateDID);
+        }
+
+
+        // // filter duplicates
+        // let managed_devices: Vec<Box<_>> = managed_devices
+        //     .into_iter()
+        //     .sorted_by_key(|device| device.get_did().as_u8())
+        //     .dedup_by(|a, b| a.get_did().as_u8() == b.get_did().as_u8())
+        //     .collect();
+        
 
         // // initialize devices
         // let devices = (0..DEVICES_COUNT)
         //     .into_iter()
-        //     .map(|did| ManagedDevice {
+        //     .map(|did| Device {
         //         device_id: DeviceId::new(did as u8).unwrap(),
         //         last_seen: None,
         //         stats: DeviceStats::default(),
@@ -113,17 +132,17 @@ impl Controller {
         //     .try_into()
         //     .unwrap();
 
-        Self {
+        Ok(Self {
             iface,
             stats: ControllerStats::default(),
             config,
-            managed_devices,
+            devices: managed_devices,
             pending_queries: Vec::new(),
             rt,
             shutdown,
             receiver,
             handle: actor::ControllerHandle { sender },
-        }
+        })
     }
 
     pub fn get_handle(&self) -> actor::ControllerHandle {
@@ -175,7 +194,7 @@ impl Controller {
         // update stats
         self.stats.rx += 1;
 
-        // let device_index = frame.device_id.get_did() as usize;
+        // let device_index = frame.device_id.as_u8() as usize;
         // let device = &mut self.devices[device_index];
 
         // device.process_incoming_response(&frame);
@@ -279,7 +298,7 @@ impl Controller {
         //     .sorted_by_key(|device| device.last_seen.unwrap())
         //     .rev()
         //     .map(|device| actor::DeviceStatsEntry {
-        //         device_id_did: device.device_id.get_did(),
+        //         device_id_did: device.device_id.as_u8(),
         //         device_id: device.device_id,
         //         stats: device.stats,
         //     })

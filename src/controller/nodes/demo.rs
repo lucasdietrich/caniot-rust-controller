@@ -1,8 +1,6 @@
-use std::default;
-
 use crate::{
     caniot::{self},
-    controller::{DeviceTrait, DeviceError, ManagedDevice},
+    controller::{ManagedDeviceTrait, ManagedDeviceError, Device},
 };
 
 #[derive(Default)]
@@ -10,8 +8,8 @@ pub struct DemoNode {
     active: bool,
 }
 
-impl DeviceTrait for DemoNode {
-    type Error = DeviceError;
+impl ManagedDeviceTrait for DemoNode {
+    type Error = ManagedDeviceError;
 
     fn handle_frame(&mut self, frame: &caniot::Response) -> Result<(), Self::Error> {
         match &frame.data {
@@ -24,5 +22,15 @@ impl DeviceTrait for DemoNode {
         }
 
         Ok(())
+    }
+}
+
+impl DemoNode {
+    pub fn active(&self) -> bool {
+        self.active
+    }
+
+    pub fn set_active(&mut self, active: bool) {
+        self.active = active;
     }
 }
