@@ -5,7 +5,7 @@ mod init;
 mod nodes;
 mod traits;
 
-pub use actor::{ControllerHandle, DeviceStatsEntry, DeviceHandle};
+pub use actor::{ControllerHandle, DeviceStatsEntry};
 pub use traits::ControllerAPI;
 pub use controller::*;
 pub use device::*;

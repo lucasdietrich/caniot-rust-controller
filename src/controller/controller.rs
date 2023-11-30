@@ -9,8 +9,8 @@ use crate::caniot;
 use crate::caniot::DeviceId;
 use crate::shutdown::Shutdown;
 
-use super::{actor, ManagedDeviceTrait, ManagedDeviceError, DeviceTrait};
-use super::device::{Device, DeviceStats};
+use super::{actor, ManagedDeviceError};
+use super::device::{DeviceStats};
 use super::traits::ControllerAPI;
 
 use log::info;
@@ -291,7 +291,7 @@ impl Controller {
     }
 
     pub fn get_devices_stats(&self) -> Vec<actor::DeviceStatsEntry> {
-        vec![]
+        todo!();
         // self.devices
         //     .iter()
         //     .filter(|device| device.last_seen.is_some())
