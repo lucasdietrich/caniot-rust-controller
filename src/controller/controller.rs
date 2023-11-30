@@ -84,7 +84,7 @@ pub struct Controller {
     pub config: CaniotConfig,
 
     // managed_devices: Vec<Box<dyn ManagedDeviceTrait<Error = ManagedDeviceError>>>,
-    devices: Vec<Box<dyn DeviceTrait<Error = ManagedDeviceError>>>,
+    // devices: Vec<Box<dyn DeviceTrait>>,
     pending_queries: Vec<PendingQuery>,
 
     rt: Arc<Runtime>,
@@ -99,7 +99,7 @@ impl Controller {
         iface: CanInterface,
         config: CaniotConfig,
         // managed_devices: Vec<Box<dyn ManagedDeviceTrait<Error = ManagedDeviceError>>>,
-        managed_devices: Vec<Box<dyn DeviceTrait<Error = ManagedDeviceError>>>,
+        // managed_devices: Vec<Box<dyn DeviceTrait>>,
         shutdown: Shutdown,
         rt: Arc<Runtime>,
     ) -> Result<Self, ControllerError> {
@@ -107,9 +107,9 @@ impl Controller {
         let (sender, receiver) = mpsc::channel(CHANNEL_SIZE);
 
         // sanity check on managed devices
-        if managed_devices.len() > DEVICES_COUNT {
-            return Err(ControllerError::DuplicateDID);
-        }
+        // if managed_devices.len() > DEVICES_COUNT {
+        //     return Err(ControllerError::DuplicateDID);
+        // }
 
 
         // // filter duplicates
@@ -136,7 +136,7 @@ impl Controller {
             iface,
             stats: ControllerStats::default(),
             config,
-            devices: managed_devices,
+            // devices: managed_devices,
             pending_queries: Vec::new(),
             rt,
             shutdown,

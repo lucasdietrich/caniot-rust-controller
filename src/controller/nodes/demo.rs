@@ -9,9 +9,9 @@ pub struct DemoNode {
 }
 
 impl ManagedDeviceTrait for DemoNode {
-    type Error = ManagedDeviceError;
+    // type Error = ManagedDeviceError;
 
-    fn handle_frame(&mut self, frame: &caniot::Response) -> Result<(), Self::Error> {
+    fn handle_frame(&mut self, frame: &caniot::Response) -> Result<(), ManagedDeviceError> {
         match &frame.data {
             caniot::ResponseData::Telemetry { payload , ..} => {
                 if payload.len() >= 1 && payload[0] == 0x01 {

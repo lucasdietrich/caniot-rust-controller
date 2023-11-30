@@ -1,6 +1,6 @@
 use crate::{
     caniot::{self, CaniotError, DeviceId, Frame, Response},
-    controller::{ControllerError, ControllerHandle},
+    controller::{ControllerError, ControllerHandle, DeviceHandle, traits::ControllerAPI, DeviceTrait, ManagedDeviceTrait, ManagedDeviceError},
 };
 
 use super::super::super::caniot::types::*;
@@ -57,6 +57,55 @@ impl From<Class0Payload> for GarageDoorStatus {
 #[derive(Debug)]
 pub struct GarageController {
     device_id: caniot::DeviceId,
+}
+
+impl ManagedDeviceTrait for GarageController {
+    // type Error = ManagedDeviceError;
+
+    fn handle_frame(&mut self, frame: &caniot::Response) -> Result<(), ManagedDeviceError> {
+        Err(ManagedDeviceError::UnsupportedFrame)
+    }
+}
+
+impl DeviceTrait for GarageController {
+    fn new(device_id: caniot::DeviceId) -> Self {
+        Self { device_id }
+    }
+
+    fn get_did(&self) -> caniot::DeviceId {
+        self.device_id
+    }
+
+    fn is_managed(&self) -> bool {
+        true
+    }
+}
+
+impl DeviceHandle<'_, GarageController> {
+    pub async fn open_door(
+        &mut self,
+        activate_left: bool,
+        activate_right: bool,
+    ) -> Result<caniot::Response, ControllerError> {
+
+        let command = GarageDoorCommand {
+            left_door_activate: activate_left,
+            right_door_activate: activate_right,
+        };
+        let command = BlcCommand {
+            class_payload: BlcClassCommand::Class0(command.into()),
+            sys: SystemCommand::default(),
+        };
+        let payload: [u8; 8] = command.into();
+        let request = caniot::RequestData::Command {
+            endpoint: caniot::Endpoint::BoardControl,
+            payload: payload.into(),
+        };
+
+        self.controller_handle.query(
+            caniot::Request { device_id: self.device.get_did(), data: request }, 1000
+        ).await
+    }
 }
 
 #[derive(Debug, Clone)]

@@ -14,7 +14,7 @@ pub mod model {
 
 use serde::{Deserialize, Serialize};
 
-use crate::{caniot, controller, shared::SharedHandle};
+use crate::{caniot, controller::{self, GarageController, DeviceHandle}, shared::SharedHandle};
 
 #[derive(Debug)]
 pub struct LegacyCaniotController {
@@ -37,12 +37,18 @@ impl CanController for LegacyCaniotController {
             GarageDoorCommand::CommandRight => (false, true),
         };
 
+        // v1
         let handle = self.shared.controller_handle.get_garage_handle();
         let status = match handle.send_command(left, right).await {
             Ok(_response) => CommandStatus::Ok,
             Err(controller::ControllerError::Timeout) => CommandStatus::Timeout,
             Err(_error) => CommandStatus::Nok,
         };
+
+        // v2
+        let handle = self.shared.controller_handle.get_device_handle::<GarageController>(caniot::DeviceId::new(1).unwrap());
+        let request = handle.open_door(true, false).await;
+        println!("request: {:#?}", request);
 
         Ok(Response::new(CommandResponse {
             status: status.into(),
@@ -53,6 +59,7 @@ impl CanController for LegacyCaniotController {
         &self,
         request: Request<AlarmCommand>,
     ) -> Result<Response<CommandResponse>, Status> {
+
         todo!();
     }
 

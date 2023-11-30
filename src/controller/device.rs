@@ -30,12 +30,15 @@ pub struct DeviceStats {
 }
 
 pub trait ManagedDeviceTrait: Send {
-    type Error;
+    // type Error;
 
-    fn handle_frame(&mut self, frame: &ct::Response) -> Result<(), Self::Error>;
+    fn handle_frame(&mut self, frame: &ct::Response) -> Result<(), ManagedDeviceError> {
+        Err(ManagedDeviceError::UnsupportedFrame)
+    }
 }
 
 pub trait DeviceTrait: ManagedDeviceTrait {
+    fn new(device_id: ct::DeviceId) -> Self;
     fn get_did(&self) -> ct::DeviceId;
     fn is_managed(&self) -> bool;
 }
@@ -60,7 +63,7 @@ impl<T> ManagedDeviceTrait for Device<T>
 where
     T: ManagedDeviceTrait + Send + Sync + Default + 'static,
 {
-    type Error = ManagedDeviceError;
+    // type Error = ManagedDeviceError;
 
     fn handle_frame(&mut self, frame: &ct::Response) -> Result<(), ManagedDeviceError> {
         match frame.data {
@@ -89,6 +92,15 @@ impl<T> DeviceTrait for Device<T>
 where
     T: ManagedDeviceTrait + Send + Sync + Default + 'static,
 {
+    fn new(device_id: ct::DeviceId) -> Self {
+        Device {
+            device_id: device_id,
+            last_seen: None,
+            stats: DeviceStats::default(),
+            specific: Some(T::default()),
+        }
+    }
+
     fn get_did(&self) -> ct::DeviceId {
         self.device_id
     }
@@ -98,19 +110,19 @@ where
     }
 }
 
-impl<T> Device<T>
-where
-    T: ManagedDeviceTrait + Send + Sync + Default + 'static,
-{
-    pub fn new(device_id: ct::DeviceId) -> Self {
-        Device {
-            device_id: device_id,
-            last_seen: None,
-            stats: DeviceStats::default(),
-            specific: Some(T::default()),
-        }
-    }
-}
+// impl<T> Device<T>
+// where
+//     T: ManagedDeviceTrait + Send + Sync + Default + 'static,
+// {
+//     pub fn new(device_id: ct::DeviceId) -> Self {
+//         Device {
+//             device_id: device_id,
+//             last_seen: None,
+//             stats: DeviceStats::default(),
+//             specific: Some(T::default()),
+//         }
+//     }
+// }
 
 fn new_unmanaged(device_id: ct::DeviceId) -> Device<Unmanaged> {
     Device {

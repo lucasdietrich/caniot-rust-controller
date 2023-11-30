@@ -4,6 +4,7 @@ use tokio::{runtime::Runtime, sync::broadcast::Sender};
 
 use super::{Controller, DemoNode, Device};
 use crate::{can, config::AppConfig, shutdown::Shutdown, caniot};
+use super::device::DeviceTrait;
 
 
 pub fn init<'a>(config: &AppConfig, rt: &Arc<Runtime>, notify_shutdown: &Sender<()>) -> Controller {
@@ -17,9 +18,9 @@ pub fn init<'a>(config: &AppConfig, rt: &Arc<Runtime>, notify_shutdown: &Sender<
     Controller::new(
         can_iface,
         config.caniot.clone(),
-        vec![
-            demo,
-        ],
+        // vec![
+        //     demo,
+        // ],
         Shutdown::new(notify_shutdown.subscribe()),
         rt.clone(),
     ).unwrap()
