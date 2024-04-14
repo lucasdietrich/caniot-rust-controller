@@ -1,10 +1,9 @@
 import { notification } from 'antd';
 import EventEmitter from 'events'
 import { HandleError } from './helpers';
-import { HelloRequest, HelloResponse,  } from '@caniot-controller/caniot-api-grpc-web/api2/ng_pb';
+import { HelloRequest, HelloResponse,  } from '@caniot-controller/caniot-api-grpc-web/api/ng_pb';
 
-import { CaniotControllerClient } from '@caniot-controller/caniot-api-grpc-web/api2/NgServiceClientPb';
-// import { CaniotControllerClient } from '@caniot-controller/caniot-api-grpc-web/api/ng_grpc_web_pb';
+import { CaniotControllerClient } from '@caniot-controller/caniot-api-grpc-web/api/NgServiceClientPb';
 
 
 class InternalStore extends EventEmitter {
@@ -12,11 +11,11 @@ class InternalStore extends EventEmitter {
 
   constructor() {
     super();
-    this.client = new CaniotControllerClient("");
+    this.client = new CaniotControllerClient("http://localhost:50051");
   }
 
   hello = (req: HelloRequest, callbackFunc: (resp: HelloResponse) => void) => {
-    this.client.hello(req, undefined, (err, resp) => {
+    this.client.hello(req, null, (err, resp) => {
       if (err !== null) {
         HandleError(err);
         return;

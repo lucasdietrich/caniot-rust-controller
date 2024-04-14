@@ -1,15 +1,14 @@
-import internalStore from '../store/InternalStore'
-import { HelloRequest, HelloResponse } from '@caniot-controller/caniot-api-grpc-web/api2/ng_pb';
-
+import { HelloRequest, HelloResponse } from '@caniot-controller/caniot-api-grpc-web/api/ng_pb'
+import internalStore from '../store/InternalStore';
 
 function Hello() {
-  let req = new HelloRequest();
+  const req = new HelloRequest();
   req.setName("Lucas");
 
   console.log("Hello component");
 
   internalStore.hello(req, (resp: HelloResponse) => {
-    console.log(resp.getMessage());
+    console.log(resp.getMessage(), resp.getTimestamp()?.toDate());
   });
 
   return (

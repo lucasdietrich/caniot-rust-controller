@@ -1,10 +1,12 @@
 import Hello from "../components/Hello";
 
 function Home() {
-  return <>
-  <Hello />
-  <div>Home</div>
-  </>;
+  return (
+    <>
+      <div>Home</div>
+      <Hello />
+    </>
+  );
 }
 
 export default Home;
