@@ -6,131 +6,15 @@ use num_traits::FromPrimitive;
 
 use serde::{Deserialize, Serialize};
 
-pub const CANIOT_ERROR_BASE: isize = 0x3A00;
 pub const CANIOT_DEVICE_FILTER_ID: u32 = 1 << 2; /* bit 2 is 1 for response frames */
 pub const CANIOT_DEVICE_FILTER_MASK: u32 = 1 << 2; /* bit 2 is 1 to filter frames by direction */
 
 use embedded_can::{Frame as EmbeddedFrame, Id as EmbeddedId, StandardId};
 
+use socketcan::CanFrame;
 use thiserror::Error;
 
-#[derive(Error, Debug)]
-pub enum ProtocolError {
-    #[error("Invalid device id")]
-    DeviceIdCreationError,
-    #[error("Payload format error")]
-    PayloadDecodeError,
-    #[error("Command format error")]
-    CommandEncodeError,
-}
-
-#[derive(Debug, PartialEq, Eq, Clone, Copy, FromPrimitive, Serialize)]
-pub enum CaniotError {
-    Ok = 0x00000000,
-    Einval = CANIOT_ERROR_BASE, // Invalid argument
-    Enproc,                     // UNPROCESSABLE
-    Ecmd,                       // COMMAND
-    Ekey,                       // KEY (read/write-attribute)
-    Etimeout,                   // TIMEOUT
-    Eagain,                     // BUSY / EAGAIN
-    Efmt,                       // FORMAT
-    Ehandlerc,                  // UNDEFINED COMMAND HANDLER
-    Ehandlert,                  // UNDEFINED TELEMETRY HANDLER
-    Etelemetry,                 // TELEMETRY
-    Eunexpected,                // Unexpected frame
-    Eep,                        // ENDPOINT
-    Ecmdep,                     // ILLEGAL COMMAND, BROADCAST TO ALL ENDPOINTS
-    Euninit,                    // NOT INITIALIZED
-    Edriver,                    // DRIVER
-    Eapi,                       // API
-    Ekeysection,                // Unknown attributes section
-    Ekeyattr,                   // Unknown attribute
-    Ekeypart,                   // Unknown attribute part
-    Enoattr,                    // No attribute
-    Eclsattr,                   // Class attribute not accessible for current device
-    Ereadonly,
-    Enull,
-    EnullDrv,
-    EnullApi,
-    EnullId,
-    EnullDev,
-    EnullCfg,
-    EnullCtrl,
-    EnullCtrlCb,
-    Eroattr,    // READ-ONLY ATTRIBUTE
-    Ereadattr,  // QUERY READ ATTR
-    Ewriteattr, // QUERY WRITE ATTR
-    Eenocb,     // no event handler
-    Eecb,       // ECCB
-    Epqalloc,   // PENDING QUERY ALLOCATION
-    Enopq,      // NO PENDING QUERY
-    Enohandle,  // NO HANDLER
-    Edevice,    // DEVICE
-    Eframe,     // FRAME, not a valid caniot frame
-    Emlfrm,     // MALFORMED FRAME
-    Eclass,     // INVALID CLASS
-    Ecfg,       // INVALID CONFIGURATION
-    Ehyst,      // Invalid hysteresis structure
-    Enotsup,    // NOT SUPPORTED
-    Enimpl,     // NOT IMPLEMENTED
-}
-
-impl CaniotError {
-    pub fn value(&self) -> i32 {
-        *self as i32
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct DeviceId {
-    pub class: u8,
-    pub sub_id: u8,
-}
-
-impl Serialize for DeviceId {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        format!("{}: ({},{})", self.as_u8(), self.class, self.sub_id).serialize(serializer)
-    }
-}
-
-impl TryFrom<u8> for DeviceId {
-    type Error = ProtocolError;
-
-    fn try_from(id: u8) -> Result<Self, Self::Error> {
-        if id > 0x3f {
-            return Err(ProtocolError::DeviceIdCreationError);
-        } else {
-            Ok(DeviceId {
-                class: id & 0x7,
-                sub_id: (id >> 3) & 0x7,
-            })
-        }
-    }
-}
-
-impl DeviceId {
-    pub const BROADCAST: DeviceId = DeviceId {
-        class: 0x7,
-        sub_id: 0x7,
-    };
-
-    pub fn new(did: u8) -> Result<Self, ProtocolError> {
-        Self::try_from(did)
-    }
-
-    pub fn as_u8(&self) -> u8 {
-        (self.sub_id << 3) | self.class
-    }
-}
-
-impl fmt::Display for DeviceId {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "({}: {},{})", self.as_u8(), self.class, self.sub_id)
-    }
-}
+use super::{DeviceId, ErrorCode, ProtocolError};
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, FromPrimitive)]
 pub enum Type {
@@ -220,15 +104,12 @@ impl Id {
 }
 
 impl TryFrom<EmbeddedId> for Id {
-    type Error = std::io::Error;
+    type Error = ConversionError;
 
     fn try_from(value: EmbeddedId) -> Result<Self, Self::Error> {
         match value {
             EmbeddedId::Standard(id) => Ok(id.as_raw().into()),
-            EmbeddedId::Extended(_) => Err(std::io::Error::new(
-                std::io::ErrorKind::InvalidData,
-                "Extended ID not supported",
-            )),
+            EmbeddedId::Extended(_) => Err(ConversionError::NotValidCaniotId),
         }
     }
 }
@@ -246,7 +127,7 @@ where
 }
 
 impl Request {
-    pub fn get_id(&self) -> EmbeddedId {
+    pub fn get_can_id(&self) -> EmbeddedId {
         let id = match &self.data {
             RequestData::Telemetry { endpoint, .. } => Id {
                 device_id: self.device_id,
@@ -281,12 +162,16 @@ impl Request {
         EmbeddedId::Standard(can_id)
     }
 
+    pub fn get_can_payload(&self) -> Vec<u8> {
+        self.data.get_can_payload()
+    }
+
     pub fn to_can_frame<T>(&self) -> Result<T, ProtocolError>
     where
         T: EmbeddedFrame,
     {
-        let data = self.data.to_data();
-        Ok(EmbeddedFrame::new(self.get_id(), &data).unwrap())
+        let data = self.data.get_can_payload();
+        Ok(EmbeddedFrame::new(self.get_can_id(), &data).unwrap())
     }
 }
 
@@ -309,7 +194,7 @@ pub enum RequestData {
 }
 
 impl RequestData {
-    fn to_data(&self) -> Vec<u8> {
+    fn get_can_payload(&self) -> Vec<u8> {
         match self {
             RequestData::Telemetry { .. } => vec![],
             RequestData::Command { payload, .. } => payload.clone(),
@@ -317,6 +202,81 @@ impl RequestData {
             RequestData::AttributeWrite { key, value } => {
                 let mut data = key.to_le_bytes().to_vec();
                 data.extend_from_slice(&value.to_le_bytes());
+                data
+            }
+        }
+    }
+}
+
+impl Response {
+    pub fn get_can_id(&self) -> EmbeddedId {
+        let id = match &self.data {
+            ResponseData::Telemetry { endpoint, .. } => Id {
+                device_id: self.device_id,
+                direction: Direction::Response,
+                msg_type: Type::Telemetry,
+                action: Action::Read,
+                endpoint: *endpoint,
+            },
+            ResponseData::Attribute { .. } => Id {
+                device_id: self.device_id,
+                direction: Direction::Response,
+                msg_type: Type::Attribute,
+                action: Action::Read,
+                endpoint: Endpoint::ApplicationDefault,
+            },
+            ResponseData::Error { source, .. } => match source {
+                ErrorSource::Telemetry(endpoint, _) => Id {
+                    device_id: self.device_id,
+                    direction: Direction::Response,
+                    msg_type: Type::Telemetry,
+                    action: Action::Read,
+                    endpoint: *endpoint,
+                },
+                ErrorSource::Attribute(_) => Id {
+                    device_id: self.device_id,
+                    direction: Direction::Response,
+                    msg_type: Type::Attribute,
+                    action: Action::Read,
+                    endpoint: Endpoint::ApplicationDefault,
+                },
+            },
+        };
+        let can_id = StandardId::new(id.to_u16()).unwrap();
+        EmbeddedId::Standard(can_id)
+    }
+
+    pub fn get_can_payload(&self) -> Vec<u8> {
+        self.data.to_data()
+    }
+
+    pub fn to_can_frame<T>(&self) -> Result<T, ProtocolError>
+    where
+        T: EmbeddedFrame,
+    {
+        let data = self.data.to_data();
+        Ok(EmbeddedFrame::new(self.get_can_id(), &data).unwrap())
+    }
+}
+
+impl ResponseData {
+    fn to_data(&self) -> Vec<u8> {
+        match self {
+            ResponseData::Telemetry { payload, .. } => payload.clone(),
+            ResponseData::Attribute { key, value } => {
+                let mut data = key.to_le_bytes().to_vec();
+                data.extend_from_slice(&value.to_le_bytes());
+                data
+            }
+            ResponseData::Error { source, error } => {
+                let mut data = vec![0; 4];
+                if let Some(err) = error {
+                    data[0..4].copy_from_slice(&err.value().to_le_bytes());
+                } else if let ErrorSource::Attribute(arg) = source {
+                    if let Some(arg) = arg {
+                        data[4..8].copy_from_slice(&arg.to_le_bytes());
+                    }
+                }
                 data
             }
         }
@@ -341,13 +301,13 @@ pub enum ResponseData {
     },
     Error {
         source: ErrorSource,
-        error: Option<CaniotError>,
+        error: Option<ErrorCode>,
     },
 }
 
 #[derive(Debug)]
 pub struct ErrorData {
-    pub error: CaniotError,
+    pub error: ErrorCode,
 }
 
 impl Frame<ResponseData> {
@@ -362,12 +322,12 @@ impl Frame<ResponseData> {
 
 #[derive(Error, Debug)]
 pub enum ConversionError {
-    #[error("TryFromSlice error: {0}")]
-    TryFromSlice(#[from] std::array::TryFromSliceError),
-    #[error("IoError: {0}")]
-    IoError(#[from] std::io::Error),
-    #[error("Not a CANIOT response frame")]
-    NotCaniotResponse,
+    #[error("Not a valid caniot response frame")]
+    NotValidCaniotResponse,
+    #[error("Not a valid caniot request frame")]
+    NotValidCaniotRequest,
+    #[error("Not a valid caniot id")]
+    NotValidCaniotId,
 }
 
 const ERROR_CODE_LEN: usize = 4;
@@ -378,8 +338,8 @@ pub fn parse_error_payload(
     payload: &[u8],
 ) -> Result<ResponseData, ConversionError> {
     let len = payload.len();
-    let error_code: Option<CaniotError> = if len >= ERROR_CODE_LEN {
-        CaniotError::from_i32(i32::from_le_bytes(
+    let error_code: Option<ErrorCode> = if len >= ERROR_CODE_LEN {
+        ErrorCode::from_i32(i32::from_le_bytes(
             payload[0..ERROR_CODE_LEN].try_into().unwrap(),
         ))
     } else {
@@ -402,48 +362,96 @@ pub fn parse_error_payload(
     })
 }
 
-// This structure is used to encapsulate a Type which implements EmbeddedFrame
-// This way we can implement TryFrom<EmbeddedFrameWrapper<E>> for Frame
-// where E: EmbeddedFrame
-pub struct EmbeddedFrameWrapper<T: EmbeddedFrame>(pub T);
-
-impl<E> TryFrom<EmbeddedFrameWrapper<E>> for Frame<ResponseData>
-where
-    E: EmbeddedFrame,
-{
+impl TryFrom<CanFrame> for Frame<ResponseData> {
     type Error = ConversionError;
 
-    fn try_from(frame: EmbeddedFrameWrapper<E>) -> Result<Self, Self::Error> {
-        let id: Id = frame.0.id().try_into()?;
-        let device_id = id.device_id;
-        let data: Vec<u8> = frame.0.data().to_vec();
+    fn try_from(frame: CanFrame) -> Result<Self, Self::Error> {
+        let id = Id::try_from(frame.id())?;
+        let payload: Vec<u8> = frame.data().to_vec();
 
-        if id.direction != Direction::Response {
-            if id.action == Action::Write {
-                return parse_error_payload(id.get_endpoint(), &data)
-                    .map(|data| Frame { device_id, data })
-                    .map_err(|e| e.into());
-            } else {
-                return Err(ConversionError::NotCaniotResponse);
-            }
-        }
-
-        match id.msg_type {
-            Type::Telemetry => Ok(Frame {
-                device_id,
-                data: ResponseData::Telemetry {
+        let data = if id.direction == Direction::Response {
+            match id.msg_type {
+                Type::Telemetry => ResponseData::Telemetry {
                     endpoint: id.endpoint,
-                    payload: data,
+                    payload,
                 },
-            }),
-            Type::Attribute => Ok(Frame {
-                device_id,
-                data: ResponseData::Attribute {
-                    key: u16::from_le_bytes(data[0..2].try_into().unwrap()),
-                    value: u32::from_le_bytes(data[2..6].try_into().unwrap()),
+                Type::Attribute => ResponseData::Attribute {
+                    key: u16::from_le_bytes(payload[0..2].try_into().unwrap()),
+                    value: u32::from_le_bytes(payload[2..6].try_into().unwrap()),
                 },
-            }),
-        }
+            }
+        } else {
+            if id.action == Action::Write {
+                parse_error_payload(id.get_endpoint(), &payload)?
+            } else {
+                return Err(ConversionError::NotValidCaniotResponse);
+            }
+        };
+
+        Ok(Frame {
+            device_id: id.device_id,
+            data,
+        })
+    }
+}
+
+impl Into<CanFrame> for &Frame<RequestData> {
+    fn into(self) -> CanFrame {
+        CanFrame::new(self.get_can_id(), self.get_can_payload().as_ref()).unwrap()
+    }
+}
+
+impl Into<CanFrame> for Frame<RequestData> {
+    fn into(self) -> CanFrame {
+        (&self).into()
+    }
+}
+
+impl TryFrom<CanFrame> for Frame<RequestData> {
+    type Error = ConversionError;
+
+    fn try_from(value: CanFrame) -> Result<Self, Self::Error> {
+        let id = Id::try_from(value.id())?;
+        let payload: Vec<u8> = value.data().to_vec();
+
+        let data = if id.direction == Direction::Query {
+            match id.msg_type {
+                Type::Telemetry => RequestData::Telemetry {
+                    endpoint: id.endpoint,
+                },
+                Type::Attribute => {
+                    if id.action == Action::Read {
+                        RequestData::AttributeRead {
+                            key: u16::from_le_bytes(payload[0..2].try_into().unwrap()),
+                        }
+                    } else {
+                        RequestData::AttributeWrite {
+                            key: u16::from_le_bytes(payload[0..2].try_into().unwrap()),
+                            value: u32::from_le_bytes(payload[2..6].try_into().unwrap()),
+                        }
+                    }
+                }
+            }
+        } else {
+            return Err(ConversionError::NotValidCaniotRequest);
+        };
+
+        Ok(Frame {
+            device_id: id.device_id,
+            data,
+        })
+    }
+}
+
+impl Into<CanFrame> for &Frame<ResponseData> {
+    fn into(self) -> CanFrame {
+        CanFrame::new(self.get_can_id(), self.get_can_payload().as_ref()).unwrap()
+    }
+}
+
+impl Into<CanFrame> for Frame<ResponseData> {
+    fn into(self) -> CanFrame {
+        (&self).into()
     }
 }
 
@@ -504,269 +512,5 @@ impl fmt::Display for Request {
                 )
             }
         }
-    }
-}
-
-pub fn build_telemetry_request(device_id: DeviceId, endpoint: Endpoint) -> Request {
-    Request {
-        device_id,
-        data: RequestData::Telemetry { endpoint },
-    }
-}
-pub fn build_attribute_read_request(device_id: DeviceId, key: u16) -> Request {
-    Request {
-        device_id,
-        data: RequestData::AttributeRead { key },
-    }
-}
-
-pub fn build_attribute_write_request(device_id: DeviceId, key: u16, value: u32) -> Request {
-    Request {
-        device_id,
-        data: RequestData::AttributeWrite { key, value },
-    }
-}
-
-pub fn build_command_request(device_id: DeviceId, endpoint: Endpoint, payload: Vec<u8>) -> Request {
-    Request {
-        device_id,
-        data: RequestData::Command { endpoint, payload },
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct ResponseMatch {
-    is_reponse: bool,
-    is_error: bool,
-}
-
-impl ResponseMatch {
-    pub fn new(is_response: bool, is_error: bool) -> Self {
-        Self {
-            is_reponse: is_response,
-            is_error: is_error,
-        }
-    }
-
-    pub fn is_response(&self) -> bool {
-        self.is_reponse
-    }
-
-    pub fn is_error(&self) -> bool {
-        self.is_error
-    }
-
-    pub fn is_valid_response(&self) -> bool {
-        self.is_reponse && !self.is_error
-    }
-
-    pub fn is_response_error(&self) -> bool {
-        self.is_reponse && self.is_error
-    }
-}
-
-fn response_match_any_telemetry_query(
-    query_endpoint: Endpoint,
-    response: &Response,
-) -> ResponseMatch {
-    let (is_response, is_error) = match response.data {
-        ResponseData::Telemetry {
-            endpoint: response_endpoint,
-            ..
-        } => (query_endpoint == response_endpoint, false),
-        ResponseData::Error {
-            source: ErrorSource::Telemetry(endpoint, _),
-            ..
-        } => (query_endpoint == endpoint, true),
-        ResponseData::Error { .. } => (false, true),
-        ResponseData::Attribute { .. } => (false, false),
-    };
-
-    ResponseMatch::new(is_response, is_error)
-}
-
-fn response_match_any_attribute_query(key: u16, response: &Response) -> ResponseMatch {
-    let (is_response, is_error) = match response.data {
-        ResponseData::Telemetry { .. } => (false, false),
-        ResponseData::Attribute {
-            key: response_key, ..
-        } => (key == response_key, false),
-        ResponseData::Error {
-            source: ErrorSource::Attribute(err_key),
-            ..
-        } => (
-            // unwrap_or(true) because if no key is present, we assume it is a response to any attribute query
-            err_key.map(|err_key| key == err_key).unwrap_or(true),
-            true,
-        ),
-        ResponseData::Error { .. } => (false, true),
-    };
-
-    ResponseMatch::new(is_response, is_error)
-}
-
-pub fn is_response_to(query: &Request, response: &Response) -> ResponseMatch {
-    if query.device_id != DeviceId::BROADCAST && query.device_id != response.device_id {
-        return ResponseMatch::new(false, false);
-    }
-
-    match query.data {
-        RequestData::Command { endpoint, .. } | RequestData::Telemetry { endpoint } => {
-            response_match_any_telemetry_query(endpoint, response)
-        }
-        RequestData::AttributeWrite { key, .. } | RequestData::AttributeRead { key } => {
-            response_match_any_attribute_query(key, response)
-        }
-    }
-}
-
-///
-/// Tests private functions
-///
-
-#[cfg(test)]
-mod tests {
-
-    use super::*;
-
-    #[test]
-    fn test_parse_error_payload() {
-        fn test_payload(
-            endpoint: Option<Endpoint>,
-            payload: &[u8],
-            expected_source: ErrorSource,
-            expected_error: Option<CaniotError>,
-        ) {
-            let resp = parse_error_payload(endpoint, payload).unwrap();
-            assert_eq!(
-                resp,
-                ResponseData::Error {
-                    source: expected_source,
-                    error: expected_error
-                }
-            );
-        }
-
-        test_payload(
-            Some(Endpoint::ApplicationDefault),
-            &[],
-            ErrorSource::Telemetry(Endpoint::ApplicationDefault, None),
-            None,
-        );
-
-        test_payload(
-            Some(Endpoint::ApplicationDefault),
-            &[0x00, 0x00, 0x00, 0x00, 0x00],
-            ErrorSource::Telemetry(Endpoint::ApplicationDefault, None),
-            Some(CaniotError::Ok),
-        );
-
-        test_payload(
-            Some(Endpoint::ApplicationDefault),
-            &[0x00, 0x3a, 0x00, 0x00, 0xFF, 0x00, 0x00, 0x00],
-            ErrorSource::Telemetry(Endpoint::ApplicationDefault, Some(0xFF)),
-            Some(CaniotError::Einval),
-        );
-
-        test_payload(None, &[0x00], ErrorSource::Attribute(None), None);
-
-        test_payload(
-            None,
-            &[0x00, 0x3a, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00],
-            ErrorSource::Attribute(Some(0x0100)),
-            Some(CaniotError::Einval),
-        );
-    }
-
-    #[test]
-    fn test_response_match_any_attribute_query() {
-        // attribute
-        let query = Request {
-            device_id: DeviceId::new(1).unwrap(),
-            data: RequestData::AttributeRead { key: 0x0100 },
-        };
-
-        let response = Response {
-            device_id: DeviceId::new(1).unwrap(),
-            data: ResponseData::Attribute {
-                key: 0x0100,
-                value: 0x12345678,
-            },
-        };
-        assert!(is_response_to(&query, &response).is_valid_response());
-
-        let response = Response {
-            device_id: DeviceId::new(1).unwrap(),
-            data: ResponseData::Error {
-                source: ErrorSource::Attribute(Some(0x0100)),
-                error: None,
-            },
-        };
-        assert!(is_response_to(&query, &response).is_response_error());
-
-        let response = Response {
-            device_id: DeviceId::new(1).unwrap(),
-            data: ResponseData::Error {
-                source: ErrorSource::Attribute(None),
-                error: None,
-            },
-        };
-        assert!(is_response_to(&query, &response).is_response_error());
-
-        let response = Response {
-            device_id: DeviceId::new(1).unwrap(),
-            data: ResponseData::Error {
-                source: ErrorSource::Telemetry(Endpoint::BoardControl, None),
-                error: None,
-            },
-        };
-        let is_response = is_response_to(&query, &response);
-        assert!(is_response.is_error() && !is_response.is_response());
-
-        // telemetry
-        let query = Request {
-            device_id: DeviceId::new(1).unwrap(),
-            data: RequestData::Telemetry {
-                endpoint: Endpoint::Application2,
-            },
-        };
-
-        let response = Response {
-            device_id: DeviceId::new(1).unwrap(),
-            data: ResponseData::Telemetry {
-                endpoint: Endpoint::Application2,
-                payload: vec![],
-            },
-        };
-        assert!(is_response_to(&query, &response).is_valid_response());
-
-        let response = Response {
-            device_id: DeviceId::new(1).unwrap(),
-            data: ResponseData::Telemetry {
-                endpoint: Endpoint::Application1,
-                payload: vec![],
-            },
-        };
-        let m = is_response_to(&query, &response);
-        assert!(!m.is_error() && !m.is_response());
-
-        let response = Response {
-            device_id: DeviceId::new(1).unwrap(),
-            data: ResponseData::Error {
-                source: ErrorSource::Telemetry(Endpoint::Application2, None),
-                error: None,
-            },
-        };
-        assert!(is_response_to(&query, &response).is_response_error());
-
-        let response = Response {
-            device_id: DeviceId::new(1).unwrap(),
-            data: ResponseData::Error {
-                source: ErrorSource::Telemetry(Endpoint::BoardControl, None),
-                error: None,
-            },
-        };
-        let m = is_response_to(&query, &response);
-        assert!(m.is_error() && !m.is_response());
     }
 }

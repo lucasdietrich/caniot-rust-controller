@@ -6,7 +6,7 @@ use crate::caniot as ct;
 use async_trait::async_trait;
 
 #[async_trait]
-pub trait ControllerAPI {
+pub trait ControllerAPI: Send + Sync {
     async fn query(
         &mut self,
         frame: ct::Request,

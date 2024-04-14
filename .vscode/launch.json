@@ -39,7 +39,8 @@
                 "args": [
                     "build",
                     "--bin=caniot-rust-controller",
-                    "--package=caniot-rust-controller"
+                    "--package=caniot-rust-controller",
+                    "--features=emu"
                 ],
                 "filter": {
                     "name": "caniot-rust-controller",

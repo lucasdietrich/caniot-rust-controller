@@ -8,7 +8,7 @@ use rocket::{
 
 use crate::controller::{self, DeviceStatsEntry};
 use crate::{
-    can::CanStats,
+    bus::CanStats,
     caniot,
     controller::ControllerError,
     shared::{self, ServerStats},

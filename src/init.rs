@@ -6,7 +6,7 @@ use tokio::sync::broadcast;
 use tokio::{self, time::sleep};
 
 use crate::shutdown::Shutdown;
-use crate::{can, caniot, config, controller, logger, shared, webserver};
+use crate::{bus, caniot, config, controller, logger, shared, webserver};
 
 #[cfg(feature = "grpc")]
 use crate::grpcserver;
@@ -29,7 +29,7 @@ pub fn run_controller() {
     let rt = get_tokio_rt();
     let rt = Arc::new(rt);
     let (notify_shutdown, _) = broadcast::channel(1);
-    
+
     let controller = controller::init(&config, &rt, &notify_shutdown);
 
     let shared = shared::new_context(

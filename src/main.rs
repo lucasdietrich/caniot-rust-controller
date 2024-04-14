@@ -4,7 +4,7 @@
 #[macro_use]
 extern crate rocket;
 
-mod can;
+mod bus;
 mod caniot;
 mod config;
 mod controller;
@@ -13,7 +13,6 @@ mod logger;
 mod shared;
 mod shutdown;
 mod webserver;
-// mod devices;
 
 #[cfg(feature = "grpc")]
 mod grpcserver;

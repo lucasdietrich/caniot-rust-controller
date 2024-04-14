@@ -1,15 +1,23 @@
 use tokio::sync::{mpsc, oneshot};
 
 use crate::{
-    can::CanStats,
-    caniot as ct,
+    bus::CanStats,
     caniot::{self, build_telemetry_request, DeviceId, Endpoint, Response},
+    caniot::{self as ct, datatypes::HeatingControllerCommand},
 };
 use serde::Serialize;
 
 use super::{
-    traits::ControllerAPI, Controller, ControllerError, ControllerStats, DeviceStats,
+    traits::ControllerAPI, Controller, ControllerError, ControllerStats, DemoAction, DeviceStats,
+    DeviceTrait, GarageDoorCommand,
 };
+
+pub enum DeviceAction {
+    Reset,
+    ResetFactoryDefault,
+    Garage(GarageDoorCommand),
+    Demo(DemoAction),
+}
 
 pub enum ControllerMessage {
     GetStats {
@@ -19,6 +27,11 @@ pub enum ControllerMessage {
         query: caniot::Request,
         timeout_ms: u32,
         respond_to: Option<oneshot::Sender<Result<caniot::Response, ControllerError>>>,
+    },
+    DeviceAction {
+        did: Option<DeviceId>,
+        action: DeviceAction,
+        respond_to: oneshot::Sender<Result<(), ControllerError>>,
     },
 }
 
@@ -46,15 +59,28 @@ impl ControllerHandle {
         self.execute(|respond_to| ControllerMessage::GetStats { respond_to })
             .await
     }
+
+    pub async fn device_action(
+        &self,
+        did: Option<DeviceId>,
+        action: DeviceAction,
+    ) -> Result<(), ControllerError> {
+        self.execute(|respond_to| ControllerMessage::DeviceAction {
+            did,
+            action,
+            respond_to,
+        })
+        .await
+    }
 }
 
-pub async fn handle_message(controller: &mut Controller, message: ControllerMessage) {
+pub async fn handle_api_message(controller: &mut Controller, message: ControllerMessage) {
     match message {
         ControllerMessage::GetStats { respond_to } => {
             let _ = respond_to.send((
                 controller.stats,
                 controller.get_devices_stats(),
-                controller.iface.stats,
+                controller.iface.get_stats(),
             ));
         }
         ControllerMessage::Query {
@@ -66,6 +92,26 @@ pub async fn handle_message(controller: &mut Controller, message: ControllerMess
                 controller.query_sched(query, timeout_ms, respond_to).await;
             } else {
                 let _ = controller.send(query).await;
+            }
+        }
+        ControllerMessage::DeviceAction {
+            did,
+            action,
+            respond_to,
+        } => {
+            let mut handle = controller.get_handle();
+            match action {
+                DeviceAction::Reset => {}
+                DeviceAction::ResetFactoryDefault => {}
+                DeviceAction::Demo(action) => {
+                    // let device = controller.get_device_mut::<DemoNode>(device_id);
+                    let device = &mut controller.dev_demo;
+                    let ret = device.handle_action(&mut handle, action).await;
+                }
+                DeviceAction::Garage(action) => {
+                    let device = &mut controller.dev_garage;
+                    let ret = device.handle_action(&mut handle, action).await;
+                }
             }
         }
     }

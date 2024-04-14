@@ -357,6 +357,7 @@ dependencies = [
  "num-derive",
  "num-traits",
  "prost",
+ "rand",
  "rocket",
  "rocket_dyn_templates",
  "serde",

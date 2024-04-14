@@ -9,13 +9,13 @@ use crate::caniot::{CANIOT_DEVICE_FILTER_ID, CANIOT_DEVICE_FILTER_MASK};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct CanConfig {
-    pub interface: String,
+    interface: String,
 }
 
 impl Default for CanConfig {
     fn default() -> Self {
         CanConfig {
-            interface: "vcan0".to_string(),
+            interface: "can0".to_string(),
         }
     }
 }
@@ -37,10 +37,9 @@ pub enum CanInterfaceError {
     IoError(#[from] std::io::Error),
 }
 
+#[cfg(not(feature = "emu"))]
 pub struct CanInterface {
-    #[cfg(not(feature = "emu"))]
     sock: CanSocket,
-
     pub stats: CanStats,
 }
 
@@ -85,27 +84,8 @@ impl CanInterface {
         };
         None
     }
-}
 
-#[cfg(feature = "emu")]
-impl CanInterface {
-    pub async fn new(_config: &CanConfig) -> Result<Self, CanInterfaceError> {
-        warn!("Using emulated CAN interface");
-        Ok(Self {
-            stats: CanStats::default(),
-        })
+    pub fn get_stats(&self) -> CanStats {
+        self.stats
     }
-
-    pub async fn send(&mut self, _frame: CanFrame) -> Result<(), CanInterfaceError> {
-        self.stats.tx += 1;
-        Ok(())
-    }
-
-    pub async fn recv_poll(&mut self) -> Option<CanDataFrame> {
-        None
-    }
-}
-
-pub async fn init_interface(config: &CanConfig) -> CanInterface {
-    CanInterface::new(config).await.unwrap()
 }

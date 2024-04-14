@@ -41,10 +41,10 @@ pub fn rocket(shared: SharedHandle) -> Rocket<Build> {
 
     let config = Config {
         workers: 1,
-        log_level: LogLevel::Off, // LogLevel::Critical
+        log_level: LogLevel::Normal, // LogLevel::Critical
+        cli_colors: true,
         port: config.port,
         address: config.listen.parse().unwrap(),
-        cli_colors: false,
         ..Default::default()
     };
 

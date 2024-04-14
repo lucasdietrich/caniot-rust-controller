@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use toml;
 
-use crate::can::CanConfig;
+use crate::bus::CanConfig;
 use crate::controller::CaniotConfig;
 use crate::webserver::WebserverConfig;
 

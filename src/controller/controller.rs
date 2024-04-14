@@ -1,22 +1,24 @@
+use std::any::Any;
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use itertools::{partition, Itertools};
 use tokio::runtime::Runtime;
 
-use crate::can::{CanInterface, CanInterfaceError};
-use crate::caniot;
+use crate::bus::{self, CanInterface, CanInterfaceError};
 use crate::caniot::DeviceId;
+use crate::caniot::{self, emu};
 use crate::shutdown::Shutdown;
 
-use super::{actor, ManagedDeviceError};
-use super::device::{DeviceStats};
+use super::device::DeviceStats;
 use super::traits::ControllerAPI;
+use super::{actor, DemoNode, Device, DeviceTrait, GarageNode, ManagedDeviceError};
 
 use log::info;
 use serde::{Deserialize, Serialize};
 
-use socketcan::CanDataFrame;
+use socketcan::{CanDataFrame, CanFrame};
 use thiserror::Error;
 use tokio::select;
 use tokio::sync::{mpsc, oneshot};
@@ -83,8 +85,6 @@ pub struct Controller {
     pub stats: ControllerStats,
     pub config: CaniotConfig,
 
-    // managed_devices: Vec<Box<dyn ManagedDeviceTrait<Error = ManagedDeviceError>>>,
-    // devices: Vec<Box<dyn DeviceTrait>>,
     pending_queries: Vec<PendingQuery>,
 
     rt: Arc<Runtime>,
@@ -92,25 +92,47 @@ pub struct Controller {
 
     receiver: mpsc::Receiver<actor::ControllerMessage>,
     handle: actor::ControllerHandle,
+
+    pub dev_garage: Device<GarageNode>,
+    pub dev_demo: Device<DemoNode>,
+    // devices: HashMap<DeviceId, Box<dyn DeviceTrait>>,
+
+    // managed_devices: Vec<Box<dyn ManagedDeviceTrait<Error = ManagedDeviceError>>>,
+    // devices: Vec<Box<dyn DeviceTrait>>,
 }
+
+use embedded_can::Frame as EmbeddedFrame;
 
 impl Controller {
     pub(crate) fn new(
-        iface: CanInterface,
+        mut iface: CanInterface,
         config: CaniotConfig,
         // managed_devices: Vec<Box<dyn ManagedDeviceTrait<Error = ManagedDeviceError>>>,
         // managed_devices: Vec<Box<dyn DeviceTrait>>,
         shutdown: Shutdown,
         rt: Arc<Runtime>,
     ) -> Result<Self, ControllerError> {
-
         let (sender, receiver) = mpsc::channel(CHANNEL_SIZE);
+
+        #[cfg(feature = "emu")]
+        {
+            let mut dev1 = emu::Device::new(1, Duration::from_secs(5));
+            dev1.add_behavior(Box::new(emu::CounterBehavior::default()));
+            iface.add_device(dev1);
+
+            let mut dev2 = emu::Device::new(2, Duration::from_secs(5));
+            dev2.add_behavior(Box::new(emu::EchoBehavior::default()));
+            iface.add_device(dev2);
+
+            let mut dev3 = emu::Device::new(3, Duration::from_secs(5));
+            dev3.add_behavior(Box::new(emu::RandomBehavior::default()));
+            iface.add_device(dev3);
+        }
 
         // sanity check on managed devices
         // if managed_devices.len() > DEVICES_COUNT {
         //     return Err(ControllerError::DuplicateDID);
         // }
-
 
         // // filter duplicates
         // let managed_devices: Vec<Box<_>> = managed_devices
@@ -118,7 +140,6 @@ impl Controller {
         //     .sorted_by_key(|device| device.get_did().as_u8())
         //     .dedup_by(|a, b| a.get_did().as_u8() == b.get_did().as_u8())
         //     .collect();
-        
 
         // // initialize devices
         // let devices = (0..DEVICES_COUNT)
@@ -142,6 +163,11 @@ impl Controller {
             shutdown,
             receiver,
             handle: actor::ControllerHandle { sender },
+            dev_garage: Device::<GarageNode>::new(caniot::DeviceId::try_from(1).unwrap()),
+            dev_demo: Device::<DemoNode>::new(caniot::DeviceId {
+                class: 1,
+                sub_id: 7,
+            }),
         })
     }
 
@@ -158,7 +184,9 @@ impl Controller {
         request: &caniot::Request,
     ) -> Result<(), ControllerError> {
         info!("TX {}", request);
-        let can_frame = request.to_can_frame()?;
+
+        let can_frame = request.into();
+
         self.iface.send(can_frame).await?;
         self.stats.tx += 1;
         Ok(())
@@ -186,8 +214,8 @@ impl Controller {
         }
     }
 
-    async fn handle_can_frame(&mut self, frame: CanDataFrame) -> Result<(), ControllerError> {
-        let frame: caniot::Response = caniot::EmbeddedFrameWrapper(frame).try_into()?;
+    async fn handle_can_frame(&mut self, frame: CanFrame) -> Result<(), ControllerError> {
+        let frame = caniot::Response::try_from(frame)?;
 
         info!("RX {}", frame);
 
@@ -261,7 +289,7 @@ impl Controller {
 
             select! {
                 Some(message) = self.receiver.recv() => {
-                    actor::handle_message(&mut self, message).await;
+                    actor::handle_api_message(&mut self, message).await;
                 },
                 Some(frame) = self.iface.recv_poll() => {
                     match self.handle_can_frame(frame).await {
@@ -276,7 +304,7 @@ impl Controller {
                     }
                 },
                 _ = sleep(time_to_next_timeout) => {
-                    // timeout handled in handle_pending_queries_timeout()
+                    // Timeout of pending queries handled in handle_pending_queries_timeout()
                 },
                 _ = self.shutdown.recv() => {
                     warn!("Received shutdown signal");

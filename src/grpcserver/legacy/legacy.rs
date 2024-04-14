@@ -14,7 +14,11 @@ pub mod model {
 
 use serde::{Deserialize, Serialize};
 
-use crate::{caniot, controller::{self, GarageController}, shared::SharedHandle};
+use crate::{
+    caniot::{self, DeviceId},
+    controller::{self, ControllerError, DeviceAction, GarageDoorCommand, GarageNode},
+    shared::SharedHandle,
+};
 
 #[derive(Debug)]
 pub struct LegacyCaniotController {
@@ -27,41 +31,40 @@ impl CanController for LegacyCaniotController {
         &self,
         request: Request<GarageCommand>,
     ) -> Result<Response<CommandResponse>, Status> {
-        let message = request.into_inner();
-        let command = GarageDoorCommand::try_from(message.command)
-            .unwrap_or(GarageDoorCommand::CommandUnspecified);
-        let (left, right) = match command {
-            GarageDoorCommand::CommandUnspecified => (false, false),
-            GarageDoorCommand::CommandAll => (true, true),
-            GarageDoorCommand::CommandLeft => (true, false),
-            GarageDoorCommand::CommandRight => (false, true),
+        let request = request.into_inner();
+        let request = model::GarageDoorCommand::try_from(request.command)
+            .unwrap_or(model::GarageDoorCommand::CommandUnspecified);
+        let (left, right) = match request {
+            model::GarageDoorCommand::CommandUnspecified => (false, false),
+            model::GarageDoorCommand::CommandAll => (true, true),
+            model::GarageDoorCommand::CommandLeft => (true, false),
+            model::GarageDoorCommand::CommandRight => (false, true),
+        };
+        let command = GarageDoorCommand {
+            left_door_activate: left,
+            right_door_activate: right,
         };
 
-        // // v1
-        // let handle = self.shared.controller_handle.get_garage_handle();
-        // let status = match handle.send_command(left, right).await {
-        //     Ok(_response) => CommandStatus::Ok,
-        //     Err(controller::ControllerError::Timeout) => CommandStatus::Timeout,
-        //     Err(_error) => CommandStatus::Nok,
-        // };
+        let result = self
+            .shared
+            .controller_handle
+            .device_action(None, DeviceAction::Garage(command))
+            .await;
+        let status = match result {
+            Ok(_) => model::Status::Ok,
+            Err(ControllerError::Timeout) => model::Status::Timeout,
+            Err(_) => model::Status::Nok,
+        };
 
-        // // v2
-        // let handle = self.shared.controller_handle.get_device_handle::<GarageController>(caniot::DeviceId::new(1).unwrap());
-        // let request = handle.open_door(true, false).await;
-        // println!("request: {:#?}", request);
-
-        // Ok(Response::new(CommandResponse {
-        //     status: status.into(),
-        // }))
-
-        todo!();
+        Ok(Response::new(model::CommandResponse {
+            status: status.into(),
+        }))
     }
 
     async fn get_alarm(
         &self,
         request: Request<AlarmCommand>,
     ) -> Result<Response<CommandResponse>, Status> {
-
         todo!();
     }
 
@@ -107,22 +110,31 @@ impl CanController for LegacyCaniotController {
         todo!();
     }
 
-    async fn reset(&self, request: Request<DeviceId>) -> Result<Response<CommandResponse>, Status> {
+    async fn reset(
+        &self,
+        request: Request<model::DeviceId>,
+    ) -> Result<Response<CommandResponse>, Status> {
         todo!();
     }
 
     async fn reset_factory_defaults(
         &self,
-        request: Request<DeviceId>,
+        request: Request<model::DeviceId>,
     ) -> Result<Response<CommandResponse>, Status> {
         todo!();
     }
 
-    async fn get_devices(&self, request: Request<Empty>) -> Result<Response<Devices>, Status> {
+    async fn get_devices(
+        &self,
+        request: Request<model::Empty>,
+    ) -> Result<Response<Devices>, Status> {
         todo!();
     }
 
-    async fn get_device(&self, request: Request<DeviceId>) -> Result<Response<Device>, Status> {
+    async fn get_device(
+        &self,
+        request: Request<model::DeviceId>,
+    ) -> Result<Response<Device>, Status> {
         Ok(Response::new(Device {
             ..Default::default()
         }))

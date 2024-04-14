@@ -4,7 +4,7 @@ use tokio::sync::{broadcast, mpsc};
 
 use serde::Serialize;
 
-use crate::can::CanStats;
+use crate::bus::CanStats;
 use crate::caniot::Request as CaniotRequest;
 use crate::config::AppConfig;
 use crate::controller::{ControllerHandle, ControllerStats, DeviceStats};

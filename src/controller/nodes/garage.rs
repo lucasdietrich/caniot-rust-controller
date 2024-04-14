@@ -1,14 +1,12 @@
 use crate::{
-    caniot::{self, CaniotError, DeviceId, Frame, Response},
-    controller::{ControllerError, ControllerHandle, traits::ControllerAPI, ManagedDeviceError},
+    caniot::{self, DeviceId, Endpoint, ErrorCode, Frame, Response, Xps},
+    controller::{
+        traits::ControllerAPI, ControllerError, ControllerHandle, Device, DeviceTrait,
+        ManagedDeviceError,
+    },
 };
 
-use super::super::super::caniot::types::*;
-
-pub const DEVICE_ID: DeviceId = DeviceId {
-    class: 0,
-    sub_id: 1,
-};
+use super::super::super::caniot::*;
 
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub struct GarageDoorCommand {
@@ -54,69 +52,46 @@ impl From<Class0Payload> for GarageDoorStatus {
     }
 }
 
-#[derive(Debug)]
-pub struct GarageController {
-    device_id: caniot::DeviceId,
+#[derive(Debug, Default)]
+pub struct GarageNode {
+    status: GarageDoorStatus,
 }
 
+impl Device<GarageNode> {
+    pub async fn handle_action(
+        &mut self,
+        api: &mut dyn ControllerAPI,
+        command: GarageDoorCommand,
+    ) -> Result<Option<Response>, ControllerError> {
+        let command: Class0Command = command.into();
+        let payload: [u8; 7] = command.into();
 
-pub fn send_command(
-    activate_left: bool,
-    activate_right: bool,
-) -> Result<Response, ControllerError> {
-    let command = GarageDoorCommand {
-        left_door_activate: activate_left,
-        right_door_activate: activate_right,
-    };
-    let command = BlcCommand {
-        class_payload: BlcClassCommand::Class0(command.into()),
-        sys: SystemCommand::default(),
-    };
-    let payload: [u8; 8] = command.into();
-    let request = caniot::RequestData::Command {
-        endpoint: caniot::Endpoint::BoardControl,
-        payload: payload.into(),
-    };
-    // let frame = Frame {
-    //     device_id: self.device_id,
-    //     data: request,
-    // };
-
-    // self.controller_handler
-    //     .query(frame, 1000)
-    //     .await
-
-    Err(ControllerError::UnsupportedQuery)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn enc() {
-        let cmd = GarageDoorCommand {
-            left_door_activate: true,
-            right_door_activate: true,
-        };
-        let cmd: Class0Command = cmd.into();
-        assert_eq!(cmd.crl1, Xps::PulseOn);
-        assert_eq!(cmd.crl2, Xps::PulseOn);
-        assert_eq!(cmd.coc1, Xps::None);
-        assert_eq!(cmd.coc2, Xps::None);
+        let resp = api
+            .query_command(
+                self.device_id,
+                caniot::Endpoint::BoardControl,
+                payload.into(),
+                1000,
+            )
+            .await?;
+        Ok(Some(resp))
     }
+}
 
-    #[test]
-    fn dec() {
-        let payload = Class0Payload {
-            in2: true,
-            in3: true,
-            in4: true,
-            ..Default::default()
-        };
-        let status = GarageDoorStatus::from(payload);
-        assert_eq!(status.left_door_status, true);
-        assert_eq!(status.right_door_status, true);
-        assert_eq!(status.garage_light_status, true);
+impl DeviceTrait for GarageNode {
+    fn handle_frame(&mut self, frame: &caniot::ResponseData) -> Result<(), ManagedDeviceError> {
+        match frame {
+            caniot::ResponseData::Telemetry {
+                endpoint: Endpoint::BoardControl,
+                payload,
+            } => {
+                if let Ok(payload) = Class0Payload::try_from(payload.as_slice()) {
+                    self.status = GarageDoorStatus::from(payload);
+                }
+            }
+            _ => {}
+        }
+
+        Ok(())
     }
 }

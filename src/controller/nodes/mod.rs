@@ -9,3 +9,6 @@ pub use demo::*;
 pub use garage::*;
 // pub use heating::*;
 // pub use outdoor_alarm::*;
+
+#[cfg(test)]
+mod garage_test;
