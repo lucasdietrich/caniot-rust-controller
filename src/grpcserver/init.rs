@@ -46,8 +46,9 @@ pub async fn grpc_server(shared: SharedHandle) -> Result<(), GrpcServerInitError
     info!("gRPC server listening on {}", addr);
 
     Server::builder()
-        .add_service(ng_controller)
-        .add_service(legacy_controller)
+        .accept_http1(true)
+        .add_service(tonic_web::enable(ng_controller))
+        .add_service(tonic_web::enable(legacy_controller))
         .serve_with_shutdown(addr, shutdown_future)
         .await?;
 
