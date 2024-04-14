@@ -3,10 +3,12 @@ syntax = "proto3";
 package ng;
 
 import "common.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
 
 service CaniotController {
   rpc Hello(HelloRequest) returns (HelloResponse) {}
-  rpc HelloEmpty(Empty) returns (Empty) {}
+  rpc HelloEmpty(google.protobuf.Empty) returns (google.protobuf.Empty) {}
 
   rpc RequestTelemetry(TelemetryRequest) returns (TelemetryResponse) {}
 }
@@ -17,6 +19,10 @@ message HelloRequest {
 
 message HelloResponse {
   string message = 1;
+  google.protobuf.Timestamp timestamp = 2;
+  map<string, uint32> map = 3;
+  repeated string strings = 4;
+  bytes bytes = 12;
 }
 
 message TelemetryRequest {

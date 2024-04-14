@@ -2,8 +2,6 @@ syntax = "proto3";
 
 package ng;
 
-message Empty { }
-
 message DeviceId
 {
   uint32 cls = 1;

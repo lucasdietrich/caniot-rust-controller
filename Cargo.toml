@@ -31,17 +31,19 @@ socketcan = { git = "https://github.com/socketcan-rs/socketcan-rs.git", rev = "c
 embedded-can = "0.4"
 
 log = "0.4.20"
-env_logger = "0.10.0"
+env_logger = "0.11.3"
 
 num = "0.4"
 num-derive = "0.4"
 num-traits = "0.2"
 thiserror = "1.0.48"
 
-tonic = { version = "0.10.1" }
+tonic = { version = "0.11.0" }
 prost = "0.12"
+prost-types = "0.12.4"
 
-itertools = "0.11"
+
+itertools = "0.12.1"
 
 tera = "1.0"
 
@@ -50,7 +52,7 @@ rocket_dyn_templates = { version = "0.1.0-rc.1", features = ["tera"] }
 rand = "0.8"
 
 [build-dependencies]
-tonic-build = { version = "0.10.1", features = ["prost"] }
+tonic-build = { version = "0.11.0", features = ["prost"] }
 
 [profile.release]
 opt-level = 3

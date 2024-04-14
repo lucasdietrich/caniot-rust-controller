@@ -24,6 +24,8 @@ impl Device {
     }
 }
 
+/// Default behavior
+/// - Nothing handled
 #[derive(Default)]
 pub struct DefaultBehavior();
 
@@ -51,6 +53,8 @@ impl Behavior for DefaultBehavior {
     }
 }
 
+/// Counter behavior
+/// - Count up on command and return the count on telemetry
 #[derive(Default)]
 pub struct CounterBehavior {
     count: u32,
@@ -81,6 +85,8 @@ impl Behavior for CounterBehavior {
     }
 }
 
+/// Echo behavior
+/// - Echo the last command on telemetry
 #[derive(Default)]
 pub struct EchoBehavior {
     last_command: Option<Vec<u8>>,
@@ -115,6 +121,8 @@ impl Behavior for EchoBehavior {
     }
 }
 
+/// Random behavior
+/// - Return random telemetry
 #[derive(Default)]
 pub struct RandomBehavior();
 

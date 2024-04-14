@@ -10,6 +10,6 @@ if [ "$1" = "hello" ]; then
         $ADDR \
         ng.CaniotController/Hello
 else
-    echo "Unknown command"
+    echo "Unknown argument $1"
     exit 1
 fi
