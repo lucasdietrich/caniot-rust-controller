@@ -1,10 +1,12 @@
-import { notification } from 'antd';
-import EventEmitter from 'events'
-import { HandleError } from './helpers';
-import { HelloRequest, HelloResponse,  } from '@caniot-controller/caniot-api-grpc-web/api/ng_pb';
+import { notification } from "antd";
+import EventEmitter from "events";
+import { HandleError } from "./helpers";
+import {
+  HelloRequest,
+  HelloResponse,
+} from "@caniot-controller/caniot-api-grpc-web/api/ng_pb";
 
-import { CaniotControllerClient } from '@caniot-controller/caniot-api-grpc-web/api/NgServiceClientPb';
-
+import { CaniotControllerClient } from "@caniot-controller/caniot-api-grpc-web/api/NgServiceClientPb";
 
 class InternalStore extends EventEmitter {
   client: CaniotControllerClient;

@@ -3,7 +3,10 @@
         "zhangyue.rust-mod-generator",
         "humao.rest-client",
         "vadimcn.vscode-lldb",
-        // "wholroyd.jinja",
-        "samuelcolvin.jinjahtml"
+        "samuelcolvin.jinjahtml",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "kangping.protobuf",
+        "dsznajder.es7-react-js-snippets"
     ]
 }
