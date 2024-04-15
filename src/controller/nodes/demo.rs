@@ -1,5 +1,5 @@
 use crate::{
-    caniot::{self, datatypes::Class0Command, Response},
+    caniot::{self, Response},
     controller::{ControllerAPI, ControllerError, Device, DeviceTrait, ManagedDeviceError},
 };
 
@@ -36,7 +36,7 @@ pub enum DemoAction {
 impl Device<DemoNode> {
     pub async fn handle_action(
         &mut self,
-        api: &mut dyn ControllerAPI,
+        _api: &mut dyn ControllerAPI,
         command: DemoAction,
     ) -> Result<Option<Response>, ControllerError> {
         match command {

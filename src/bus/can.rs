@@ -1,11 +1,11 @@
-use futures_util::{SinkExt, StreamExt};
-use log::{error, warn};
+
+use log::{error};
 use serde::{Deserialize, Serialize};
-use socketcan::tokio::CanSocket;
-use socketcan::{CanDataFrame, CanFilter, CanFrame, Error as CanError, SocketOptions};
+
+use socketcan::{Error as CanError};
 use thiserror::Error;
 
-use crate::caniot::{CANIOT_DEVICE_FILTER_ID, CANIOT_DEVICE_FILTER_MASK};
+
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct CanConfig {

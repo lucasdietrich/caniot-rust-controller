@@ -1,13 +1,13 @@
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc};
 use tokio::runtime::Runtime;
-use tokio::sync::{broadcast, mpsc};
+use tokio::sync::{broadcast};
 
 use serde::Serialize;
 
-use crate::bus::CanStats;
-use crate::caniot::Request as CaniotRequest;
+
+
 use crate::config::AppConfig;
-use crate::controller::{ControllerHandle, ControllerStats, DeviceStats};
+use crate::controller::{ControllerHandle};
 
 pub type SharedHandle = Arc<Shared>;
 

@@ -16,6 +16,7 @@ const menuItems: MenuProps["items"] = [
     children: [
       { key: "1", label: <Link to="/">Overview</Link> },
       { key: "2", label: <Link to="/devices">Devices</Link> },
+      { key: "3", label: <Link to="/debug">Debug</Link> },
     ],
   },
   {
@@ -23,9 +24,9 @@ const menuItems: MenuProps["items"] = [
     icon: <ControlOutlined />,
     label: "Devices",
     children: [
-      { key: "3", label: <Link to="/devices/heaters">Heaters</Link> },
-      { key: "4", label: <Link to="/devices/garage">Garage Doors</Link> },
-      { key: "5", label: <Link to="/devices/alarms">Alarms</Link> },
+      { key: "10", label: <Link to="/devices/heaters">Heaters</Link> },
+      { key: "11", label: <Link to="/devices/garage">Garage Doors</Link> },
+      { key: "12", label: <Link to="/devices/alarms">Alarms</Link> },
     ],
   },
   {
@@ -39,8 +40,8 @@ const menuItems: MenuProps["items"] = [
     icon: <SettingFilled />,
     label: "Misc",
     children: [
-      { key: "7", label: <Link to="/settings">Settings</Link> },
-      { key: "8", label: <Link to="/about">About</Link> },
+      { key: "20", label: <Link to="/settings">Settings</Link> },
+      { key: "21", label: <Link to="/about">About</Link> },
     ],
   },
 ];

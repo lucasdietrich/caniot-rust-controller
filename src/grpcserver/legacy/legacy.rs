@@ -1,22 +1,20 @@
-use log::info;
+
 use tonic::{
-    transport::{Error as GrpcError, Server},
-    Code, Request, Response, Status,
+    Request, Response, Status,
 };
 
 use model::can_controller_server::{CanController, CanControllerServer};
-use model::Status as CommandStatus;
+
 use model::*;
 
 pub mod model {
     tonic::include_proto!("legacy");
 }
 
-use serde::{Deserialize, Serialize};
+
 
 use crate::{
-    caniot::{self, DeviceId},
-    controller::{self, ControllerError, DeviceAction, GarageDoorCommand, GarageNode},
+    controller::{ControllerError, DeviceAction, GarageDoorCommand},
     shared::SharedHandle,
 };
 
@@ -63,77 +61,77 @@ impl CanController for LegacyCaniotController {
 
     async fn get_alarm(
         &self,
-        request: Request<AlarmCommand>,
+        _request: Request<AlarmCommand>,
     ) -> Result<Response<CommandResponse>, Status> {
         todo!();
     }
 
     async fn send_alarm(
         &self,
-        request: Request<AlarmCommand>,
+        _request: Request<AlarmCommand>,
     ) -> Result<Response<CommandResponse>, Status> {
         todo!();
     }
 
     async fn set_heaters(
         &self,
-        request: Request<HeatersCommand>,
+        _request: Request<HeatersCommand>,
     ) -> Result<Response<CommandResponse>, Status> {
         todo!();
     }
 
     async fn request_telemetry(
         &self,
-        request: Request<TelemetryTarget>,
+        _request: Request<TelemetryTarget>,
     ) -> Result<Response<Empty>, Status> {
         todo!();
     }
 
     async fn command_device(
         &self,
-        request: Request<BoardLevelCommand>,
+        _request: Request<BoardLevelCommand>,
     ) -> Result<Response<CommandResponse>, Status> {
         todo!();
     }
 
     async fn read_attribute(
         &self,
-        request: Request<AttributeRequest>,
+        _request: Request<AttributeRequest>,
     ) -> Result<Response<AttributeResponse>, Status> {
         todo!();
     }
 
     async fn write_attribute(
         &self,
-        request: Request<AttributeRequest>,
+        _request: Request<AttributeRequest>,
     ) -> Result<Response<AttributeResponse>, Status> {
         todo!();
     }
 
     async fn reset(
         &self,
-        request: Request<model::DeviceId>,
+        _request: Request<model::DeviceId>,
     ) -> Result<Response<CommandResponse>, Status> {
         todo!();
     }
 
     async fn reset_factory_defaults(
         &self,
-        request: Request<model::DeviceId>,
+        _request: Request<model::DeviceId>,
     ) -> Result<Response<CommandResponse>, Status> {
         todo!();
     }
 
     async fn get_devices(
         &self,
-        request: Request<model::Empty>,
+        _request: Request<model::Empty>,
     ) -> Result<Response<Devices>, Status> {
         todo!();
     }
 
     async fn get_device(
         &self,
-        request: Request<model::DeviceId>,
+        _request: Request<model::DeviceId>,
     ) -> Result<Response<Device>, Status> {
         Ok(Response::new(Device {
             ..Default::default()

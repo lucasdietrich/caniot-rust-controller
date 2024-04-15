@@ -11,6 +11,7 @@ import GarageDoors from "./view/GarageDoors";
 import Alarms from "./view/Alarms";
 import Settings from "./view/Settings";
 import NoMatch from "./view/NoMatch";
+import Debug from "./view/Debug";
 
 const { Content, Sider } = Layout;
 
@@ -42,6 +43,7 @@ const App: React.FC = () => {
             <Route path="/devices/garage" element={<GarageDoors />} />
             <Route path="/devices/alarms" element={<Alarms />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/debug" element={<Debug />} />
             <Route path="*" element={<NoMatch />} />
           </Routes>
         </Content>

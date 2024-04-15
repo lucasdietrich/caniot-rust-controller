@@ -1,7 +1,7 @@
 use crate::{
-    caniot::{self, DeviceId, Endpoint, ErrorCode, Frame, Response, Xps},
+    caniot::{self, Endpoint, Response, Xps},
     controller::{
-        traits::ControllerAPI, ControllerError, ControllerHandle, Device, DeviceTrait,
+        traits::ControllerAPI, ControllerError, Device, DeviceTrait,
         ManagedDeviceError,
     },
 };

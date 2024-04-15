@@ -1,7 +1,6 @@
-use std::collections::HashMap;
+
 
 use rocket::{
-    response::content::{self, RawJson},
     serde::{json::Json, Deserialize, Serialize},
     Responder, State,
 };
@@ -10,11 +9,10 @@ use crate::controller::{self, DeviceStatsEntry};
 use crate::{
     bus::CanStats,
     caniot,
-    controller::ControllerError,
     shared::{self, ServerStats},
 };
 use crate::{
-    caniot::{DeviceId, Endpoint},
+    caniot::{DeviceId},
     shared::SharedHandle,
 };
 
@@ -74,10 +72,13 @@ pub async fn route_caniot_request_telemetry(
     endpoint: u8,
     shared: &State<SharedHandle>,
 ) -> CaniotRestResponse {
-    let did = match DeviceId::try_from(did) {
+    let _did = match DeviceId::try_from(did) {
         Ok(did) => did,
         Err(_) => return CaniotRestResponse::Error("Invalid device id".to_string()), // willingly ignoring protocol error
     };
+
+    let _endpoint = endpoint;
+    let _shared = shared;
 
     // let endpoint = if let Some(endpoint) = num::FromPrimitive::from_u8(endpoint) {
     //     endpoint

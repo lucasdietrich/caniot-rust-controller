@@ -2,14 +2,13 @@ use tokio::sync::{mpsc, oneshot};
 
 use crate::{
     bus::CanStats,
-    caniot::{self, build_telemetry_request, DeviceId, Endpoint, Response},
-    caniot::{self as ct, datatypes::HeatingControllerCommand},
+    caniot::{self, DeviceId},
+    caniot::{self as ct},
 };
 use serde::Serialize;
 
 use super::{
-    traits::ControllerAPI, Controller, ControllerError, ControllerStats, DemoAction, DeviceStats,
-    DeviceTrait, GarageDoorCommand,
+    traits::ControllerAPI, Controller, ControllerError, ControllerStats, DemoAction, DeviceStats, GarageDoorCommand,
 };
 
 pub enum DeviceAction {
@@ -95,9 +94,9 @@ pub async fn handle_api_message(controller: &mut Controller, message: Controller
             }
         }
         ControllerMessage::DeviceAction {
-            did,
+            did: _,
             action,
-            respond_to,
+            respond_to: _,
         } => {
             let mut handle = controller.get_handle();
             match action {
@@ -106,11 +105,11 @@ pub async fn handle_api_message(controller: &mut Controller, message: Controller
                 DeviceAction::Demo(action) => {
                     // let device = controller.get_device_mut::<DemoNode>(device_id);
                     let device = &mut controller.dev_demo;
-                    let ret = device.handle_action(&mut handle, action).await;
+                    let _ret = device.handle_action(&mut handle, action).await;
                 }
                 DeviceAction::Garage(action) => {
                     let device = &mut controller.dev_garage;
-                    let ret = device.handle_action(&mut handle, action).await;
+                    let _ret = device.handle_action(&mut handle, action).await;
                 }
             }
         }

@@ -61,7 +61,7 @@ pub struct CounterBehavior {
 }
 
 impl Behavior for CounterBehavior {
-    fn set_did(&mut self, did: &caniot::DeviceId) {}
+    fn set_did(&mut self, _did: &caniot::DeviceId) {}
 
     fn on_telemetry(&mut self, _endpoint: &caniot::Endpoint) -> Option<Vec<u8>> {
         Some(self.count.to_be_bytes()[..4].to_vec())
@@ -93,7 +93,7 @@ pub struct EchoBehavior {
 }
 
 impl Behavior for EchoBehavior {
-    fn set_did(&mut self, did: &caniot::DeviceId) {}
+    fn set_did(&mut self, _did: &caniot::DeviceId) {}
 
     fn on_telemetry(&mut self, _endpoint: &caniot::Endpoint) -> Option<Vec<u8>> {
         if let Some(last_command) = self.last_command.take() {

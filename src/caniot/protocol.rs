@@ -4,7 +4,7 @@ use std::fmt::Debug;
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 
-use serde::{Deserialize, Serialize};
+use serde::{Serialize};
 
 pub const CANIOT_DEVICE_FILTER_ID: u32 = 1 << 2; /* bit 2 is 1 for response frames */
 pub const CANIOT_DEVICE_FILTER_MASK: u32 = 1 << 2; /* bit 2 is 1 to filter frames by direction */

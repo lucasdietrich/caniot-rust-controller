@@ -1,7 +1,6 @@
 use log::info;
 use tonic::{
     transport::{Error as GrpcError, Server},
-    Code, Request, Response, Status,
 };
 
 use serde::{Deserialize, Serialize};
@@ -51,6 +50,8 @@ pub async fn grpc_server(shared: SharedHandle) -> Result<(), GrpcServerInitError
         .add_service(tonic_web::enable(legacy_controller))
         .serve_with_shutdown(addr, shutdown_future)
         .await?;
+
+    info!("gRPC server stopped");
 
     Ok(())
 }

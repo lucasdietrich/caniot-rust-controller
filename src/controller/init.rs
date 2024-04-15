@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use tokio::{runtime::Runtime, sync::broadcast::Sender};
 
-use super::{Controller, DemoNode};
-use crate::{bus, bus::CanInterface, caniot, config::AppConfig, shutdown::Shutdown};
+use super::{Controller};
+use crate::{bus::CanInterface, config::AppConfig, shutdown::Shutdown};
 // use super::device::DeviceTrait;
 
 pub fn init<'a>(config: &AppConfig, rt: &Arc<Runtime>, notify_shutdown: &Sender<()>) -> Controller {

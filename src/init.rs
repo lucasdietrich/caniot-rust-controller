@@ -1,12 +1,12 @@
 use std::sync::Arc;
-use std::time::Duration;
+
 
 use log::info;
 use tokio::sync::broadcast;
-use tokio::{self, time::sleep};
+use tokio::{self};
 
-use crate::shutdown::Shutdown;
-use crate::{bus, caniot, config, controller, logger, shared, webserver};
+
+use crate::{config, controller, logger, shared, webserver};
 
 #[cfg(feature = "grpc")]
 use crate::grpcserver;
@@ -46,7 +46,11 @@ pub fn run_controller() {
 
         info!("CTRL+C received, shutting down...");
 
+        // Mark shutdown as requested
         let _ = notify_shutdown.send(());
+
+        // drop notify_shutdown to signal the shutdown
+        drop(notify_shutdown);
     });
 
     let h_ctrl = rt.spawn(controller.run());

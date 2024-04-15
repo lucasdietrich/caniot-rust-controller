@@ -6,16 +6,14 @@ import "common.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/empty.proto";
 
-service CaniotController {
+service CaniotControllerService {
   rpc Hello(HelloRequest) returns (HelloResponse) {}
   rpc HelloEmpty(google.protobuf.Empty) returns (google.protobuf.Empty) {}
 
   rpc RequestTelemetry(TelemetryRequest) returns (TelemetryResponse) {}
 }
 
-message HelloRequest {
-  string name = 1;
-}
+message HelloRequest { string name = 1; }
 
 message HelloResponse {
   string message = 1;
@@ -31,6 +29,4 @@ message TelemetryRequest {
   float timeout = 3;
 }
 
-message TelemetryResponse {
-  string message = 1;
-}
+message TelemetryResponse { string message = 1; }

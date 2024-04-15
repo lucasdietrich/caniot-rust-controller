@@ -1,10 +1,10 @@
 use std::{
     fmt::Debug,
-    time::{Duration, Instant},
+    time::{Instant},
 };
 
 use crate::caniot::{self as ct};
-use serde::{Deserialize, Serialize};
+use serde::{Serialize};
 
 use super::traits::ControllerAPI;
 use thiserror::Error;
@@ -77,7 +77,7 @@ where
         let cmd = ct::BlcCommand::get_reset_command();
         let cmd: [u8; 8] = cmd.into();
 
-        let z = api
+        let _z = api
             .query_command(self.device_id, ct::Endpoint::BoardControl, cmd.into(), 1000)
             .await
             .unwrap();

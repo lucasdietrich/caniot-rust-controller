@@ -1,11 +1,11 @@
-.PHONY: build run target deploy deploy_release deploy_config deploy_static fmt
+.PHONY: build run target deploy deploy_release deploy_config deploy_static fmt ui
 
 all: build
 
 format:
 	cargo fmt
 
-build:
+build: ui
 	cargo build --features "emu"
 
 run:
@@ -34,6 +34,10 @@ deploy_static:
 deploy_config:
 	ssh rpi "mkdir -p /home/root/rust-controller"
 	scp scripts/caniot-controller.toml rpi:/home/root/rust-controller/caniot-controller.toml
+
+ui:
+	cd proto/grpc-web; ./proto-gen-grpc-web.sh
+	cd ui; rm -rf node_modules; npm i
 
 clippy:
 	cargo clippy -- -D warnings

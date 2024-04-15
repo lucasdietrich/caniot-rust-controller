@@ -1,12 +1,13 @@
-use std::{collections::HashMap, time::Instant};
+use std::{collections::HashMap};
 
-use log::info;
+
 use tonic::{
-    transport::{Error as GrpcError, Server},
-    Code, Request, Response, Status,
+    Request, Response, Status,
 };
 
-use model::caniot_controller_server::{CaniotController, CaniotControllerServer};
+use model::caniot_controller_service_server::{
+    CaniotControllerService, CaniotControllerServiceServer,
+};
 use model::*;
 
 pub mod model {
@@ -21,7 +22,7 @@ pub struct NgCaniotController {
 }
 
 #[tonic::async_trait]
-impl CaniotController for NgCaniotController {
+impl CaniotControllerService for NgCaniotController {
     async fn hello(
         &self,
         request: Request<HelloRequest>,
@@ -31,7 +32,7 @@ impl CaniotController for NgCaniotController {
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap();
-        
+
         let mut map = HashMap::new();
         map.insert("garage".to_string(), 1);
         map.insert("uuid".to_string(), 2);
@@ -41,7 +42,7 @@ impl CaniotController for NgCaniotController {
             message: format!("Hello {}!", request.into_inner().name),
             timestamp: Some(prost_types::Timestamp {
                 seconds: now.as_secs() as i64,
-                    nanos: now.subsec_nanos() as i32,
+                nanos: now.subsec_nanos() as i32,
             }),
             map: map,
             strings: vec![
@@ -76,6 +77,6 @@ impl CaniotController for NgCaniotController {
 
 pub fn get_ng_caniot_controller(
     shared: SharedHandle,
-) -> CaniotControllerServer<NgCaniotController> {
-    CaniotControllerServer::new(NgCaniotController { shared })
+) -> CaniotControllerServiceServer<NgCaniotController> {
+    CaniotControllerServiceServer::new(NgCaniotController { shared })
 }

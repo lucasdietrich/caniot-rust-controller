@@ -70,8 +70,6 @@ impl CanInterface {
                 sleep(next_telemetry).await;
             }
         }
-
-        None
     }
 
     pub fn get_stats(&self) -> CanStats {

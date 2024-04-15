@@ -1,24 +1,24 @@
-use std::any::Any;
-use std::collections::HashMap;
-use std::sync::Arc;
-use std::time::{Duration, Instant};
 
-use itertools::{partition, Itertools};
+
+use std::sync::Arc;
+use std::time::{Duration};
+
+use itertools::{partition};
 use tokio::runtime::Runtime;
 
-use crate::bus::{self, CanInterface, CanInterfaceError};
+use crate::bus::{CanInterface, CanInterfaceError};
 use crate::caniot::DeviceId;
 use crate::caniot::{self, emu};
 use crate::shutdown::Shutdown;
 
-use super::device::DeviceStats;
+
 use super::traits::ControllerAPI;
-use super::{actor, DemoNode, Device, DeviceTrait, GarageNode, ManagedDeviceError};
+use super::{actor, DemoNode, Device, GarageNode};
 
 use log::info;
 use serde::{Deserialize, Serialize};
 
-use socketcan::{CanDataFrame, CanFrame};
+use socketcan::{CanFrame};
 use thiserror::Error;
 use tokio::select;
 use tokio::sync::{mpsc, oneshot};
@@ -307,7 +307,7 @@ impl Controller {
                     // Timeout of pending queries handled in handle_pending_queries_timeout()
                 },
                 _ = self.shutdown.recv() => {
-                    warn!("Received shutdown signal");
+                    warn!("Received shutdown signal, exiting ...");
                     break;
                 }
             }

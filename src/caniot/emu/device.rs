@@ -1,8 +1,8 @@
 use std::time::{Duration, Instant};
 
-use crate::caniot::{self, Attribute, DeviceId, Endpoint, ErrorCode, Frame};
+use crate::caniot::{self, Attribute, DeviceId, Endpoint, ErrorCode};
 
-use super::{Behavior, CounterBehavior, DefaultBehavior};
+use super::{Behavior, DefaultBehavior};
 
 pub struct Device {
     pub did: DeviceId,

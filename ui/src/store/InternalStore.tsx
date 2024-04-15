@@ -6,14 +6,14 @@ import {
   HelloResponse,
 } from "@caniot-controller/caniot-api-grpc-web/api/ng_pb";
 
-import { CaniotControllerClient } from "@caniot-controller/caniot-api-grpc-web/api/NgServiceClientPb";
+import { CaniotControllerServiceClient } from "@caniot-controller/caniot-api-grpc-web/api/NgServiceClientPb";
 
 class InternalStore extends EventEmitter {
-  client: CaniotControllerClient;
+  client: CaniotControllerServiceClient;
 
   constructor() {
     super();
-    this.client = new CaniotControllerClient("http://localhost:50051");
+    this.client = new CaniotControllerServiceClient("http://localhost:50051");
   }
 
   hello = (req: HelloRequest, callbackFunc: (resp: HelloResponse) => void) => {

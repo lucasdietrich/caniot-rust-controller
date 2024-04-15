@@ -1,10 +1,10 @@
 use core::fmt;
 use std::fmt::Debug;
 
-use num_derive::FromPrimitive;
-use num_traits::FromPrimitive;
 
-use serde::{Deserialize, Serialize};
+
+
+use serde::{Serialize};
 
 use super::ProtocolError;
 
