@@ -4,7 +4,7 @@ import { Layout, theme } from "antd";
 import { Routes, Route } from "react-router-dom";
 import Home from "./view/Home";
 import About from "./view/About";
-import Devices from "./view/Devices";
+import DevicesView from "./view/DevicesView";
 import AppMenu from "./components/Menu";
 import Heaters from "./view/Heaters";
 import GarageDoors from "./view/GarageDoors";
@@ -37,7 +37,7 @@ const App: React.FC = () => {
         >
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/devices" element={<Devices />} />
+            <Route path="/devices" element={<DevicesView />} />
             <Route path="/about" element={<About />} />
             <Route path="/devices/heaters" element={<Heaters />} />
             <Route path="/devices/garage" element={<GarageDoors />} />
