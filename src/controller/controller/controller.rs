@@ -153,26 +153,25 @@ impl Controller {
         self.stats.rx += 1;
 
         // Get or create device
-        let device = if let Some(device) = self.devices.get(&frame.device_id) {
+        let device = if let Some(device) = self.devices.get_mut(&frame.device_id) {
             device
         } else {
-            let mut new_device = Device::new(frame.device_id);
-            new_device.update_last_seen();
+            let new_device = Device::new(frame.device_id);
             self.devices.insert(frame.device_id, new_device);
-            self.devices.get(&frame.device_id).unwrap()
+            self.devices.get_mut(&frame.device_id).unwrap()
         };
 
-        // device.process_incoming_response(&frame);
+        // Update device stats
+        device.handle_frame(&frame.data);
 
         // TODO broadcast should be handled differently as the oneshot channel cannot be used to send multiple responses
-
         let pivot = self
             .pending_queries
             .partition_point(|pq| pq.match_response(&frame));
 
         // if a frame can answer multiple pending queries, remove all of them
         for pq in self.pending_queries.drain(..pivot) {
-            let _ = pq.reply_with_frame(frame.clone()); // Do not panic if receiver is dropped
+            pq.reply_with_frame(frame.clone());
         }
 
         Ok(())
