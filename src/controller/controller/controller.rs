@@ -257,7 +257,7 @@ impl Controller {
 
             select! {
                 Some(message) = self.receiver.recv() => {
-                    actor::handle_api_message(&mut self, message).await;
+                    self.handle_api_message(message).await;
                 },
                 Some(frame) = self.iface.recv_poll() => {
                     match self.handle_can_frame(frame).await {

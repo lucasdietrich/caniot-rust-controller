@@ -12,6 +12,7 @@ use super::{
     GarageDoorCommand,
 };
 
+#[derive(Debug)]
 pub enum DeviceAction {
     Reset,
     ResetFactoryDefault,
@@ -71,49 +72,6 @@ impl ControllerHandle {
             respond_to,
         })
         .await
-    }
-}
-
-pub async fn handle_api_message(controller: &mut Controller, message: ControllerMessage) {
-    match message {
-        ControllerMessage::GetStats { respond_to } => {
-            let _ = respond_to.send((
-                controller.stats,
-                controller.get_devices_stats(),
-                controller.iface.get_stats(),
-            ));
-        }
-        ControllerMessage::Query {
-            query,
-            timeout_ms,
-            respond_to,
-        } => {
-            if let Some(respond_to) = respond_to {
-                controller.query_sched(query, timeout_ms, respond_to).await;
-            } else {
-                let _ = controller.send(query).await;
-            }
-        }
-        ControllerMessage::DeviceAction {
-            did: _,
-            action,
-            respond_to: _,
-        } => {
-            let mut handle = controller.get_handle();
-            match action {
-                DeviceAction::Reset => {}
-                DeviceAction::ResetFactoryDefault => {}
-                DeviceAction::Demo(action) => {
-                    // let device = controller.get_device_mut::<DemoNode>(device_id);
-                    // let device = &mut controller.dev_demo;
-                    // let _ret = device.handle_action(&mut handle, action).await;
-                }
-                DeviceAction::Garage(action) => {
-                    // let device = &mut controller.dev_garage;
-                    // let _ret = device.handle_action(&mut handle, action).await;
-                }
-            }
-        }
     }
 }
 

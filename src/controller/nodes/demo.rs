@@ -47,6 +47,7 @@ impl DemoNode {
     }
 }
 
+#[derive(Debug)]
 pub enum DemoAction {
     Activate,
     Deactivate,
