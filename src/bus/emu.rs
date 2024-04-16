@@ -6,14 +6,12 @@ use super::can::{CanConfig, CanInterfaceError, CanStats};
 use socketcan::CanFrame;
 use tokio::time::sleep;
 
-#[cfg(feature = "emu")]
 pub struct CanInterface {
     stats: CanStats,
     devices: Vec<emu::Device>,
     to_recv_msgq: Vec<CanFrame>,
 }
 
-#[cfg(feature = "emu")]
 impl CanInterface {
     pub async fn new(_config: &CanConfig) -> Result<Self, CanInterfaceError> {
         warn!("Using emulated CAN interface");
