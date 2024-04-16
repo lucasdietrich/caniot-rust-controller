@@ -1,9 +1,6 @@
 use crate::{
     caniot::{self, Endpoint, Response, Xps},
-    controller::{
-        traits::ControllerAPI, ControllerError, Device, DeviceTrait,
-        ManagedDeviceError,
-    },
+    controller::{traits::ControllerAPI, ControllerError, Device, DeviceTrait, ManagedDeviceError},
 };
 
 use super::super::super::caniot::*;
@@ -57,7 +54,7 @@ pub struct GarageNode {
     status: GarageDoorStatus,
 }
 
-impl Device<GarageNode> {
+impl GarageNode {
     pub async fn handle_action(
         &mut self,
         api: &mut dyn ControllerAPI,
@@ -66,15 +63,16 @@ impl Device<GarageNode> {
         let command: Class0Command = command.into();
         let payload: [u8; 7] = command.into();
 
-        let resp = api
-            .query_command(
-                self.device_id,
-                caniot::Endpoint::BoardControl,
-                payload.into(),
-                1000,
-            )
-            .await?;
-        Ok(Some(resp))
+        // let resp = api
+        //     .query_command(
+        //         self.device_id,
+        //         caniot::Endpoint::BoardControl,
+        //         payload.into(),
+        //         1000,
+        //     )
+        //     .await?;
+        // Ok(Some(resp))
+        todo!();
     }
 }
 

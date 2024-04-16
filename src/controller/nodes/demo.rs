@@ -25,15 +25,7 @@ impl DemoNode {
         println!("DemoNode::set_active({})", active);
         self.active = active;
     }
-}
 
-pub enum DemoAction {
-    Activate,
-    Deactivate,
-    SetActive(bool),
-}
-
-impl Device<DemoNode> {
     pub async fn handle_action(
         &mut self,
         _api: &mut dyn ControllerAPI,
@@ -41,16 +33,22 @@ impl Device<DemoNode> {
     ) -> Result<Option<Response>, ControllerError> {
         match command {
             DemoAction::Activate => {
-                self.inner.set_active(true);
+                self.set_active(true);
             }
             DemoAction::Deactivate => {
-                self.inner.set_active(false);
+                self.set_active(false);
             }
             DemoAction::SetActive(active) => {
-                self.inner.set_active(active);
+                self.set_active(active);
             }
         }
 
         Ok(None)
     }
+}
+
+pub enum DemoAction {
+    Activate,
+    Deactivate,
+    SetActive(bool),
 }

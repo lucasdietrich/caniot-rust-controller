@@ -1,16 +1,14 @@
-
-
 use std::sync::Arc;
-use std::time::{Duration};
+use std::time::Duration;
 
-use itertools::{partition};
+use itertools::partition;
 use tokio::runtime::Runtime;
 
 use crate::bus::{CanInterface, CanInterfaceError};
+use crate::caniot::emu::emu_pool1_add_devices_to_iface;
 use crate::caniot::DeviceId;
 use crate::caniot::{self, emu};
 use crate::shutdown::Shutdown;
-
 
 use super::traits::ControllerAPI;
 use super::{actor, DemoNode, Device, GarageNode};
@@ -18,7 +16,7 @@ use super::{actor, DemoNode, Device, GarageNode};
 use log::info;
 use serde::{Deserialize, Serialize};
 
-use socketcan::{CanFrame};
+use socketcan::CanFrame;
 use thiserror::Error;
 use tokio::select;
 use tokio::sync::{mpsc, oneshot};
@@ -85,30 +83,19 @@ pub struct Controller {
     pub stats: ControllerStats,
     pub config: CaniotConfig,
 
-    pending_queries: Vec<PendingQuery>,
-
+    // Service
     rt: Arc<Runtime>,
     shutdown: Shutdown,
-
     receiver: mpsc::Receiver<actor::ControllerMessage>,
     handle: actor::ControllerHandle,
 
-    pub dev_garage: Device<GarageNode>,
-    pub dev_demo: Device<DemoNode>,
-    // devices: HashMap<DeviceId, Box<dyn DeviceTrait>>,
-
-    // managed_devices: Vec<Box<dyn ManagedDeviceTrait<Error = ManagedDeviceError>>>,
-    // devices: Vec<Box<dyn DeviceTrait>>,
+    pending_queries: Vec<PendingQuery>,
 }
-
-use embedded_can::Frame as EmbeddedFrame;
 
 impl Controller {
     pub(crate) fn new(
         mut iface: CanInterface,
         config: CaniotConfig,
-        // managed_devices: Vec<Box<dyn ManagedDeviceTrait<Error = ManagedDeviceError>>>,
-        // managed_devices: Vec<Box<dyn DeviceTrait>>,
         shutdown: Shutdown,
         rt: Arc<Runtime>,
     ) -> Result<Self, ControllerError> {
@@ -116,17 +103,7 @@ impl Controller {
 
         #[cfg(feature = "emu")]
         {
-            let mut dev1 = emu::Device::new(1, Duration::from_secs(5));
-            dev1.add_behavior(Box::new(emu::CounterBehavior::default()));
-            iface.add_device(dev1);
-
-            let mut dev2 = emu::Device::new(2, Duration::from_secs(5));
-            dev2.add_behavior(Box::new(emu::EchoBehavior::default()));
-            iface.add_device(dev2);
-
-            let mut dev3 = emu::Device::new(3, Duration::from_secs(5));
-            dev3.add_behavior(Box::new(emu::RandomBehavior::default()));
-            iface.add_device(dev3);
+            emu_pool1_add_devices_to_iface(&mut iface);
         }
 
         // sanity check on managed devices
@@ -163,21 +140,12 @@ impl Controller {
             shutdown,
             receiver,
             handle: actor::ControllerHandle { sender },
-            dev_garage: Device::<GarageNode>::new(caniot::DeviceId::try_from(1).unwrap()),
-            dev_demo: Device::<DemoNode>::new(caniot::DeviceId {
-                class: 1,
-                sub_id: 7,
-            }),
         })
     }
 
     pub fn get_handle(&self) -> actor::ControllerHandle {
         self.handle.clone()
     }
-
-    // pub fn get_device_handle(&self, did: DeviceId) -> DeviceHandle {
-    //     self.handle.get_device(did)
-    // }
 
     async fn send_caniot_frame(
         &mut self,
