@@ -1,12 +1,9 @@
-use std::{
-    fmt::Debug,
-    time::{Instant},
-};
+use std::{fmt::Debug, time::Instant};
 
 use crate::caniot::{self as ct};
-use serde::{Serialize};
+use serde::Serialize;
 
-use super::traits::ControllerAPI;
+use super::super::traits::ControllerAPI;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
