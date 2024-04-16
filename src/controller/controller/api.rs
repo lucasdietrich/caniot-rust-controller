@@ -1,6 +1,6 @@
 use crate::controller::actor::ControllerMessage;
 
-use super::{traits::ControllerAPI, Controller};
+use super::{Controller, ControllerAPI};
 
 impl Controller {
     pub async fn handle_api_message(&mut self, message: ControllerMessage) {

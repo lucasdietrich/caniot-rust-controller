@@ -8,8 +8,8 @@ use crate::{
 use serde::Serialize;
 
 use super::{
-    traits::ControllerAPI, Controller, ControllerError, ControllerStats, DemoAction, DeviceStats,
-    GarageDoorCommand,
+    Controller, ControllerAPI, ControllerError, ControllerStats, DemoAction, GarageDoorCommand,
+    LDeviceStats,
 };
 
 #[derive(Debug)]
@@ -45,7 +45,7 @@ pub struct ControllerHandle {
 pub struct DeviceStatsEntry {
     pub device_id_did: u8,
     pub device_id: caniot::DeviceId,
-    pub stats: DeviceStats,
+    pub stats: LDeviceStats,
 }
 
 impl ControllerHandle {

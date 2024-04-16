@@ -1,6 +1,6 @@
 use crate::{
     caniot::{self, Endpoint, Response, Xps},
-    controller::{traits::ControllerAPI, ControllerError, Device, DeviceTrait, ManagedDeviceError},
+    controller::{ControllerAPI, ControllerError, LDevice, LDeviceTrait, LManagedDeviceError},
 };
 
 use super::super::super::caniot::*;
@@ -76,8 +76,8 @@ impl GarageNode {
     }
 }
 
-impl DeviceTrait for GarageNode {
-    fn handle_frame(&mut self, frame: &caniot::ResponseData) -> Result<(), ManagedDeviceError> {
+impl LDeviceTrait for GarageNode {
+    fn handle_frame(&mut self, frame: &caniot::ResponseData) -> Result<(), LManagedDeviceError> {
         match frame {
             caniot::ResponseData::Telemetry {
                 endpoint: Endpoint::BoardControl,
