@@ -1,17 +1,21 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
-use itertools::partition;
+use embedded_can::Frame;
+use itertools::{partition, Itertools};
 use tokio::runtime::Runtime;
 
 use crate::bus::{CanInterface, CanInterfaceError};
 use crate::caniot::emu::emu_pool1_add_devices_to_iface;
 use crate::caniot::DeviceId;
 use crate::caniot::{self, emu};
+use crate::controller::Device;
 use crate::shutdown::Shutdown;
 
 use super::super::ControllerAPI;
 use super::super::{actor, DemoNode, GarageNode, LDevice};
+use super::PendingQuery;
 
 use log::info;
 use serde::{Deserialize, Serialize};
@@ -63,33 +67,21 @@ pub enum ControllerError {
     CaniotConversionError(#[from] caniot::ConversionError),
 }
 
-#[derive(Debug)]
-struct PendingQuery {
-    // query pending
-    query: caniot::Request,
-
-    // closure to call when response is received
-    sender: oneshot::Sender<Result<caniot::Response, ControllerError>>,
-
-    // timeout in milliseconds
-    timeout_ms: u32,
-
-    // time when query was sent
-    sent_at: std::time::Instant,
-}
-
 pub struct Controller {
+    // CAN interface
     pub iface: CanInterface,
-    pub stats: ControllerStats,
-    pub config: CaniotConfig,
 
     // Service
+    pub config: CaniotConfig,
+    pub stats: ControllerStats,
     rt: Arc<Runtime>,
     shutdown: Shutdown,
     receiver: mpsc::Receiver<actor::ControllerMessage>,
     handle: actor::ControllerHandle,
 
+    // State
     pending_queries: Vec<PendingQuery>,
+    devices: HashMap<DeviceId, Device>,
 }
 
 impl Controller {
@@ -106,40 +98,16 @@ impl Controller {
             emu_pool1_add_devices_to_iface(&mut iface);
         }
 
-        // sanity check on managed devices
-        // if managed_devices.len() > DEVICES_COUNT {
-        //     return Err(ControllerError::DuplicateDID);
-        // }
-
-        // // filter duplicates
-        // let managed_devices: Vec<Box<_>> = managed_devices
-        //     .into_iter()
-        //     .sorted_by_key(|device| device.get_did().as_u8())
-        //     .dedup_by(|a, b| a.get_did().as_u8() == b.get_did().as_u8())
-        //     .collect();
-
-        // // initialize devices
-        // let devices = (0..DEVICES_COUNT)
-        //     .into_iter()
-        //     .map(|did| Device {
-        //         device_id: DeviceId::new(did as u8).unwrap(),
-        //         last_seen: None,
-        //         stats: DeviceStats::default(),
-        //     })
-        //     .collect::<Vec<_>>()
-        //     .try_into()
-        //     .unwrap();
-
         Ok(Self {
             iface,
-            stats: ControllerStats::default(),
             config,
-            // devices: managed_devices,
-            pending_queries: Vec::new(),
+            stats: ControllerStats::default(),
             rt,
             shutdown,
             receiver,
             handle: actor::ControllerHandle { sender },
+            pending_queries: Vec::new(),
+            devices: HashMap::new(),
         })
     }
 
@@ -173,25 +141,26 @@ impl Controller {
             error!("Failed to send CANIOT frame: {:?}", err);
             let _ = sender.send(Err(err)); // Send None, but do not panic if receiver is dropped
         } else {
-            self.pending_queries.push(PendingQuery {
-                query: request,
-                sender,
-                timeout_ms,
-                sent_at: std::time::Instant::now(),
-            })
+            self.pending_queries
+                .push(PendingQuery::new(request, sender, timeout_ms));
         }
     }
 
-    async fn handle_can_frame(&mut self, frame: CanFrame) -> Result<(), ControllerError> {
-        let frame = caniot::Response::try_from(frame)?;
-
-        info!("RX {}", frame);
-
-        // update stats
+    async fn handle_caniot_response(
+        &mut self,
+        frame: caniot::Response,
+    ) -> Result<(), ControllerError> {
         self.stats.rx += 1;
 
-        // let device_index = frame.device_id.as_u8() as usize;
-        // let device = &mut self.devices[device_index];
+        // Get or create device
+        let device = if let Some(device) = self.devices.get(&frame.device_id) {
+            device
+        } else {
+            let mut new_device = Device::new(frame.device_id);
+            new_device.update_last_seen();
+            self.devices.insert(frame.device_id, new_device);
+            self.devices.get(&frame.device_id).unwrap()
+        };
 
         // device.process_incoming_response(&frame);
 
@@ -199,11 +168,11 @@ impl Controller {
 
         let pivot = self
             .pending_queries
-            .partition_point(|pq| caniot::is_response_to(&pq.query, &frame).is_response());
+            .partition_point(|pq| pq.match_response(&frame));
 
         // if a frame can answer multiple pending queries, remove all of them
         for pq in self.pending_queries.drain(..pivot) {
-            let _ = pq.sender.send(Ok(frame.clone())); // Do not panic if receiver is dropped
+            let _ = pq.reply_with_frame(frame.clone()); // Do not panic if receiver is dropped
         }
 
         Ok(())
@@ -216,7 +185,7 @@ impl Controller {
         let neareast_timeout = self
             .pending_queries
             .iter()
-            .map(|pq| pq.sent_at + Duration::from_millis(pq.timeout_ms as u64))
+            .map(|pq| pq.get_timeout_instant())
             .min();
 
         if let Some(neareast_timeout) = neareast_timeout {
@@ -234,9 +203,7 @@ impl Controller {
         let now = std::time::Instant::now();
 
         // place all timed out queries at the end of the vector
-        let split_index = partition(&mut self.pending_queries, |pq| {
-            now.duration_since(pq.sent_at) < Duration::from_millis(pq.timeout_ms as u64)
-        });
+        let split_index = partition(&mut self.pending_queries, |pq| !pq.has_timed_out(&now));
 
         // remove timed out queries
         let timed_out_queries = self.pending_queries.split_off(split_index);
@@ -244,10 +211,10 @@ impl Controller {
         // send timeout to all timed out queries
         for pq in timed_out_queries {
             warn!(
-                "Pending query timeout {} after {} ms",
+                "Pending query {} timed out after {} ms",
                 pq.query, pq.timeout_ms
             );
-            let _ = pq.sender.send(Err(ControllerError::Timeout)); // Do not panic if receiver is dropped
+            pq.reply(Err(ControllerError::Timeout));
         }
     }
 
@@ -260,15 +227,18 @@ impl Controller {
                     self.handle_api_message(message).await;
                 },
                 Some(frame) = self.iface.recv_poll() => {
-                    match self.handle_can_frame(frame).await {
-                        Ok(_) => {
-                            // nothing more to do
+                    match caniot::Response::try_from(frame) {
+                        Ok(frame) => {
+                            info!("RX {}", frame);
+                            let result = self.handle_caniot_response(frame).await;
+                            if let Err(err) = result {
+                                error!("Failed to handle CANIOT frame {}", err);
+                            }
                         },
-                        Err(ControllerError::CaniotConversionError(err)) => {
+                        Err(err) => {
                             self.stats.malformed += 1;
                             error!("Failed to convert into CANIOT frame {}", err)
                         },
-                        _ => {}
                     }
                 },
                 _ = sleep(time_to_next_timeout) => {
@@ -287,18 +257,16 @@ impl Controller {
     }
 
     pub fn get_devices_stats(&self) -> Vec<actor::DeviceStatsEntry> {
-        todo!();
-        // self.devices
-        //     .iter()
-        //     .filter(|device| device.last_seen.is_some())
-        //     .sorted_by_key(|device| device.last_seen.unwrap())
-        //     .rev()
-        //     .map(|device| actor::DeviceStatsEntry {
-        //         device_id_did: device.device_id.as_u8(),
-        //         device_id: device.device_id,
-        //         stats: device.stats,
-        //     })
-        //     .collect()
+        self.devices
+            .iter()
+            .filter(|(_did, device)| device.last_seen.is_some())
+            .sorted_by_key(|(_did, device)| device.last_seen.unwrap())
+            .rev()
+            .map(|(_did, device)| actor::DeviceStatsEntry {
+                did: device.did,
+                stats: device.stats,
+            })
+            .collect()
     }
 }
 

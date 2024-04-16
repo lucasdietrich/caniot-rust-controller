@@ -1,26 +1,14 @@
 use core::fmt;
 use std::fmt::Debug;
 
-
-
-
-use serde::{Serialize};
+use serde::Serialize;
 
 use super::ProtocolError;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Serialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct DeviceId {
     pub class: u8,
     pub sub_id: u8,
-}
-
-impl Serialize for DeviceId {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        format!("{}: ({},{})", self.to_u8(), self.class, self.sub_id).serialize(serializer)
-    }
 }
 
 impl TryFrom<u8> for DeviceId {
