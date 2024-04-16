@@ -1,7 +1,4 @@
-
-use tonic::{
-    Request, Response, Status,
-};
+use tonic::{Request, Response, Status};
 
 use model::can_controller_server::{CanController, CanControllerServer};
 
@@ -10,8 +7,6 @@ use model::*;
 pub mod model {
     tonic::include_proto!("legacy");
 }
-
-
 
 use crate::{
     controller::{ControllerError, DeviceAction, GarageDoorCommand},

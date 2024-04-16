@@ -30,3 +30,27 @@ message TelemetryRequest {
 }
 
 message TelemetryResponse { string message = 1; }
+
+service CaniotDevicesService {
+  rpc GetList(google.protobuf.Empty) returns (DevicesList) {}
+}
+
+message DeviceStats {
+  uint32 rx = 1;
+  uint32 tx = 2;
+  uint32 telemetry_rx = 3;
+  uint32 command_tx = 4;
+  uint32 attribute_rx = 5;
+  uint32 attribute_tx = 6;
+  uint32 err_rx = 7;
+}
+
+message Device {
+  DeviceId did = 1;
+  string name = 2;
+  string status = 6;
+  google.protobuf.Timestamp lastSeen = 7;
+  DeviceStats stats = 8;
+}
+
+message DevicesList { repeated Device devices = 1; }

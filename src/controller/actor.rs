@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use tokio::sync::{mpsc, oneshot};
 
 use crate::{
@@ -44,6 +45,7 @@ pub struct ControllerHandle {
 #[derive(Debug, Clone, Serialize)]
 pub struct DeviceStatsEntry {
     pub did: caniot::DeviceId,
+    pub last_seen: Option<DateTime<Utc>>,
     pub stats: DeviceStats,
 }
 

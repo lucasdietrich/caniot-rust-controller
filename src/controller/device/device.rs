@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use serde::Serialize;
 use std::time::Instant;
 
@@ -17,7 +18,7 @@ pub struct DeviceStats {
 #[derive(Debug, Clone, Copy)]
 pub struct Device {
     pub did: DeviceId,
-    pub last_seen: Option<Instant>,
+    pub last_seen: Option<DateTime<Utc>>,
     pub stats: DeviceStats,
 }
 
@@ -31,7 +32,7 @@ impl Device {
     }
 
     pub fn mark_last_seen(&mut self) {
-        self.last_seen = Some(Instant::now());
+        self.last_seen = Some(Utc::now());
     }
 
     pub fn handle_frame(&mut self, frame: &ResponseData) {

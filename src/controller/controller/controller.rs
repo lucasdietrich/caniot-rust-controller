@@ -263,6 +263,7 @@ impl Controller {
             .rev()
             .map(|(_did, device)| actor::DeviceStatsEntry {
                 did: device.did,
+                last_seen: device.last_seen,
                 stats: device.stats,
             })
             .collect()
