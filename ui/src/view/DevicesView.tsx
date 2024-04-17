@@ -7,7 +7,7 @@ import devicesStore from "../store/DevicesStore";
 
 function DevicesView() {
   const [devicesList, setDevicesList] = useState<DevicesList | undefined>(
-    undefined
+    undefined,
   );
   const [refreshData, setRefreshData] = useState<boolean>(false);
 

@@ -3,9 +3,10 @@
 ## Build for Raspberry Pi 3
 
 Requirements:
+
 - [Rust](https://www.rust-lang.org/tools/install) version 1.71.0
-   - Rustup target `armv7-unknown-linux-gnueabihf` (install with `rustup target add armv7-unknown-linux-gnueabihf`)
-- Yocto Poky SDK for Raspberry Pi 3 (*Hypirl* personnal distribution)
+  - Rustup target `armv7-unknown-linux-gnueabihf` (install with `rustup target add armv7-unknown-linux-gnueabihf`)
+- Yocto Poky SDK for Raspberry Pi 3 (_Hypirl_ personnal distribution)
 - `sudo dnf install protobuf-compiler protobuf-devel`
 - `sudo dnf install grpcurl` (optional: for testing purpose)
 
@@ -28,7 +29,7 @@ rustflags = [
 ]
 ```
 
-Build with 
+Build with
 
     cargo build --target=armv7-unknown-linux-gnueabihf --release --verbose`
 
@@ -52,12 +53,14 @@ Run with
 
     ./caniot-rust-controller
 
-## TODO
+## TODO (controller)
 
 - Allow to set custom configuration file path: `./caniot-rust-controller -c /etc/caniot/caniot-controller.toml`
 - Timestamp received CAN frames (wait for this feature of `socketcan` crate https://github.com/socketcan-rs/socketcan-rs/issues/22)
-- Implent complete shutdown mecanism: https://tokio.rs/tokio/topics/shutdown
-- Tune log level of rocket server
-- Implement Request::to_can_frame() method
 - Improve logging: make this shorter `[2023-09-24T09:46:24.759Z INFO  caniot_rctrl::can] RX Telemetry Response (9: 1,1): ep-2 / 12 00 11 00 14 00 22 00` -> `[2023-09-24T09:46:24.759Z INFO can] RX Telemetry Response (9: 1,1): ep-2 / 12 00 11 00 14 00 22 00`
-- Put &rt in shared state
+- Logger
+- Database
+
+## TODO (UI)
+
+- Solve the resolution problem of: `import { Timestamp } from "google-protobuf/google/protobuf/timestamp_pb";`

@@ -2,6 +2,11 @@ use std::collections::HashMap;
 
 use env_logger;
 
+// struct Config {
+//     filepath: String,
+//     modules_level: HashMap<String, log::LevelFilter>,
+// }
+
 pub fn init_logger() {
     let mut modules = HashMap::<&str, log::LevelFilter>::new();
 

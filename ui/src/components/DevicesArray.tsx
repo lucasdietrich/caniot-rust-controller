@@ -1,6 +1,8 @@
+// @ts-check
+
 import { DevicesList } from "@caniot-controller/caniot-api-grpc-web/api/ng_pb";
+import { Timestamp } from "google-protobuf/google/protobuf/timestamp_pb";
 import { Table } from "antd";
-import React from "react";
 
 interface IProps {
   devicesList: DevicesList | undefined;
@@ -25,10 +27,13 @@ function DevicesTable({ devicesList }: IProps) {
   ];
 
   const dataSource = devicesList.getDevicesList().map((device, index) => {
+    let lastseen: Timestamp | undefined = device.getLastseen();
+    let lastseen_fmt = lastseen?.toDate().toLocaleString();
+
     return {
       key: index,
       did: device.getDid()?.getCls() + " / " + device.getDid()?.getSid(),
-      last_seen: device.getLastseen()?.toDate().toString() || "",
+      last_seen: lastseen_fmt || "",
     };
   });
 
