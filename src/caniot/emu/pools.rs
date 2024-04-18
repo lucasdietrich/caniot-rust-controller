@@ -1,8 +1,11 @@
 use std::time::Duration;
 
-use crate::bus::CanInterface;
+use crate::{
+    bus::CanInterface,
+    caniot::{self, DeviceId},
+};
 
-use super::Device;
+use super::{Device, HeatersController};
 
 pub fn emu_pool1_add_devices_to_iface(iface: &mut CanInterface) {
     let mut dev1 = Device::new(1, Duration::from_secs(5));
@@ -25,4 +28,16 @@ pub fn emu_pool1_add_devices_to_iface(iface: &mut CanInterface) {
             dev
         })
         .for_each(|dev| iface.add_device(dev));
+}
+
+pub fn emu_pool2_realistic_add_devices_to_iface(iface: &mut CanInterface) {
+    // Add heaters controllers at
+    let mut heaters_controller = Device::new(
+        DeviceId::new(1, 0).unwrap().to_u8(),
+        Duration::from_secs(30),
+    );
+    let heaters_behavior = HeatersController::new();
+    heaters_controller.set_telemetry_endpoint(caniot::Endpoint::ApplicationDefault);
+    heaters_controller.add_behavior(Box::new(heaters_behavior));
+    iface.add_device(heaters_controller);
 }

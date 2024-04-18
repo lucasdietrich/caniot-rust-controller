@@ -2,9 +2,9 @@ use num_traits::FromPrimitive;
 
 use super::*;
 
-trait TelemetryPayload<'a>: TryFrom<&'a [u8]> {}
+trait PayloadTrait<'a>: TryFrom<&'a [u8]> {}
 
-trait TelemetryCommand: Into<[u8; 7]> {}
+trait CommandTrait: Into<[u8; 7]> {}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SystemCommand {
@@ -74,7 +74,7 @@ pub struct Class0Payload {
     pub temp_out: [i16; 3],
 }
 
-impl TelemetryPayload<'_> for Class0Payload {}
+impl PayloadTrait<'_> for Class0Payload {}
 
 impl TryFrom<&[u8]> for Class0Payload {
     type Error = ProtocolError;
@@ -115,7 +115,7 @@ pub struct Class0Command {
     pub crl2: Xps,
 }
 
-impl TelemetryCommand for Class0Command {}
+impl CommandTrait for Class0Command {}
 impl Into<[u8; 7]> for Class0Command {
     fn into(self) -> [u8; 7] {
         let mut payload = [0_u8; 7];
@@ -138,7 +138,7 @@ pub struct Class1Payload {
     pub temp_out: [i16; 3],
 }
 
-impl TelemetryPayload<'_> for Class1Payload {}
+impl PayloadTrait<'_> for Class1Payload {}
 impl TryFrom<&[u8]> for Class1Payload {
     type Error = ProtocolError;
 
@@ -208,7 +208,7 @@ pub struct Class1Command {
     pub ios: [Xps; CLASS1_IO_COUNT],
 }
 
-impl TelemetryCommand for Class1Command {}
+impl CommandTrait for Class1Command {}
 impl Into<[u8; 7]> for Class1Command {
     fn into(self) -> [u8; 7] {
         let mut payload = [0; 7];
@@ -273,8 +273,70 @@ pub struct HeatingControllerCommand {
     pub modes: [HeatingMode; 4],
 }
 
+impl TryFrom<&[u8]> for HeatingControllerCommand {
+    type Error = ProtocolError;
+
+    fn try_from(payload: &[u8]) -> Result<Self, ProtocolError> {
+        if payload.len() >= 3 {
+            Ok(HeatingControllerCommand {
+                modes: [
+                    HeatingMode::from_u8(payload[0] & 0xf).unwrap(),
+                    HeatingMode::from_u8((payload[0] & 0xf0) >> 4).unwrap(),
+                    HeatingMode::from_u8(payload[1] & 0xf).unwrap(),
+                    HeatingMode::from_u8((payload[1] & 0xf0) >> 4).unwrap(),
+                ],
+            })
+        } else {
+            Err(ProtocolError::PayloadDecodeError)
+        }
+    }
+}
+
+impl Into<Vec<u8>> for HeatingControllerCommand {
+    fn into(self) -> Vec<u8> {
+        let mut payload = Vec::with_capacity(3);
+
+        payload.push(self.modes[0] as u8 | (self.modes[1] as u8) << 4);
+        payload.push(self.modes[2] as u8 | (self.modes[3] as u8) << 4);
+
+        payload
+    }
+}
+
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub struct HeatingControllerPayload {
     pub modes: [HeatingMode; 4],
     pub power_status: bool,
+}
+
+impl TryFrom<&[u8]> for HeatingControllerPayload {
+    type Error = ProtocolError;
+
+    fn try_from(payload: &[u8]) -> Result<Self, ProtocolError> {
+        if payload.len() >= 3 {
+            Ok(HeatingControllerPayload {
+                modes: [
+                    HeatingMode::from_u8(payload[0] & 0xf).unwrap(),
+                    HeatingMode::from_u8((payload[0] & 0xf0) >> 4).unwrap(),
+                    HeatingMode::from_u8(payload[1] & 0xf).unwrap(),
+                    HeatingMode::from_u8((payload[1] & 0xf0) >> 4).unwrap(),
+                ],
+                power_status: payload[2] & 0b0000_0001 != 0,
+            })
+        } else {
+            Err(ProtocolError::PayloadDecodeError)
+        }
+    }
+}
+
+impl Into<Vec<u8>> for HeatingControllerPayload {
+    fn into(self) -> Vec<u8> {
+        let mut payload = Vec::with_capacity(3);
+
+        payload.push(self.modes[0] as u8 | (self.modes[1] as u8) << 4);
+        payload.push(self.modes[2] as u8 | (self.modes[3] as u8) << 4);
+        payload.push(self.power_status as u8);
+
+        payload
+    }
 }

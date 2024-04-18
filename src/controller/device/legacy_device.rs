@@ -75,7 +75,12 @@ where
         let cmd: [u8; 8] = cmd.into();
 
         let _z = api
-            .query_command(self.device_id, ct::Endpoint::BoardControl, cmd.into(), 1000)
+            .query_command(
+                self.device_id,
+                ct::Endpoint::BoardControl,
+                cmd.into(),
+                Some(1000),
+            )
             .await
             .unwrap();
 

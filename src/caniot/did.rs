@@ -32,6 +32,14 @@ impl DeviceId {
         sub_id: 0x7,
     };
 
+    pub fn new(class: u8, sub_id: u8) -> Result<Self, ProtocolError> {
+        if class > 0x7 || sub_id > 0x7 {
+            Err(ProtocolError::DeviceIdCreationError)
+        } else {
+            Ok(DeviceId { class, sub_id })
+        }
+    }
+
     pub fn from_u8(did: u8) -> Result<Self, ProtocolError> {
         Self::try_from(did)
     }

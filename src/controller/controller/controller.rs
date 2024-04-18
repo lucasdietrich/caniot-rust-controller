@@ -7,7 +7,9 @@ use itertools::{partition, Itertools};
 use tokio::runtime::Runtime;
 
 use crate::bus::{CanInterface, CanInterfaceError};
-use crate::caniot::emu::emu_pool1_add_devices_to_iface;
+use crate::caniot::emu::{
+    emu_pool1_add_devices_to_iface, emu_pool2_realistic_add_devices_to_iface,
+};
 use crate::caniot::DeviceId;
 use crate::caniot::{self, emu};
 use crate::controller::Device;
@@ -26,6 +28,7 @@ use tokio::select;
 use tokio::sync::{mpsc, oneshot};
 use tokio::time::sleep;
 
+const QUERY_DEFAULT_TIMEOUT_MS: u32 = 1000; // 1s
 const CHANNEL_SIZE: usize = 10;
 const DEVICES_COUNT: usize = 63;
 
@@ -95,7 +98,8 @@ impl Controller {
 
         #[cfg(feature = "emu")]
         {
-            emu_pool1_add_devices_to_iface(&mut iface);
+            // emu_pool1_add_devices_to_iface(&mut iface);
+            emu_pool2_realistic_add_devices_to_iface(&mut iface);
         }
 
         Ok(Self {
@@ -105,7 +109,7 @@ impl Controller {
             rt,
             shutdown,
             receiver,
-            handle: actor::ControllerHandle { sender },
+            handle: actor::ControllerHandle::new(sender),
             pending_queries: Vec::new(),
             devices: HashMap::new(),
         })
@@ -115,7 +119,7 @@ impl Controller {
         self.handle.clone()
     }
 
-    async fn send_caniot_frame(
+    pub async fn send_caniot_frame(
         &mut self,
         request: &caniot::Request,
     ) -> Result<(), ControllerError> {
@@ -131,9 +135,11 @@ impl Controller {
     pub async fn query_sched(
         &mut self,
         request: caniot::Request,
-        timeout_ms: u32,
+        timeout_ms: Option<u32>,
         sender: oneshot::Sender<Result<caniot::Response, ControllerError>>,
     ) {
+        let timeout_ms = timeout_ms.unwrap_or(QUERY_DEFAULT_TIMEOUT_MS);
+
         if request.device_id == DeviceId::BROADCAST {
             error!("BROADCAST query not supported");
             let _ = sender.send(Err(ControllerError::UnsupportedQuery));
@@ -267,25 +273,5 @@ impl Controller {
                 stats: device.stats,
             })
             .collect()
-    }
-}
-
-#[async_trait]
-impl ControllerAPI for Controller {
-    async fn query(
-        &mut self,
-        frame: caniot::Request,
-        timeout_ms: u32,
-    ) -> Result<caniot::Response, ControllerError> {
-        let (sender, receiver) = oneshot::channel();
-        self.query_sched(frame, timeout_ms, sender).await;
-        self.rt
-            .spawn(async move { receiver.await.unwrap() })
-            .await
-            .unwrap()
-    }
-
-    async fn send(&mut self, frame: caniot::Request) -> Result<(), ControllerError> {
-        self.send_caniot_frame(&frame).await
     }
 }

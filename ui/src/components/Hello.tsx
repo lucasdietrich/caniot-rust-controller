@@ -1,7 +1,7 @@
 import {
   HelloRequest,
   HelloResponse,
-} from "@caniot-controller/caniot-api-grpc-web/api/ng_pb";
+} from "@caniot-controller/caniot-api-grpc-web/api/ng_internal_pb";
 import internalStore from "../store/InternalStore";
 import { Divider, List, Typography } from "antd";
 import { PropsWithChildren, useEffect, useState } from "react";

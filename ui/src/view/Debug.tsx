@@ -1,18 +1,22 @@
-import { Row, Col, Card, Button, List, Typography } from "antd";
+import { Row, Col, Card, Button, List, Typography, Space } from "antd";
 import Hello from "../components/Hello";
 import { ReloadOutlined } from "@ant-design/icons";
 import HelloCard from "./HelloCard";
 import ListLabelledItem from "../components/ListLabelledItem";
+import CaniotFramesTable from "../components/CaniotFramesTable";
+import CaniotQueryForm from "../components/CaniotQueryForm";
 
 function Debug() {
   return (
     <>
-      <Row gutter={16}>
-        <Col span={12}>
-          <HelloCard user_name="Lucas" />
-        </Col>
-      </Row>
-      <Row gutter={16} style={{ paddingTop: 20 }}></Row>
+      <Space direction="vertical" size="middle" style={{ display: "flex" }}>
+        <Card title="Query CANIOT">
+          <CaniotQueryForm></CaniotQueryForm>
+        </Card>
+        <Card>
+          <CaniotFramesTable></CaniotFramesTable>
+        </Card>
+      </Space>
     </>
   );
 }

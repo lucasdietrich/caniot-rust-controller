@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package ng.heaters;
+
+import "google/protobuf/empty.proto";
+
+service HeatersService {
+  rpc GetState(google.protobuf.Empty) returns (Status) {}
+  rpc SetState(Command) returns (Status) {}
+}
+
+enum State {
+  NONE = 0;
+  COMFORT = 1;
+  COMFORT_MIN_1 = 2;
+  COMFORT_MIN_2 = 3;
+  COMFORT_ENERGY_SAVING = 4;
+  FROST_FREE = 5;
+  OFF = 6;
+}
+
+message Command { repeated State heater = 1; }
+
+message Status {
+  repeated State heater = 1;
+  bool power_status = 2;
+}

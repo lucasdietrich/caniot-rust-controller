@@ -32,11 +32,21 @@ impl Device {
         }
     }
 
+    pub fn set_telemetry_endpoint(&mut self, endpoint: Endpoint) {
+        self.telemetry_endpoint = endpoint;
+    }
+
+    pub fn set_telemetry_interval(&mut self, interval: Duration) {
+        self.telemetry_interval = interval;
+    }
+
     fn read_attribute(&self, attr: impl TryInto<Attribute>) -> Option<u32> {
         match attr.try_into() {
             Ok(Attribute::NodeId) => Some(self.did.to_u8() as u32),
             Ok(Attribute::SystemUptime) => Some(self.start_time.elapsed().as_millis() as u32),
-            Ok(Attribute::ConfigTelemetryPeriod) => Some(self.telemetry_interval.as_millis() as u32),
+            Ok(Attribute::ConfigTelemetryPeriod) => {
+                Some(self.telemetry_interval.as_millis() as u32)
+            }
             _ => None,
         }
     }
@@ -46,7 +56,7 @@ impl Device {
             Ok(Attribute::ConfigTelemetryPeriod) => {
                 self.telemetry_interval = Duration::from_millis(value as u64);
                 true
-            },
+            }
             _ => false,
         }
     }

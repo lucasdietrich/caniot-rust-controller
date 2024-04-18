@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package ng;
+
+import "google/protobuf/timestamp.proto";
+
+service InternalService {
+  rpc Hello(HelloRequest) returns (HelloResponse) {}
+}
+
+message HelloRequest { string name = 1; }
+
+message HelloResponse {
+  string message = 1;
+  google.protobuf.Timestamp timestamp = 2;
+  map<string, uint32> map = 3;
+  repeated string strings = 4;
+  bytes bytes = 12;
+}

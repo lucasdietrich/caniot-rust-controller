@@ -1,6 +1,6 @@
 // @ts-check
 
-import { DevicesList } from "@caniot-controller/caniot-api-grpc-web/api/ng_pb";
+import { DevicesList } from "@caniot-controller/caniot-api-grpc-web/api/ng_devices_pb";
 import { Timestamp } from "google-protobuf/google/protobuf/timestamp_pb";
 import { Table } from "antd";
 

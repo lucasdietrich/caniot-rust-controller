@@ -6,12 +6,13 @@ import Home from "./view/Home";
 import About from "./view/About";
 import DevicesView from "./view/DevicesView";
 import AppMenu from "./components/Menu";
-import Heaters from "./view/Heaters";
+import HeatersView from "./view/HeatersView";
 import GarageDoors from "./view/GarageDoors";
 import Alarms from "./view/Alarms";
 import Settings from "./view/Settings";
 import NoMatch from "./view/NoMatch";
 import Debug from "./view/Debug";
+import DemoView from "./view/DemoView";
 
 const { Content, Sider } = Layout;
 
@@ -39,11 +40,12 @@ const App: React.FC = () => {
             <Route path="/" element={<Home />} />
             <Route path="/devices" element={<DevicesView />} />
             <Route path="/about" element={<About />} />
-            <Route path="/devices/heaters" element={<Heaters />} />
+            <Route path="/debug" element={<Debug />} />
+            <Route path="/devices/heaters" element={<HeatersView />} />
             <Route path="/devices/garage" element={<GarageDoors />} />
             <Route path="/devices/alarms" element={<Alarms />} />
             <Route path="/settings" element={<Settings />} />
-            <Route path="/debug" element={<Debug />} />
+            <Route path="/demo" element={<DemoView />} />
             <Route path="*" element={<NoMatch />} />
           </Routes>
         </Content>

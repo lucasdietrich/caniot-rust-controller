@@ -5,9 +5,9 @@ import { HandleError } from "./helpers";
 import { Empty } from "google-protobuf/google/protobuf/empty_pb";
 // import google_protobuf_empty_pb from "google-protobuf/google/protobuf/empty_pb.js";
 
-import { DevicesList } from "@caniot-controller/caniot-api-grpc-web/api/ng_pb";
+import { DevicesList } from "@caniot-controller/caniot-api-grpc-web/api/ng_devices_pb";
 
-import { CaniotDevicesServiceClient } from "@caniot-controller/caniot-api-grpc-web/api/NgServiceClientPb";
+import { CaniotDevicesServiceClient } from "@caniot-controller/caniot-api-grpc-web/api/Ng_devicesServiceClientPb";
 
 class DevicesStore extends EventEmitter {
   client: CaniotDevicesServiceClient;

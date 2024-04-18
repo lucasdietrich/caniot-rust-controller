@@ -8,7 +8,7 @@ if [ "$1" = "hello" ]; then
     grpcurl -plaintext -import-path ./proto -proto $PROTO \
         -d '{"name": "Lucas"}' \
         $ADDR \
-        ng.CaniotControllerService/Hello
+        ng.InternalService/Hello
 else
     echo "Unknown argument $1"
     exit 1

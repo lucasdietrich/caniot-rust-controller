@@ -4,7 +4,7 @@ use std::fmt::Debug;
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 
-use serde::{Serialize};
+use serde::Serialize;
 
 pub const CANIOT_DEVICE_FILTER_ID: u32 = 1 << 2; /* bit 2 is 1 for response frames */
 pub const CANIOT_DEVICE_FILTER_MASK: u32 = 1 << 2; /* bit 2 is 1 to filter frames by direction */
@@ -40,6 +40,20 @@ pub enum Endpoint {
     Application1 = 1,
     Application2 = 2,
     BoardControl = 3,
+}
+
+impl TryFrom<i32> for Endpoint {
+    type Error = ConversionError;
+
+    fn try_from(value: i32) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(Endpoint::ApplicationDefault),
+            1 => Ok(Endpoint::Application1),
+            2 => Ok(Endpoint::Application2),
+            3 => Ok(Endpoint::BoardControl),
+            _ => Err(ConversionError::NotValidEndpoint),
+        }
+    }
 }
 
 impl fmt::Display for Endpoint {
@@ -109,7 +123,7 @@ impl TryFrom<EmbeddedId> for Id {
     fn try_from(value: EmbeddedId) -> Result<Self, Self::Error> {
         match value {
             EmbeddedId::Standard(id) => Ok(id.as_raw().into()),
-            EmbeddedId::Extended(_) => Err(ConversionError::NotValidCaniotId),
+            EmbeddedId::Extended(_) => Err(ConversionError::NotValidId),
         }
     }
 }
@@ -323,11 +337,13 @@ impl Frame<ResponseData> {
 #[derive(Error, Debug)]
 pub enum ConversionError {
     #[error("Not a valid caniot response frame")]
-    NotValidCaniotResponse,
+    NotValidResponse,
     #[error("Not a valid caniot request frame")]
-    NotValidCaniotRequest,
+    NotValidRequest,
     #[error("Not a valid caniot id")]
-    NotValidCaniotId,
+    NotValidId,
+    #[error("Not a valid caniot endpoint")]
+    NotValidEndpoint,
 }
 
 const ERROR_CODE_LEN: usize = 4;
@@ -384,7 +400,7 @@ impl TryFrom<CanFrame> for Frame<ResponseData> {
             if id.action == Action::Write {
                 parse_error_payload(id.get_endpoint(), &payload)?
             } else {
-                return Err(ConversionError::NotValidCaniotResponse);
+                return Err(ConversionError::NotValidResponse);
             }
         };
 
@@ -433,7 +449,7 @@ impl TryFrom<CanFrame> for Frame<RequestData> {
                 }
             }
         } else {
-            return Err(ConversionError::NotValidCaniotRequest);
+            return Err(ConversionError::NotValidRequest);
         };
 
         Ok(Frame {

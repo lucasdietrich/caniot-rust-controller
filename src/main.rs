@@ -8,6 +8,7 @@ mod bus;
 mod caniot;
 mod config;
 mod controller;
+mod database;
 mod init;
 mod logger;
 mod shared;

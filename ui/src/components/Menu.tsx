@@ -42,6 +42,7 @@ const menuItems: MenuProps["items"] = [
     children: [
       { key: "20", label: <Link to="/settings">Settings</Link> },
       { key: "21", label: <Link to="/about">About</Link> },
+      { key: "22", label: <Link to="/demo">Ant Demos</Link> },
     ],
   },
 ];

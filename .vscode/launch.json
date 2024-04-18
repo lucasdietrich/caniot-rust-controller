@@ -5,6 +5,25 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug local",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=caniot-rust-controller",
+                    "--package=caniot-rust-controller",
+                    "--features=emu"
+                ],
+                "filter": {
+                    "name": "caniot-rust-controller",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
             "name": "cppgdb Target",
             "type": "cppdbg",
             "request": "launch",
@@ -30,25 +49,6 @@
                     "ignoreFailures": false
                 }
             ],
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug local",
-            "cargo": {
-                "args": [
-                    "build",
-                    "--bin=caniot-rust-controller",
-                    "--package=caniot-rust-controller",
-                    "--features=emu"
-                ],
-                "filter": {
-                    "name": "caniot-rust-controller",
-                    "kind": "bin"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
         },
         {
             "type": "lldb",

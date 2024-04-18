@@ -3,19 +3,19 @@ use std::{collections::HashMap, time::SystemTime};
 use tonic::{Request, Response, Status};
 
 use super::model::{
-    caniot_controller_service_server::{CaniotControllerService, CaniotControllerServiceServer},
+    internal_service_server::{InternalService, InternalServiceServer},
     *,
 };
 
 use crate::{grpcserver::systemtime_to_prost_timestamp, shared::SharedHandle};
 
 #[derive(Debug)]
-pub struct ControllerAPI {
+pub struct NgInternal {
     pub shared: SharedHandle,
 }
 
 #[tonic::async_trait]
-impl CaniotControllerService for ControllerAPI {
+impl InternalService for NgInternal {
     async fn hello(
         &self,
         request: Request<HelloRequest>,
@@ -43,26 +43,20 @@ impl CaniotControllerService for ControllerAPI {
         Ok(Response::new(response))
     }
 
-    async fn hello_empty(&self, _request: Request<()>) -> Result<Response<()>, Status> {
-        Ok(Response::new(()))
-    }
+    // async fn request_telemetry(
+    //     &self,
+    //     request: Request<TelemetryRequest>,
+    // ) -> Result<Response<TelemetryResponse>, Status> {
+    //     println!("Got a request: {:?}", request);
 
-    async fn request_telemetry(
-        &self,
-        request: Request<TelemetryRequest>,
-    ) -> Result<Response<TelemetryResponse>, Status> {
-        println!("Got a request: {:?}", request);
+    //     let response = TelemetryResponse {
+    //         message: format!("Hello!"),
+    //     };
 
-        let response = TelemetryResponse {
-            message: format!("Hello!"),
-        };
-
-        Ok(Response::new(response))
-    }
+    //     Ok(Response::new(response))
+    // }
 }
 
-pub fn get_ng_caniot_controller_server(
-    shared: SharedHandle,
-) -> CaniotControllerServiceServer<ControllerAPI> {
-    CaniotControllerServiceServer::new(ControllerAPI { shared })
+pub fn get_ng_internal_server(shared: SharedHandle) -> InternalServiceServer<NgInternal> {
+    InternalServiceServer::new(NgInternal { shared })
 }

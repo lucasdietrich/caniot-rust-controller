@@ -27,7 +27,7 @@ pub enum ControllerMessage {
     },
     Query {
         query: caniot::Request,
-        timeout_ms: u32,
+        timeout_ms: Option<u32>,
         respond_to: Option<oneshot::Sender<Result<caniot::Response, ControllerError>>>,
     },
     DeviceAction {
@@ -35,11 +35,14 @@ pub enum ControllerMessage {
         action: DeviceAction,
         respond_to: oneshot::Sender<Result<(), ControllerError>>,
     },
+    // GetHeatersState {
+    //     respond_to: oneshot::Sender<Vec<LDeviceStats>>,
+    // },
 }
 
 #[derive(Debug, Clone)]
 pub struct ControllerHandle {
-    pub sender: mpsc::Sender<ControllerMessage>,
+    sender: mpsc::Sender<ControllerMessage>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -50,7 +53,16 @@ pub struct DeviceStatsEntry {
 }
 
 impl ControllerHandle {
-    async fn execute<R>(&self, closure: impl FnOnce(oneshot::Sender<R>) -> ControllerMessage) -> R {
+    pub fn new(sender: mpsc::Sender<ControllerMessage>) -> Self {
+        Self { sender }
+    }
+
+    /// Create a one-shot channel, embed it in a message using the provided closure, and send the
+    /// message to the controller actor. Wait for the response and return it.
+    async fn prepare_and_send<R>(
+        &self,
+        closure: impl FnOnce(oneshot::Sender<R>) -> ControllerMessage,
+    ) -> R {
         let (sender, receiver) = oneshot::channel();
         let message = closure(sender);
         self.sender.send(message).await.unwrap();
@@ -58,7 +70,7 @@ impl ControllerHandle {
     }
 
     pub async fn get_stats(&self) -> (ControllerStats, Vec<DeviceStatsEntry>, CanStats) {
-        self.execute(|respond_to| ControllerMessage::GetStats { respond_to })
+        self.prepare_and_send(|respond_to| ControllerMessage::GetStats { respond_to })
             .await
     }
 
@@ -67,7 +79,7 @@ impl ControllerHandle {
         did: Option<DeviceId>,
         action: DeviceAction,
     ) -> Result<(), ControllerError> {
-        self.execute(|respond_to| ControllerMessage::DeviceAction {
+        self.prepare_and_send(|respond_to| ControllerMessage::DeviceAction {
             did,
             action,
             respond_to,
@@ -79,11 +91,11 @@ impl ControllerHandle {
 #[async_trait]
 impl ControllerAPI for ControllerHandle {
     async fn query(
-        &mut self,
+        &self,
         frame: ct::Request,
-        timeout_ms: u32,
+        timeout_ms: Option<u32>,
     ) -> Result<ct::Response, ControllerError> {
-        self.execute(|sender| ControllerMessage::Query {
+        self.prepare_and_send(|sender| ControllerMessage::Query {
             query: frame,
             timeout_ms,
             respond_to: Some(sender),
@@ -91,10 +103,10 @@ impl ControllerAPI for ControllerHandle {
         .await
     }
 
-    async fn send(&mut self, frame: ct::Request) -> Result<(), ControllerError> {
-        self.execute(|_sender| ControllerMessage::Query {
+    async fn send(&self, frame: ct::Request) -> Result<(), ControllerError> {
+        self.prepare_and_send(|_sender| ControllerMessage::Query {
             query: frame,
-            timeout_ms: 0,
+            timeout_ms: None,
             respond_to: None,
         })
         .await

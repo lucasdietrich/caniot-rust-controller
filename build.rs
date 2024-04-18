@@ -1,5 +1,12 @@
 const PROTO_DIR: &str = "proto";
-const PROTO_FILES: &[&str] = &["proto/ng.proto", "proto/common.proto", "proto/legacy.proto"];
+const PROTO_FILES: &[&str] = &[
+    "proto/legacy.proto",
+    "proto/ng_controller.proto",
+    "proto/ng_devices.proto",
+    "proto/ng_internal.proto",
+    "proto/ng_heaters.proto",
+    "proto/common.proto",
+];
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     tonic_build::configure()

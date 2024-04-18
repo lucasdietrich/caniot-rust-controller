@@ -17,7 +17,7 @@ impl Controller {
                 if let Some(respond_to) = respond_to {
                     self.query_sched(query, timeout_ms, respond_to).await;
                 } else {
-                    let _ = self.send(query).await;
+                    let _ = self.send_caniot_frame(&query).await;
                 }
             }
             ControllerMessage::DeviceAction {

@@ -4,16 +4,16 @@ import { HandleError } from "./helpers";
 import {
   HelloRequest,
   HelloResponse,
-} from "@caniot-controller/caniot-api-grpc-web/api/ng_pb";
+} from "@caniot-controller/caniot-api-grpc-web/api/ng_internal_pb";
 
-import { CaniotControllerServiceClient } from "@caniot-controller/caniot-api-grpc-web/api/NgServiceClientPb";
+import { InternalServiceClient } from "@caniot-controller/caniot-api-grpc-web/api/Ng_internalServiceClientPb";
 
 class InternalStore extends EventEmitter {
-  client: CaniotControllerServiceClient;
+  client: InternalServiceClient;
 
   constructor() {
     super();
-    this.client = new CaniotControllerServiceClient("http://localhost:50051");
+    this.client = new InternalServiceClient("http://localhost:50051");
   }
 
   hello = (req: HelloRequest, callbackFunc: (resp: HelloResponse) => void) => {
