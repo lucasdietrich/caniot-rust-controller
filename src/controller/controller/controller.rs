@@ -13,7 +13,7 @@ use crate::caniot::emu::{
 use crate::caniot::{self, emu};
 use crate::caniot::{DeviceId, Request};
 use crate::controller::{
-    Device, DeviceActionTrait, DeviceError, DeviceEvent, DeviceResult, DeviceTrait,
+    Device, DeviceActionTrait, DeviceError, DeviceEvent, DeviceProcessOutput, DeviceTrait,
 };
 use crate::shutdown::Shutdown;
 

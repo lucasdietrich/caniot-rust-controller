@@ -1,11 +1,8 @@
-
-use log::{error};
+use log::error;
 use serde::{Deserialize, Serialize};
 
-use socketcan::{Error as CanError};
+use socketcan::Error as CanError;
 use thiserror::Error;
-
-
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct CanConfig {

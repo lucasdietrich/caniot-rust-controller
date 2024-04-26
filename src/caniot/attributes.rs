@@ -81,7 +81,7 @@ impl TryFrom<u16> for Attribute {
     fn try_from(mut value: u16) -> Result<Self, Self::Error> {
         // 4 lsb are the attribute part
         value &= 0xfff0;
-        
+
         match num_traits::FromPrimitive::from_u16(value) {
             Some(attr) => Ok(attr),
             None => Err(ProtocolError::UnknownAttributeKey),

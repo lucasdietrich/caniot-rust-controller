@@ -1,14 +1,24 @@
+use as_any::{AsAny, Downcast};
 use chrono::{DateTime, Utc};
 use rocket::Request;
 use serde::Serialize;
-use std::time::{Duration, Instant};
-
-use crate::{
-    caniot::{self, BlcCommand, BlcPayload, DeviceId, RequestData, Response, ResponseData},
-    controller::DeviceActionTrait,
+use std::{
+    ops::Deref,
+    time::{Duration, Instant},
 };
 
-use super::{DeviceError, DeviceTrait, DeviceWrapperTrait};
+use crate::{
+    caniot::{
+        self, emu::device, Action, BlcCommand, BlcPayload, DeviceId, RequestData, Response,
+        ResponseData,
+    },
+    controller::{DeviceActionResultTrait, DeviceActionTrait, DeviceActionWrapperTrait},
+};
+
+use super::{
+    actions::{DeviceAction, DeviceActionResult},
+    DeviceError, DeviceTrait, DeviceWrapperTrait,
+};
 
 #[derive(Serialize, Debug, Clone, Copy, Default)]
 pub struct DeviceStats {
@@ -35,6 +45,8 @@ pub struct Device {
     // Internal
     pub next_requested_process: Option<Instant>,
     pub last_process: Option<Instant>,
+    // Strategies (e.g. for retries)
+    // pub strategies: Vec<Box<dyn DeviceStrategy>>,
 }
 
 impl Device {
@@ -88,27 +100,20 @@ impl Device {
     }
 }
 
-pub enum DeviceAction {
-    Reset,
-    Inner(Box<dyn DeviceActionTrait>),
-}
-
-pub enum DeviceActionResult {
-    Reset,
-    Inner,
-    // Inner(Box<dyn DeviceActionResponseTrait>),
-}
-
 impl DeviceTrait for Device {
     type Action = DeviceAction;
 
-    fn handle_action(&mut self, action: &DeviceAction) -> Result<DeviceResult, DeviceError> {
+    fn handle_action(
+        &mut self,
+        action: &DeviceAction,
+    ) -> Result<DeviceProcessOutput<Self::Action>, DeviceError> {
         match action {
-            DeviceAction::Reset => Ok(DeviceResult::default()), // BlcCommand::HARDWARE_RESET
+            DeviceAction::Reset => Ok(DeviceProcessOutput::default()), // BlcCommand::HARDWARE_RESET
 
             DeviceAction::Inner(inner_action) => {
                 if let Some(inner_device) = self.inner.as_mut() {
-                    inner_device.handle_action(inner_action)
+                    let inner_result = inner_device.handle_action(inner_action)?;
+                    Ok(DeviceProcessOutput::from_inner_result(inner_result))
                 } else {
                     Err(DeviceError::NoInnerDevice)
                 }
@@ -116,7 +121,10 @@ impl DeviceTrait for Device {
         }
     }
 
-    fn handle_frame(&mut self, frame: &ResponseData) -> Result<DeviceResult, DeviceError> {
+    fn handle_frame(
+        &mut self,
+        frame: &ResponseData,
+    ) -> Result<DeviceProcessOutput<Self::Action>, DeviceError> {
         self.mark_last_seen();
 
         // update stats
@@ -127,35 +135,46 @@ impl DeviceTrait for Device {
         }
 
         if let Some(ref mut inner) = self.inner {
-            inner.handle_frame(frame)
+            let inner_result = inner.handle_frame(frame)?;
+            Ok(DeviceProcessOutput::from_inner_result(inner_result))
         } else {
-            Ok(DeviceResult::default())
+            Ok(DeviceProcessOutput::default())
         }
     }
 
-    fn process(&mut self) -> Result<DeviceResult, DeviceError> {
+    fn process(&mut self) -> Result<DeviceProcessOutput<Self::Action>, DeviceError> {
         if let Some(ref mut inner) = self.inner {
-            inner.process()
+            let inner_result = inner.process()?;
+            Ok(DeviceProcessOutput::from_inner_result(inner_result))
         } else {
-            Ok(DeviceResult::default())
+            Ok(DeviceProcessOutput::default())
         }
     }
 }
 
-#[derive(Default, Debug)]
-pub struct DeviceResult {
+#[derive(Debug)]
+pub struct DeviceProcessOutput<A: DeviceActionTrait> {
     // List of caniot requests to send to the device
     pub requests: Vec<RequestData>,
 
     // Time to wait before processing the device again
     pub next_process: Option<Duration>,
+
+    // Action result
+    pub action_result: Option<A::Result>,
 }
 
-impl DeviceResult {
-    pub fn request_immediate_process(&mut self) {
-        self.next_process = Some(Duration::from_secs(0));
+impl<A: DeviceActionTrait> Default for DeviceProcessOutput<A> {
+    fn default() -> Self {
+        Self {
+            requests: Vec::new(),
+            next_process: None,
+            action_result: None,
+        }
     }
+}
 
+impl<A: DeviceActionTrait> DeviceProcessOutput<A> {
     pub fn request_process_in(&mut self, delay: Duration) {
         self.next_process = Some(delay);
     }
@@ -168,9 +187,53 @@ impl DeviceResult {
         self.request_process_in(Duration::from_secs(delay));
     }
 
-    pub fn from_request_data(request_data: RequestData) -> Self {
-        let mut result: DeviceResult = Self::default();
+    pub fn request_process_immediate(&mut self) {
+        self.request_process_in_ms(0);
+    }
+
+    pub fn build_request_data(request_data: RequestData) -> Self {
+        let mut result = DeviceProcessOutput::<A>::default();
         result.requests.push(request_data);
         result
+    }
+
+    pub fn build_action_result(action_result: A::Result) -> Self {
+        let mut result = DeviceProcessOutput::<A>::default();
+        result.action_result = Some(action_result);
+        result
+    }
+}
+
+impl DeviceProcessOutput<DeviceAction> {
+    /// Converts a DeviceProcessOutputWrapper returned by an inner device to a DeviceProcessOutput<DeviceAction>
+    pub fn from_inner_result(inner: DeviceProcessOutputWrapper) -> Self {
+        DeviceProcessOutput {
+            requests: inner.requests,
+            next_process: inner.next_process,
+            action_result: inner.action_result.map(DeviceActionResult::new_boxed_inner),
+        }
+    }
+}
+
+impl<A> DeviceActionResultTrait for DeviceProcessOutput<A> where A: DeviceActionTrait {}
+
+pub struct DeviceProcessOutputWrapper {
+    pub requests: Vec<RequestData>,
+    pub next_process: Option<Duration>,
+    pub action_result: Option<Box<dyn DeviceActionResultTrait>>,
+}
+
+impl<A> From<DeviceProcessOutput<A>> for DeviceProcessOutputWrapper
+where
+    A: DeviceActionTrait,
+{
+    fn from(result: DeviceProcessOutput<A>) -> Self {
+        Self {
+            requests: result.requests,
+            next_process: result.next_process,
+            action_result: result
+                .action_result
+                .map(|r| Box::new(r) as Box<dyn DeviceActionResultTrait>),
+        }
     }
 }

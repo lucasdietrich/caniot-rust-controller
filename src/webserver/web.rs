@@ -1,5 +1,3 @@
-
-
 use rocket_dyn_templates::{context, Template};
 
 #[get("/hello/<name>")]

@@ -10,7 +10,7 @@ use serde::Serialize;
 
 use super::{
     Controller, ControllerAPI, ControllerError, ControllerStats, DemoAction, DeviceAction,
-    DeviceActionResult, DeviceActionTrait, DeviceStats, GarageDoorCommand,
+    DeviceActionTrait, DeviceStats, GarageDoorCommand,
 };
 
 pub enum ControllerMessage {
@@ -25,7 +25,8 @@ pub enum ControllerMessage {
     DeviceAction {
         did: DeviceId,
         action: DeviceAction,
-        respond_to: oneshot::Sender<Result<DeviceActionResult, ControllerError>>,
+        respond_to:
+            oneshot::Sender<Result<<DeviceAction as DeviceActionTrait>::Result, ControllerError>>,
     },
 }
 
@@ -63,18 +64,18 @@ impl ControllerHandle {
             .await
     }
 
-    pub async fn device_action(
-        &self,
-        did: DeviceId,
-        action: DeviceAction,
-    ) -> Result<DeviceActionResult, ControllerError> {
-        self.prepare_and_send(|respond_to| ControllerMessage::DeviceAction {
-            did,
-            action,
-            respond_to,
-        })
-        .await
-    }
+    // pub async fn device_action(
+    //     &self,
+    //     did: DeviceId,
+    //     action: DeviceAction,
+    // ) -> Result<DeviceActionResult, ControllerError> {
+    //     self.prepare_and_send(|respond_to| ControllerMessage::DeviceAction {
+    //         did,
+    //         action,
+    //         respond_to,
+    //     })
+    //     .await
+    // }
 }
 
 #[async_trait]

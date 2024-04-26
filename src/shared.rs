@@ -1,13 +1,11 @@
-use std::sync::{Arc};
+use std::sync::Arc;
 use tokio::runtime::Runtime;
-use tokio::sync::{broadcast};
+use tokio::sync::broadcast;
 
 use serde::Serialize;
 
-
-
 use crate::config::AppConfig;
-use crate::controller::{ControllerHandle};
+use crate::controller::ControllerHandle;
 
 pub type SharedHandle = Arc<Shared>;
 

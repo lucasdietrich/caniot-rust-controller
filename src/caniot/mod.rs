@@ -17,13 +17,13 @@ pub use protocol::*;
 pub use types::*;
 
 #[cfg(test)]
+mod attributes_test;
+#[cfg(test)]
 mod helper_test;
 #[cfg(test)]
 mod payloads_test;
 #[cfg(test)]
 mod protocol_test;
-#[cfg(test)]
-mod attributes_test;
 
 #[cfg(feature = "emu")]
 pub mod emu;

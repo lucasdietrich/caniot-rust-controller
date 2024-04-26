@@ -1,5 +1,3 @@
-
-
 use rocket::{
     serde::{json::Json, Deserialize, Serialize},
     Responder, State,
@@ -11,10 +9,7 @@ use crate::{
     caniot,
     shared::{self, ServerStats},
 };
-use crate::{
-    caniot::{DeviceId},
-    shared::SharedHandle,
-};
+use crate::{caniot::DeviceId, shared::SharedHandle};
 
 #[get("/test")]
 pub fn route_test() -> &'static str {

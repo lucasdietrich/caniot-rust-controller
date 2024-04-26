@@ -1,48 +1,32 @@
-use std::fmt::Debug;
+use std::{fmt::Debug, ops::Deref};
 
-use crate::{
-    caniot::{self},
-    controller::DeviceActionTrait,
-};
+use crate::caniot;
 
-use as_any::Downcast;
-use thiserror::Error;
+use as_any::{AsAny, Downcast};
 
-use super::DeviceResult;
-
-#[derive(Error, Debug)]
-pub enum DeviceError {
-    #[error("Unsupported action for device")]
-    UnsupportedAction,
-    #[error("NoInnerDevice")]
-    NoInnerDevice,
-    #[error("Invalid frame")]
-    InvalidFrame,
-}
-
-pub enum DeviceEvent<A> {
-    Process,
-    Action(A),
-    Frame(caniot::ResponseData),
-}
+use super::{DeviceError, DeviceEvent, DeviceProcessOutput, DeviceProcessOutputWrapper};
 
 pub trait DeviceTrait: Send + Debug {
-    type Action;
+    type Action: DeviceActionTrait;
 
-    // fn set_did(&mut self, did: caniot::DeviceId);
-    // fn get_did(&self) -> caniot::DeviceId;
+    fn handle_frame(
+        &mut self,
+        frame: &caniot::ResponseData,
+    ) -> Result<DeviceProcessOutput<Self::Action>, DeviceError>;
 
-    fn handle_frame(&mut self, frame: &caniot::ResponseData) -> Result<DeviceResult, DeviceError>;
-    fn handle_action(&mut self, action: &Self::Action) -> Result<DeviceResult, DeviceError>;
+    fn handle_action(
+        &mut self,
+        action: &Self::Action,
+    ) -> Result<DeviceProcessOutput<Self::Action>, DeviceError>;
 
-    fn process(&mut self) -> Result<DeviceResult, DeviceError> {
-        Ok(DeviceResult::default())
+    fn process(&mut self) -> Result<DeviceProcessOutput<Self::Action>, DeviceError> {
+        Ok(DeviceProcessOutput::default())
     }
 
     fn handle_event(
         &mut self,
         event: &DeviceEvent<Self::Action>,
-    ) -> Result<DeviceResult, DeviceError> {
+    ) -> Result<DeviceProcessOutput<Self::Action>, DeviceError> {
         match event {
             DeviceEvent::Process => self.process(),
             DeviceEvent::Action(action) => self.handle_action(action),
@@ -53,33 +37,52 @@ pub trait DeviceTrait: Send + Debug {
 
 /// This trait is used to wrap a DeviceTrait into a DeviceWrapperTrait and make it object safe
 pub trait DeviceWrapperTrait: Send + Debug {
-    fn handle_frame(&mut self, frame: &caniot::ResponseData) -> Result<DeviceResult, DeviceError>;
+    fn handle_frame(
+        &mut self,
+        frame: &caniot::ResponseData,
+    ) -> Result<DeviceProcessOutputWrapper, DeviceError>;
     fn handle_action(
         &mut self,
-        action: &Box<dyn DeviceActionTrait>,
-    ) -> Result<DeviceResult, DeviceError>;
-    fn process(&mut self) -> Result<DeviceResult, DeviceError>;
+        action: &Box<dyn DeviceActionWrapperTrait>,
+    ) -> Result<DeviceProcessOutputWrapper, DeviceError>;
+    fn process(&mut self) -> Result<DeviceProcessOutputWrapper, DeviceError>;
 }
 
 impl<T: DeviceTrait> DeviceWrapperTrait for T
 where
     <T as DeviceTrait>::Action: 'static,
 {
-    fn handle_frame(&mut self, frame: &caniot::ResponseData) -> Result<DeviceResult, DeviceError> {
+    fn handle_frame(
+        &mut self,
+        frame: &caniot::ResponseData,
+    ) -> Result<DeviceProcessOutputWrapper, DeviceError> {
         self.handle_frame(frame)
+            .map(DeviceProcessOutputWrapper::from)
     }
 
     fn handle_action(
         &mut self,
-        action: &Box<dyn DeviceActionTrait>,
-    ) -> Result<DeviceResult, DeviceError> {
-        match action.downcast_ref::<T::Action>() {
-            Some(action) => self.handle_action(action),
+        action: &Box<dyn DeviceActionWrapperTrait>,
+    ) -> Result<DeviceProcessOutputWrapper, DeviceError> {
+        match action.deref().downcast_ref::<T::Action>() {
+            Some(action) => self
+                .handle_action(action)
+                .map(DeviceProcessOutputWrapper::from),
             None => Err(DeviceError::UnsupportedAction),
         }
     }
 
-    fn process(&mut self) -> Result<DeviceResult, DeviceError> {
-        self.process()
+    fn process(&mut self) -> Result<DeviceProcessOutputWrapper, DeviceError> {
+        self.process().map(DeviceProcessOutputWrapper::from)
     }
 }
+
+pub trait DeviceActionTrait: AsAny + Send {
+    type Result: DeviceActionResultTrait;
+}
+
+pub trait DeviceActionResultTrait: AsAny + Send {}
+
+pub trait DeviceActionWrapperTrait: AsAny + Send {}
+
+impl<T> DeviceActionWrapperTrait for T where T: DeviceActionTrait {}
