@@ -21,11 +21,11 @@ impl Controller {
                 }
             }
             ControllerMessage::DeviceAction {
-                did: _,
+                did,
                 action,
-                respond_to: _,
+                respond_to,
             } => {
-                todo!("DeviceAction: {action:?}");
+                todo!("DeviceAction: {did:?}")
             }
         }
     }

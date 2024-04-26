@@ -50,7 +50,10 @@ pub enum DeviceAction {
     Inner(Box<dyn DeviceActionTrait>),
 }
 
-impl DeviceActionTrait for DeviceAction {}
+pub enum DeviceActionResult {
+    ResetResult,
+    // Inner(Box<dyn DeviceActionResponseTrait>),
+}
 
 impl DeviceTrait for Device {
     type Action = DeviceAction;

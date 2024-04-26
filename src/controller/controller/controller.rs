@@ -16,7 +16,7 @@ use crate::controller::{Device, DeviceActionTrait, DeviceTrait};
 use crate::shutdown::Shutdown;
 
 use super::super::ControllerAPI;
-use super::super::{actor, DemoController, GarageController, LDevice};
+use super::super::{actor, DemoController, GarageController};
 use super::PendingQuery;
 
 use log::info;

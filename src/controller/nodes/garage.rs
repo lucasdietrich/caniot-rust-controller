@@ -1,6 +1,6 @@
 use crate::{
     caniot::{self, Endpoint, Response, Xps},
-    controller::{ControllerAPI, ControllerError, LDevice, LDeviceTrait, LManagedDeviceError},
+    controller::{ControllerAPI, ControllerError},
 };
 
 use super::super::super::caniot::*;
@@ -73,23 +73,5 @@ impl GarageController {
         //     .await?;
         // Ok(Some(resp))
         todo!();
-    }
-}
-
-impl LDeviceTrait for GarageController {
-    fn handle_frame(&mut self, frame: &caniot::ResponseData) -> Result<(), LManagedDeviceError> {
-        match frame {
-            caniot::ResponseData::Telemetry {
-                endpoint: Endpoint::BoardControl,
-                payload,
-            } => {
-                if let Ok(payload) = Class0Payload::try_from(payload.as_slice()) {
-                    self.status = GarageDoorStatus::from(payload);
-                }
-            }
-            _ => {}
-        }
-
-        Ok(())
     }
 }

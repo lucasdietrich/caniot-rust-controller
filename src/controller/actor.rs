@@ -9,17 +9,9 @@ use crate::{
 use serde::Serialize;
 
 use super::{
-    Controller, ControllerAPI, ControllerError, ControllerStats, DemoAction, DeviceStats,
-    GarageDoorCommand, LDeviceStats,
+    Controller, ControllerAPI, ControllerError, ControllerStats, DemoAction, DeviceAction,
+    DeviceActionResult, DeviceActionTrait, DeviceStats, GarageDoorCommand,
 };
-
-#[derive(Debug)]
-pub enum DeviceAction {
-    Reset,
-    ResetFactoryDefault,
-    Garage(GarageDoorCommand),
-    Demo(DemoAction),
-}
 
 pub enum ControllerMessage {
     GetStats {
@@ -33,11 +25,8 @@ pub enum ControllerMessage {
     DeviceAction {
         did: Option<DeviceId>,
         action: DeviceAction,
-        respond_to: oneshot::Sender<Result<(), ControllerError>>,
+        respond_to: oneshot::Sender<Result<DeviceActionResult, ControllerError>>,
     },
-    // GetHeatersState {
-    //     respond_to: oneshot::Sender<Vec<LDeviceStats>>,
-    // },
 }
 
 #[derive(Debug, Clone)]
@@ -78,7 +67,7 @@ impl ControllerHandle {
         &self,
         did: Option<DeviceId>,
         action: DeviceAction,
-    ) -> Result<(), ControllerError> {
+    ) -> Result<DeviceActionResult, ControllerError> {
         self.prepare_and_send(|respond_to| ControllerMessage::DeviceAction {
             did,
             action,

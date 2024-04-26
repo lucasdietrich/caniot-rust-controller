@@ -4,20 +4,12 @@ use crate::{
     caniot::{self, Response},
     controller::{
         ControllerAPI, ControllerError, DeviceActionTrait, DeviceError, DeviceResult, DeviceTrait,
-        LDevice, LDeviceTrait, LManagedDeviceError,
     },
 };
 
 #[derive(Default, Debug)]
 pub struct DemoController {
     active: bool,
-}
-
-impl LDeviceTrait for DemoController {
-    fn handle_frame(&mut self, frame: &caniot::ResponseData) -> Result<(), LManagedDeviceError> {
-        println!("DemoNode::handle_frame({:?})", frame);
-        Ok(())
-    }
 }
 
 impl DemoController {

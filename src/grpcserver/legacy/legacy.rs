@@ -38,20 +38,22 @@ impl CanController for LegacyCaniotController {
             right_door_activate: right,
         };
 
-        let result = self
-            .shared
-            .controller_handle
-            .device_action(None, DeviceAction::Garage(command))
-            .await;
-        let status = match result {
-            Ok(_) => model::Status::Ok,
-            Err(ControllerError::Timeout) => model::Status::Timeout,
-            Err(_) => model::Status::Nok,
-        };
+        // let result = self
+        //     .shared
+        //     .controller_handle
+        //     .device_action(None, DeviceAction::Garage(command))
+        //     .await;
+        // let status = match result {
+        //     Ok(_) => model::Status::Ok,
+        //     Err(ControllerError::Timeout) => model::Status::Timeout,
+        //     Err(_) => model::Status::Nok,
+        // };
 
-        Ok(Response::new(model::CommandResponse {
-            status: status.into(),
-        }))
+        // Ok(Response::new(model::CommandResponse {
+        //     status: status.into(),
+        // }))
+
+        todo!();
     }
 
     async fn get_alarm(
