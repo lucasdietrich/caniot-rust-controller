@@ -10,13 +10,16 @@ use crate::bus::{CanInterface, CanInterfaceError};
 use crate::caniot::emu::{
     emu_pool1_add_devices_to_iface, emu_pool2_realistic_add_devices_to_iface,
 };
-use crate::caniot::DeviceId;
 use crate::caniot::{self, emu};
-use crate::controller::{Device, DeviceActionTrait, DeviceTrait};
+use crate::caniot::{DeviceId, Request};
+use crate::controller::{
+    Device, DeviceActionTrait, DeviceError, DeviceEvent, DeviceResult, DeviceTrait,
+};
 use crate::shutdown::Shutdown;
 
 use super::super::ControllerAPI;
 use super::super::{actor, DemoController, GarageController};
+use super::attach::device_attach_controller;
 use super::PendingQuery;
 
 use log::info;
@@ -68,6 +71,9 @@ pub enum ControllerError {
 
     #[error("Conversion Error: {0}")]
     CaniotConversionError(#[from] caniot::ConversionError),
+
+    #[error("Device error: {0}")]
+    DeviceError(#[from] DeviceError),
 }
 
 pub struct Controller {
@@ -162,13 +168,17 @@ impl Controller {
         let device = if let Some(device) = self.devices.get_mut(&frame.device_id) {
             device
         } else {
-            let new_device = Device::new(frame.device_id);
+            let mut new_device = Device::new(frame.device_id);
+            device_attach_controller(&mut new_device);
             self.devices.insert(frame.device_id, new_device);
             self.devices.get_mut(&frame.device_id).unwrap()
         };
 
         // Update device stats
-        device.handle_frame(&frame.data);
+        let device_result = device.handle_frame(&frame.data)?;
+
+        // Set next process time
+        device.schedule_next_process_in(device_result.next_process);
 
         // TODO broadcast should be handled differently as the oneshot channel cannot be used to send multiple responses
         let pivot = self
@@ -180,10 +190,17 @@ impl Controller {
             pq.reply_with_frame(frame.clone());
         }
 
+        // Send requests to device
+        let device_did = device.did;
+        for request_data in device_result.requests {
+            let request = Request::new(device_did, request_data);
+            self.send_caniot_frame(&request).await?;
+        }
+
         Ok(())
     }
 
-    fn time_to_next_timeout(&self) -> Duration {
+    fn time_to_next_pq_timeout(&self) -> Duration {
         // TODO improve this code
         let now = std::time::Instant::now();
 
@@ -196,6 +213,32 @@ impl Controller {
         if let Some(neareast_timeout) = neareast_timeout {
             if neareast_timeout > now {
                 neareast_timeout - now
+            } else {
+                Duration::from_millis(0)
+            }
+        } else {
+            Duration::MAX
+        }
+    }
+
+    fn time_to_next_device_process(&self) -> Duration {
+        let now = std::time::Instant::now();
+
+        let nearest_process = self
+            .devices
+            .iter()
+            .filter_map(|(_did, device)| {
+                if let Some(next_process) = device.next_process_time() {
+                    Some(next_process)
+                } else {
+                    None
+                }
+            })
+            .min();
+
+        if let Some(nearest_process) = nearest_process {
+            if nearest_process > now {
+                nearest_process - now
             } else {
                 Duration::from_millis(0)
             }
@@ -223,9 +266,35 @@ impl Controller {
         }
     }
 
+    async fn process_devices(&mut self) -> Result<(), ControllerError> {
+        let mut results = Vec::new();
+
+        // Process devices
+        for (did, device) in self.devices.iter_mut() {
+            if device.needs_process() {
+                let device_result = device.handle_event(&DeviceEvent::Process)?;
+                device.mark_processed();
+                device.schedule_next_process_in(device_result.next_process);
+                results.push((did.to_owned(), device_result));
+            }
+        }
+
+        // Send requests to device
+        for (did, result) in results {
+            for request_data in result.requests {
+                let request = Request::new(did, request_data);
+                self.send_caniot_frame(&request).await?;
+            }
+        }
+
+        Ok(())
+    }
+
     pub async fn run(mut self) -> Result<(), ()> {
         loop {
-            let time_to_next_timeout = self.time_to_next_timeout();
+            let time_to_next_pq_timeout = self.time_to_next_pq_timeout();
+            let time_to_next_device_process = self.time_to_next_device_process();
+            let sleep_time = time_to_next_pq_timeout.min(time_to_next_device_process);
 
             select! {
                 Some(message) = self.receiver.recv() => {
@@ -246,7 +315,7 @@ impl Controller {
                         },
                     }
                 },
-                _ = sleep(time_to_next_timeout) => {
+                _ = sleep(sleep_time) => {
                     // Timeout of pending queries handled in handle_pending_queries_timeout()
                 },
                 _ = self.shutdown.recv() => {
@@ -256,6 +325,7 @@ impl Controller {
             }
 
             self.handle_pending_queries_timeout().await;
+            self.process_devices().await.unwrap();
         }
 
         Ok(())

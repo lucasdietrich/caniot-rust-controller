@@ -40,4 +40,14 @@ pub fn emu_pool2_realistic_add_devices_to_iface(iface: &mut CanInterface) {
     heaters_controller.set_telemetry_endpoint(caniot::Endpoint::ApplicationDefault);
     heaters_controller.add_behavior(Box::new(heaters_behavior));
     iface.add_device(heaters_controller);
+
+    // Add demo device
+    let mut demo_controller = Device::new(
+        DeviceId::new(0, 0).unwrap().to_u8(),
+        Duration::from_secs(30),
+    );
+    let demo_behavior = super::DemoController::new();
+    demo_controller.set_telemetry_endpoint(caniot::Endpoint::ApplicationDefault);
+    demo_controller.add_behavior(Box::new(demo_behavior));
+    iface.add_device(demo_controller);
 }

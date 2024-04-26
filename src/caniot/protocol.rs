@@ -140,6 +140,15 @@ where
     pub data: T,
 }
 
+impl<T> Frame<T>
+where
+    T: Serialize,
+{
+    pub fn new(device_id: DeviceId, data: T) -> Self {
+        Self { device_id, data }
+    }
+}
+
 impl Request {
     pub fn get_can_id(&self) -> EmbeddedId {
         let id = match &self.data {

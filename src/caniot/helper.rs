@@ -1,29 +1,46 @@
 use super::{DeviceId, Endpoint, ErrorSource, Request, RequestData, Response, ResponseData};
 
+pub fn build_telemetry_request_data(endpoint: Endpoint) -> RequestData {
+    RequestData::Telemetry { endpoint }
+}
+
+pub fn build_attribute_read_request_data(key: u16) -> RequestData {
+    RequestData::AttributeRead { key }
+}
+
+pub fn build_attribute_write_request_data(key: u16, value: u32) -> RequestData {
+    RequestData::AttributeWrite { key, value }
+}
+
+pub fn build_command_request_data(endpoint: Endpoint, payload: Vec<u8>) -> RequestData {
+    RequestData::Command { endpoint, payload }
+}
+
 pub fn build_telemetry_request(device_id: DeviceId, endpoint: Endpoint) -> Request {
     Request {
         device_id,
-        data: RequestData::Telemetry { endpoint },
+        data: build_telemetry_request_data(endpoint),
     }
 }
+
 pub fn build_attribute_read_request(device_id: DeviceId, key: u16) -> Request {
     Request {
         device_id,
-        data: RequestData::AttributeRead { key },
+        data: build_attribute_read_request_data(key),
     }
 }
 
 pub fn build_attribute_write_request(device_id: DeviceId, key: u16, value: u32) -> Request {
     Request {
         device_id,
-        data: RequestData::AttributeWrite { key, value },
+        data: build_attribute_write_request_data(key, value),
     }
 }
 
 pub fn build_command_request(device_id: DeviceId, endpoint: Endpoint, payload: Vec<u8>) -> Request {
     Request {
         device_id,
-        data: RequestData::Command { endpoint, payload },
+        data: build_command_request_data(endpoint, payload),
     }
 }
 

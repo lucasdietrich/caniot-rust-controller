@@ -23,7 +23,7 @@ pub enum ControllerMessage {
         respond_to: Option<oneshot::Sender<Result<caniot::Response, ControllerError>>>,
     },
     DeviceAction {
-        did: Option<DeviceId>,
+        did: DeviceId,
         action: DeviceAction,
         respond_to: oneshot::Sender<Result<DeviceActionResult, ControllerError>>,
     },
@@ -65,7 +65,7 @@ impl ControllerHandle {
 
     pub async fn device_action(
         &self,
-        did: Option<DeviceId>,
+        did: DeviceId,
         action: DeviceAction,
     ) -> Result<DeviceActionResult, ControllerError> {
         self.prepare_and_send(|respond_to| ControllerMessage::DeviceAction {
