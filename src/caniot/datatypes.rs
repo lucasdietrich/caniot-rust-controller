@@ -6,7 +6,7 @@ trait PayloadTrait<'a>: TryFrom<&'a [u8]> {}
 
 trait CommandTrait: Into<[u8; 7]> {}
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct SystemCommand {
     pub hardware_reset: bool,
     pub _software_reset: bool, // deprecated
@@ -230,12 +230,10 @@ pub struct BlcCommand {
 }
 
 impl BlcCommand {
-    pub const fn get_reset_command() -> BlcCommand {
-        BlcCommand {
-            class_payload: None,
-            sys: SystemCommand::HARDWARE_RESET,
-        }
-    }
+    pub const HARDWARE_RESET: BlcCommand = BlcCommand {
+        class_payload: None,
+        sys: SystemCommand::HARDWARE_RESET,
+    };
 }
 
 impl Into<[u8; 8]> for BlcCommand {

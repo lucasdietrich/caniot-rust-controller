@@ -5,7 +5,7 @@ use tokio::{runtime::Runtime, sync::broadcast::Sender};
 use super::Controller;
 use crate::{bus::CanInterface, config::AppConfig, shutdown::Shutdown};
 
-pub fn init<'a>(config: &AppConfig, rt: &Arc<Runtime>, notify_shutdown: &Sender<()>) -> Controller {
+pub fn init(config: &AppConfig, rt: &Arc<Runtime>, notify_shutdown: &Sender<()>) -> Controller {
     let can_iface = rt.block_on(async { CanInterface::new(&config.can).await.unwrap() });
 
     Controller::new(

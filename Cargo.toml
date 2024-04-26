@@ -57,6 +57,8 @@ rocket_dyn_templates = { version = "0.1.0-rc.1", features = ["tera"] }
 rand = "0.8"
 chrono = { version = "0.4", features = ["serde"] }
 
+as-any = "0.3"
+
 [build-dependencies]
 tonic-build = { version = "0.11.0", features = ["prost"] }
 

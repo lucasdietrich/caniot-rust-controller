@@ -50,11 +50,11 @@ impl From<Class0Payload> for GarageDoorStatus {
 }
 
 #[derive(Debug, Default)]
-pub struct GarageNode {
+pub struct GarageController {
     status: GarageDoorStatus,
 }
 
-impl GarageNode {
+impl GarageController {
     pub async fn handle_action(
         &mut self,
         api: &mut dyn ControllerAPI,
@@ -76,7 +76,7 @@ impl GarageNode {
     }
 }
 
-impl LDeviceTrait for GarageNode {
+impl LDeviceTrait for GarageController {
     fn handle_frame(&mut self, frame: &caniot::ResponseData) -> Result<(), LManagedDeviceError> {
         match frame {
             caniot::ResponseData::Telemetry {

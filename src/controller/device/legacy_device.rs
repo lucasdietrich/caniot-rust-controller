@@ -71,7 +71,7 @@ where
     }
 
     pub async fn reset(&self, api: &mut dyn ControllerAPI) -> Result<(), LManagedDeviceError> {
-        let cmd = ct::BlcCommand::get_reset_command();
+        let cmd = ct::BlcCommand::HARDWARE_RESET;
         let cmd: [u8; 8] = cmd.into();
 
         let _z = api

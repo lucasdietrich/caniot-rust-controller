@@ -1,21 +1,26 @@
+use as_any::Downcast;
+
 use crate::{
     caniot::{self, Response},
-    controller::{ControllerAPI, ControllerError, LDevice, LDeviceTrait, LManagedDeviceError},
+    controller::{
+        ControllerAPI, ControllerError, DeviceActionTrait, DeviceError, DeviceResult, DeviceTrait,
+        LDevice, LDeviceTrait, LManagedDeviceError,
+    },
 };
 
-#[derive(Default)]
-pub struct DemoNode {
+#[derive(Default, Debug)]
+pub struct DemoController {
     active: bool,
 }
 
-impl LDeviceTrait for DemoNode {
+impl LDeviceTrait for DemoController {
     fn handle_frame(&mut self, frame: &caniot::ResponseData) -> Result<(), LManagedDeviceError> {
         println!("DemoNode::handle_frame({:?})", frame);
         Ok(())
     }
 }
 
-impl DemoNode {
+impl DemoController {
     pub fn get_active(&self) -> bool {
         println!("DemoNode::get_active() -> {}", self.active);
         self.active
@@ -25,13 +30,13 @@ impl DemoNode {
         println!("DemoNode::set_active({})", active);
         self.active = active;
     }
+}
 
-    pub async fn handle_action(
-        &mut self,
-        _api: &mut dyn ControllerAPI,
-        command: DemoAction,
-    ) -> Result<Option<Response>, ControllerError> {
-        match command {
+impl DeviceTrait for DemoController {
+    type Action = DemoAction;
+
+    fn handle_action(&mut self, action: &DemoAction) -> Result<DeviceResult, DeviceError> {
+        match action {
             DemoAction::Activate => {
                 self.set_active(true);
             }
@@ -39,11 +44,18 @@ impl DemoNode {
                 self.set_active(false);
             }
             DemoAction::SetActive(active) => {
-                self.set_active(active);
+                self.set_active(*active);
             }
         }
+        Ok(DeviceResult::default())
+    }
 
-        Ok(None)
+    fn handle_frame(&mut self, frame: &caniot::ResponseData) -> Result<DeviceResult, DeviceError> {
+        Ok(DeviceResult::default())
+    }
+
+    fn process(&mut self) -> Result<DeviceResult, DeviceError> {
+        Ok(DeviceResult::default())
     }
 }
 
@@ -53,3 +65,5 @@ pub enum DemoAction {
     Deactivate,
     SetActive(bool),
 }
+
+impl DeviceActionTrait for DemoAction {}
