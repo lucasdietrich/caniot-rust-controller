@@ -15,9 +15,12 @@ pub struct DemoController {
 }
 
 impl DemoController {
-    pub fn get_active(&self) -> bool {
+    pub fn get_active(&self) -> Result<DeviceProcessOutput<DemoAction>, DeviceError> {
         println!("DemoNode::get_active() -> {}", self.active);
-        self.active
+
+        Ok(DeviceProcessOutput::build_action_result(
+            DemoActionResult::Active(self.active),
+        ))
     }
 
     pub fn set_active(
@@ -50,6 +53,7 @@ impl DeviceTrait for DemoController {
     ) -> Result<DeviceProcessOutput<DemoAction>, DeviceError> {
         println!("DemoNode::handle_action({:?})", action);
         match action {
+            DemoAction::GetActive => self.get_active(),
             DemoAction::Activate => self.set_active(true),
             DemoAction::Deactivate => self.set_active(false),
             DemoAction::SetActive(active) => self.set_active(*active),
@@ -83,6 +87,7 @@ impl DeviceTrait for DemoController {
 
 #[derive(Debug)]
 pub enum DemoAction {
+    GetActive,
     Activate,
     Deactivate,
     SetActive(bool),

@@ -1,3 +1,4 @@
+use as_any::Downcast;
 use chrono::{DateTime, Utc};
 use tokio::sync::{mpsc, oneshot};
 
@@ -10,7 +11,7 @@ use serde::Serialize;
 
 use super::{
     Controller, ControllerAPI, ControllerError, ControllerStats, DemoAction, DeviceAction,
-    DeviceActionTrait, DeviceStats, GarageDoorCommand,
+    DeviceActionResult, DeviceActionTrait, DeviceStats, GarageDoorCommand,
 };
 
 pub enum ControllerMessage {
@@ -23,7 +24,7 @@ pub enum ControllerMessage {
         respond_to: Option<oneshot::Sender<Result<caniot::Response, ControllerError>>>,
     },
     DeviceAction {
-        did: DeviceId,
+        did: Option<DeviceId>,
         action: DeviceAction,
         respond_to:
             oneshot::Sender<Result<<DeviceAction as DeviceActionTrait>::Result, ControllerError>>,
@@ -64,18 +65,38 @@ impl ControllerHandle {
             .await
     }
 
-    // pub async fn device_action(
-    //     &self,
-    //     did: DeviceId,
-    //     action: DeviceAction,
-    // ) -> Result<DeviceActionResult, ControllerError> {
-    //     self.prepare_and_send(|respond_to| ControllerMessage::DeviceAction {
-    //         did,
-    //         action,
-    //         respond_to,
-    //     })
-    //     .await
-    // }
+    // Send a generic device action to the controller of the device.
+    // Some actions are unique to a specific device, so the device id is optional.
+    // For generic actions, the device id is required.
+    pub async fn device_action(
+        &self,
+        did: Option<DeviceId>,
+        action: DeviceAction,
+    ) -> Result<DeviceActionResult, ControllerError> {
+        self.prepare_and_send(|respond_to| ControllerMessage::DeviceAction {
+            did,
+            action,
+            respond_to,
+        })
+        .await
+    }
+
+    // Send a specific (typed) device action to the controller of the device.
+    pub async fn device_action_inner<A: DeviceActionTrait>(
+        &self,
+        did: Option<DeviceId>,
+        action: A,
+    ) -> Result<&A::Result, ControllerError> {
+        let action = DeviceAction::new_inner(action);
+        let result = self.device_action(did, action).await?;
+        match result {
+            DeviceActionResult::Inner(inner) => match inner.downcast_ref() {
+                Some(result) => Ok(*result),
+                None => panic!("Unexpected DeviceActionResult inner variant"),
+            },
+            _ => panic!("Unexpected DeviceActionResult variant"),
+        }
+    }
 }
 
 #[async_trait]

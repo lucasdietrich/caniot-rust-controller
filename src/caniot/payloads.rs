@@ -1,5 +1,6 @@
 use super::*;
-use num_derive::FromPrimitive;
+use num_derive::{FromPrimitive, ToPrimitive};
+use num_traits::{FromPrimitive, ToPrimitive};
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, FromPrimitive)]
 pub enum Xps {
@@ -50,7 +51,7 @@ pub enum TSP {
     Pulse = 3,
 }
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, FromPrimitive)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, FromPrimitive, ToPrimitive)]
 pub enum HeatingMode {
     #[default]
     None = 0,
