@@ -28,4 +28,11 @@
         "editor.tabSize": 2
     },
     "editor.formatOnSave": true,
+    "remote.SSH.defaultForwardedPorts": [
+        {
+            "localPort": 50051,
+            "remotePort": 50051,
+            "name": "gRPC"
+        }
+    ]
 }

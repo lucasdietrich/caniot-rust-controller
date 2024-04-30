@@ -1,14 +1,18 @@
 .PHONY: build server dependencies clean
 
-build: dependencies
-	yarn build
+all: build
 
 dependencies:
 	yarn install
-	yarn add file:../proto/grpc-web
+
+build: dependencies
+	yarn build
 
 clean:
-	rm -rf build
+	rm -rf node_modules
+
+run:
+	npm run dev
 
 format:
 	./node_modules/.bin/prettier --write .

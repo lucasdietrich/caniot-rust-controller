@@ -4,6 +4,9 @@
     "description": "CanIoT API gRPC Web",
     "private": true,
     "type": "commonjs",
+    "devDependencies": {
+        "protoc-gen-grpc-web": "^1.4.2"
+    },
     "dependencies": {
         "@types/google-protobuf": "^3.15.12",
         "google-protobuf": "^3.21.2",

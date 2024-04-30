@@ -8,6 +8,9 @@ format:
 build: ui
 	cargo build --features "emu"
 
+clippy:
+	cargo clippy -- -D warnings
+
 run:
 	cargo run --features "emu"
 
@@ -36,8 +39,12 @@ deploy_config:
 	scp scripts/caniot-controller.toml rpi:/home/root/rust-controller/caniot-controller.toml
 
 ui:
-	cd proto/grpc-web; ./proto-gen-grpc-web.sh
-	cd ui; rm -rf node_modules; npm i
+	make -C proto/grpc-web
+	make -C ui
 
-clippy:
-	cargo clippy -- -D warnings
+ui_clean:
+	make -C proto/grpc-web clean
+	make -C ui clean
+
+ui_run:
+	make -C ui run
