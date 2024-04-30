@@ -11,7 +11,7 @@ pub const DEVICE_HEATERS_DID: u8 = 1;
 pub fn device_get_controller(did: &DeviceId) -> Option<Box<dyn DeviceWrapperTrait>> {
     match did.to_u8() {
         DEVICE_DEMO_DID => Some(Box::new(DemoController::default())),
-        DEVICE_HEATERS_DID => None,
+        DEVICE_HEATERS_DID => Some(Box::new(HeatersController::default())),
         _ => None,
     }
 }

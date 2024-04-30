@@ -302,17 +302,17 @@ impl Into<Vec<u8>> for HeatingControllerCommand {
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
-pub struct HeatingControllerPayload {
+pub struct HeatingControllerTelemetry {
     pub modes: [HeatingMode; 4],
     pub power_status: bool,
 }
 
-impl TryFrom<&[u8]> for HeatingControllerPayload {
+impl TryFrom<&[u8]> for HeatingControllerTelemetry {
     type Error = ProtocolError;
 
     fn try_from(payload: &[u8]) -> Result<Self, ProtocolError> {
         if payload.len() >= 3 {
-            Ok(HeatingControllerPayload {
+            Ok(HeatingControllerTelemetry {
                 modes: [
                     HeatingMode::from_u8(payload[0] & 0xf).unwrap(),
                     HeatingMode::from_u8((payload[0] & 0xf0) >> 4).unwrap(),
@@ -327,7 +327,7 @@ impl TryFrom<&[u8]> for HeatingControllerPayload {
     }
 }
 
-impl Into<Vec<u8>> for HeatingControllerPayload {
+impl Into<Vec<u8>> for HeatingControllerTelemetry {
     fn into(self) -> Vec<u8> {
         let mut payload = Vec::with_capacity(3);
 

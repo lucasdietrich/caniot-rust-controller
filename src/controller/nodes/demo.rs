@@ -18,7 +18,7 @@ impl DemoController {
     pub fn get_active(&self) -> Result<DeviceProcessOutput<DemoAction>, DeviceError> {
         println!("DemoNode::get_active() -> {}", self.active);
 
-        Ok(DeviceProcessOutput::build_action_result(
+        Ok(DeviceProcessOutput::new_action_result(
             DemoActionResult::Active(self.active),
         ))
     }
@@ -93,7 +93,7 @@ pub enum DemoAction {
     SetActive(bool),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum DemoActionResult {
     Active(bool),
 }

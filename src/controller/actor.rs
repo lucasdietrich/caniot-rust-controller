@@ -1,4 +1,6 @@
-use as_any::Downcast;
+use std::ops::Deref;
+
+use as_any::{AsAny, Downcast};
 use chrono::{DateTime, Utc};
 use tokio::sync::{mpsc, oneshot};
 
@@ -11,7 +13,7 @@ use serde::Serialize;
 
 use super::{
     Controller, ControllerAPI, ControllerError, ControllerStats, DemoAction, DeviceAction,
-    DeviceActionResult, DeviceActionTrait, DeviceStats, GarageDoorCommand,
+    DeviceActionResult, DeviceActionResultTrait, DeviceActionTrait, DeviceStats, GarageDoorCommand,
 };
 
 pub enum ControllerMessage {
@@ -48,20 +50,22 @@ impl ControllerHandle {
         Self { sender }
     }
 
+    /// Query a controller message
+    ///
     /// Create a one-shot channel, embed it in a message using the provided closure, and send the
     /// message to the controller actor. Wait for the response and return it.
-    async fn prepare_and_send<R>(
+    async fn query<R>(
         &self,
-        closure: impl FnOnce(oneshot::Sender<R>) -> ControllerMessage,
+        build_message_closure: impl FnOnce(oneshot::Sender<R>) -> ControllerMessage,
     ) -> R {
         let (sender, receiver) = oneshot::channel();
-        let message = closure(sender);
+        let message = build_message_closure(sender);
         self.sender.send(message).await.unwrap();
         receiver.await.unwrap()
     }
 
     pub async fn get_stats(&self) -> (ControllerStats, Vec<DeviceStatsEntry>, CanStats) {
-        self.prepare_and_send(|respond_to| ControllerMessage::GetStats { respond_to })
+        self.query(|respond_to| ControllerMessage::GetStats { respond_to })
             .await
     }
 
@@ -73,7 +77,7 @@ impl ControllerHandle {
         did: Option<DeviceId>,
         action: DeviceAction,
     ) -> Result<DeviceActionResult, ControllerError> {
-        self.prepare_and_send(|respond_to| ControllerMessage::DeviceAction {
+        self.query(|respond_to| ControllerMessage::DeviceAction {
             did,
             action,
             respond_to,
@@ -86,16 +90,26 @@ impl ControllerHandle {
         &self,
         did: Option<DeviceId>,
         action: A,
-    ) -> Result<&A::Result, ControllerError> {
+    ) -> Result<A::Result, ControllerError>
+    // # IMPORTANT NOTE: TODO
+    // The A::Result type which is returned by the action must implement the Clone trait.
+    // check if A::Result can be constrained to implement Clone
+    // for sure DeviceActionResultTrait cannot implement Clone as it would make it not object-safe
+    //
+    // Evaluate DeviceActionResultTrait { type Result: DeviceActionResultTrait + Clone }
+    where
+        A::Result: Clone,
+    {
         let action = DeviceAction::new_inner(action);
         let result = self.device_action(did, action).await?;
         match result {
-            DeviceActionResult::Inner(inner) => match inner.downcast_ref() {
-                Some(result) => Ok(*result),
+            DeviceActionResult::Inner(inner) => match inner.deref().downcast_ref::<A::Result>() {
+                Some(result) => Ok(result.clone()),
                 None => panic!("Unexpected DeviceActionResult inner variant"),
             },
             _ => panic!("Unexpected DeviceActionResult variant"),
         }
+        // Err(ControllerError::NotImplemented)
     }
 }
 
@@ -106,7 +120,7 @@ impl ControllerAPI for ControllerHandle {
         frame: ct::Request,
         timeout_ms: Option<u32>,
     ) -> Result<ct::Response, ControllerError> {
-        self.prepare_and_send(|sender| ControllerMessage::Query {
+        self.query(|sender| ControllerMessage::Query {
             query: frame,
             timeout_ms,
             respond_to: Some(sender),
@@ -115,7 +129,7 @@ impl ControllerAPI for ControllerHandle {
     }
 
     async fn send(&self, frame: ct::Request) -> Result<(), ControllerError> {
-        self.prepare_and_send(|_sender| ControllerMessage::Query {
+        self.query(|_sender| ControllerMessage::Query {
             query: frame,
             timeout_ms: None,
             respond_to: None,

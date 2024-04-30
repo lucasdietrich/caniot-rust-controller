@@ -12,12 +12,15 @@ use crate::caniot::emu::{
 };
 use crate::caniot::{self, emu};
 use crate::caniot::{DeviceId, Request};
+use crate::controller::actor::ControllerMessage;
 use crate::controller::{
-    Device, DeviceActionTrait, DeviceError, DeviceEvent, DeviceProcessOutput, DeviceTrait,
+    Device, DeviceAction, DeviceActionResult, DeviceActionTrait, DeviceError, DeviceEvent,
+    DeviceProcessOutput, DeviceTrait, DeviceWrapperTrait,
 };
 use crate::shutdown::Shutdown;
 
-use super::super::ControllerAPI;
+use super::ControllerAPI;
+
 use super::super::{actor, DemoController, GarageController};
 use super::attach::device_attach_controller;
 use super::PendingQuery;
@@ -62,6 +65,21 @@ pub enum ControllerError {
 
     #[error("Duplicate device Error")]
     DuplicateDID,
+
+    #[error("Generic device action needs a device ID")]
+    GenericDeviceActionNeedsDID,
+
+    #[error("Not implemented")]
+    NotImplemented,
+
+    #[error("Unknown device")]
+    NoSuchDevice,
+
+    #[error("No such device can handle the action")]
+    NoSuchDeviceForAction,
+
+    #[error("Multiple devices can handle the action")]
+    MultipleDevicesForAction,
 
     #[error("CAN Interface Error: {0}")]
     CanError(#[from] CanInterfaceError),
@@ -298,7 +316,7 @@ impl Controller {
 
             select! {
                 Some(message) = self.receiver.recv() => {
-                    self.handle_api_message(message).await;
+                    let _ = self.handle_api_message(message).await;
                 },
                 Some(frame) = self.iface.recv_poll() => {
                     match caniot::Response::try_from(frame) {
@@ -331,7 +349,7 @@ impl Controller {
         Ok(())
     }
 
-    pub fn get_devices_stats(&self) -> Vec<actor::DeviceStatsEntry> {
+    fn get_devices_stats(&self) -> Vec<actor::DeviceStatsEntry> {
         self.devices
             .iter()
             .filter(|(_did, device)| device.last_seen.is_some())
@@ -343,5 +361,107 @@ impl Controller {
                 stats: device.stats,
             })
             .collect()
+    }
+
+    fn get_device_by_did(&mut self, did: &DeviceId) -> Result<&mut Device, ControllerError> {
+        self.devices
+            .get_mut(did)
+            .ok_or(ControllerError::NoSuchDevice)
+    }
+
+    fn get_device_by_action(
+        &mut self,
+        action: &DeviceAction,
+    ) -> Result<&mut Device, ControllerError> {
+        match action {
+            DeviceAction::Inner(inner_action) => {
+                let mut devices_candidates: Vec<&mut Device> = self
+                    .devices
+                    .values_mut()
+                    .filter(|device| {
+                        if let Some(ref device_inner) = device.inner {
+                            device_inner.wrapper_can_handle_action(&**inner_action)
+                        } else {
+                            false
+                        }
+                    })
+                    .collect();
+
+                match devices_candidates.len() {
+                    0 => Err(ControllerError::NoSuchDeviceForAction),
+                    1 => Ok(devices_candidates.swap_remove(0)),
+                    _ => Err(ControllerError::MultipleDevicesForAction),
+                }
+            }
+            _ => Err(ControllerError::GenericDeviceActionNeedsDID),
+        }
+    }
+
+    async fn handle_api_device_action(
+        &mut self,
+        did: Option<DeviceId>,
+        action: DeviceAction,
+    ) -> Result<DeviceActionResult, ControllerError> {
+        // Find device by DID or by action
+        let device = match did {
+            Some(did) => {
+                let device = self.get_device_by_did(&did)?;
+                if !device.wrapper_can_handle_action(&action) {
+                    return Err(DeviceError::UnsupportedAction.into());
+                }
+                Ok(device)
+            }
+            None => self.get_device_by_action(&action),
+        }?;
+
+        info!("Found device {} for action", device.did);
+
+        match device.handle_action(&action) {
+            Ok(result) => {
+                let did = device.did;
+                device.schedule_next_process_in(result.next_process);
+                for request_data in result.requests {
+                    let request = Request::new(did, request_data);
+                    self.send_caniot_frame(&request).await?;
+                }
+
+                result.action_result.ok_or(DeviceError::NoActionResult)
+            }
+            Err(err) => Err(err),
+        }
+        .map_err(ControllerError::from)
+    }
+
+    pub async fn handle_api_message(
+        &mut self,
+        message: ControllerMessage,
+    ) -> Result<(), ControllerError> {
+        match message {
+            ControllerMessage::GetStats { respond_to } => {
+                let _ =
+                    respond_to.send((self.stats, self.get_devices_stats(), self.iface.get_stats()));
+            }
+            ControllerMessage::Query {
+                query,
+                timeout_ms,
+                respond_to,
+            } => {
+                if let Some(respond_to) = respond_to {
+                    self.query_sched(query, timeout_ms, respond_to).await;
+                } else {
+                    let _ = self.send_caniot_frame(&query).await;
+                }
+            }
+            ControllerMessage::DeviceAction {
+                did,
+                action,
+                respond_to,
+            } => {
+                let response = self.handle_api_device_action(did, action).await;
+                let _ = respond_to.send(response);
+            }
+        }
+
+        Ok(())
     }
 }

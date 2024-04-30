@@ -1,4 +1,8 @@
-use std::{fmt::Debug, ops::Deref};
+use std::{
+    any::{Any, TypeId},
+    fmt::Debug,
+    ops::Deref,
+};
 
 use crate::caniot;
 
@@ -11,13 +15,17 @@ pub trait DeviceTrait: Send + Debug {
 
     fn handle_frame(
         &mut self,
-        frame: &caniot::ResponseData,
-    ) -> Result<DeviceProcessOutput<Self::Action>, DeviceError>;
+        _frame: &caniot::ResponseData,
+    ) -> Result<DeviceProcessOutput<Self::Action>, DeviceError> {
+        Ok(DeviceProcessOutput::default())
+    }
 
     fn handle_action(
         &mut self,
-        action: &Self::Action,
-    ) -> Result<DeviceProcessOutput<Self::Action>, DeviceError>;
+        _action: &Self::Action,
+    ) -> Result<DeviceProcessOutput<Self::Action>, DeviceError> {
+        Err(DeviceError::NotImplemented)
+    }
 
     fn process(&mut self) -> Result<DeviceProcessOutput<Self::Action>, DeviceError> {
         Ok(DeviceProcessOutput::default())
@@ -36,23 +44,34 @@ pub trait DeviceTrait: Send + Debug {
 }
 
 /// This trait is used to wrap a DeviceTrait into a DeviceWrapperTrait and make it object safe
+/// so that we can make a list of devices with different types.
 pub trait DeviceWrapperTrait: Send + Debug {
-    fn handle_frame(
+    fn wrapper_handle_frame(
         &mut self,
         frame: &caniot::ResponseData,
     ) -> Result<DeviceProcessOutputWrapper, DeviceError>;
-    fn handle_action(
+
+    // Check if the action type can be handled by this device
+    fn wrapper_can_handle_action(&self, action: &dyn DeviceActionWrapperTrait) -> bool;
+
+    fn wrapper_handle_action(
         &mut self,
         action: &Box<dyn DeviceActionWrapperTrait>,
     ) -> Result<DeviceProcessOutputWrapper, DeviceError>;
-    fn process(&mut self) -> Result<DeviceProcessOutputWrapper, DeviceError>;
+
+    fn wrapper_process(&mut self) -> Result<DeviceProcessOutputWrapper, DeviceError>;
 }
 
+/// Automatically implement DeviceWrapperTrait for any DeviceTrait
 impl<T: DeviceTrait> DeviceWrapperTrait for T
 where
     <T as DeviceTrait>::Action: 'static,
 {
-    fn handle_frame(
+    fn wrapper_can_handle_action(&self, action: &dyn DeviceActionWrapperTrait) -> bool {
+        action.is::<T::Action>()
+    }
+
+    fn wrapper_handle_frame(
         &mut self,
         frame: &caniot::ResponseData,
     ) -> Result<DeviceProcessOutputWrapper, DeviceError> {
@@ -60,7 +79,7 @@ where
             .map(DeviceProcessOutputWrapper::from)
     }
 
-    fn handle_action(
+    fn wrapper_handle_action(
         &mut self,
         action: &Box<dyn DeviceActionWrapperTrait>,
     ) -> Result<DeviceProcessOutputWrapper, DeviceError> {
@@ -72,13 +91,13 @@ where
         }
     }
 
-    fn process(&mut self) -> Result<DeviceProcessOutputWrapper, DeviceError> {
+    fn wrapper_process(&mut self) -> Result<DeviceProcessOutputWrapper, DeviceError> {
         self.process().map(DeviceProcessOutputWrapper::from)
     }
 }
 
 pub trait DeviceActionTrait: AsAny + Send {
-    type Result: DeviceActionResultTrait;
+    type Result: DeviceActionResultTrait; // TODO Check if Clone trait can be added here
 }
 
 pub trait DeviceActionResultTrait: AsAny + Send {}

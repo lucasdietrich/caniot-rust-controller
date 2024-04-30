@@ -1,5 +1,7 @@
 use super::super::Behavior;
-use crate::caniot::{self as ct, HeatingControllerCommand, HeatingControllerPayload, HeatingMode};
+use crate::caniot::{
+    self as ct, HeatingControllerCommand, HeatingControllerTelemetry, HeatingMode,
+};
 
 pub struct HeatersController {
     modes: [HeatingMode; 4],
@@ -9,7 +11,12 @@ pub struct HeatersController {
 impl HeatersController {
     pub fn new() -> Self {
         Self {
-            modes: [HeatingMode::Stop; 4],
+            modes: [
+                HeatingMode::Stop,
+                HeatingMode::Comfort,
+                HeatingMode::Stop,
+                HeatingMode::Stop,
+            ],
             power_status: true,
         }
     }
@@ -30,7 +37,7 @@ impl Behavior for HeatersController {
 
     fn on_telemetry(&mut self, endpoint: &ct::Endpoint) -> Option<Vec<u8>> {
         if endpoint == &ct::Endpoint::ApplicationDefault {
-            let telemetry = HeatingControllerPayload {
+            let telemetry = HeatingControllerTelemetry {
                 modes: self.modes,
                 power_status: self.power_status,
             };

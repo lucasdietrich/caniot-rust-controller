@@ -112,7 +112,7 @@ impl DeviceTrait for Device {
 
             DeviceAction::Inner(inner_action) => {
                 if let Some(inner_device) = self.inner.as_mut() {
-                    let inner_result = inner_device.handle_action(inner_action)?;
+                    let inner_result = inner_device.wrapper_handle_action(inner_action)?;
                     Ok(DeviceProcessOutput::from_inner_result(inner_result))
                 } else {
                     Err(DeviceError::NoInnerDevice)
@@ -135,7 +135,7 @@ impl DeviceTrait for Device {
         }
 
         if let Some(ref mut inner) = self.inner {
-            let inner_result = inner.handle_frame(frame)?;
+            let inner_result = inner.wrapper_handle_frame(frame)?;
             Ok(DeviceProcessOutput::from_inner_result(inner_result))
         } else {
             Ok(DeviceProcessOutput::default())
@@ -144,7 +144,7 @@ impl DeviceTrait for Device {
 
     fn process(&mut self) -> Result<DeviceProcessOutput<Self::Action>, DeviceError> {
         if let Some(ref mut inner) = self.inner {
-            let inner_result = inner.process()?;
+            let inner_result = inner.wrapper_process()?;
             Ok(DeviceProcessOutput::from_inner_result(inner_result))
         } else {
             Ok(DeviceProcessOutput::default())
@@ -191,13 +191,13 @@ impl<A: DeviceActionTrait> DeviceProcessOutput<A> {
         self.request_process_in_ms(0);
     }
 
-    pub fn build_request_data(request_data: RequestData) -> Self {
+    pub fn new_request_data(request_data: RequestData) -> Self {
         let mut result = DeviceProcessOutput::<A>::default();
         result.requests.push(request_data);
         result
     }
 
-    pub fn build_action_result(action_result: A::Result) -> Self {
+    pub fn new_action_result(action_result: A::Result) -> Self {
         let mut result = DeviceProcessOutput::<A>::default();
         result.action_result = Some(action_result);
         result
@@ -215,7 +215,21 @@ impl DeviceProcessOutput<DeviceAction> {
     }
 }
 
+// Automatically implement DeviceProcessOutputTrait for any DeviceProcessOutput
 impl<A> DeviceActionResultTrait for DeviceProcessOutput<A> where A: DeviceActionTrait {}
+
+// impl<A> Clone for DeviceProcessOutput<A>
+// where
+//     A: DeviceActionTrait,
+// {
+//     fn clone(&self) -> Self {
+//         Self {
+//             requests: self.requests.clone(),
+//             next_process: self.next_process,
+//             action_result: self.action_result.clone(),
+//         }
+//     }
+// }
 
 pub struct DeviceProcessOutputWrapper {
     pub requests: Vec<RequestData>,

@@ -33,7 +33,7 @@ impl NgHeaters {
 
 #[tonic::async_trait]
 impl HeatersService for NgHeaters {
-    async fn get_state(&self, req: Request<()>) -> Result<Response<m::Status>, Status> {
+    async fn get_state(&self, _req: Request<()>) -> Result<Response<m::Status>, Status> {
         let api = self.shared.controller_handle.clone();
         let action = heaters::HeaterAction::GetStatus;
 
@@ -42,7 +42,6 @@ impl HeatersService for NgHeaters {
             .await
             .map_err(|e| Status::internal(format!("Error in get_state: {:?}", e)))?;
 
-        let result = result.to_owned();
         Ok(Response::new(self.heater_status_to_proto(&result)))
     }
 
@@ -61,7 +60,6 @@ impl HeatersService for NgHeaters {
             .await
             .map_err(|e| Status::internal(format!("Error in set_state: {:?}", e)))?;
 
-        let result = result.to_owned();
         Ok(Response::new(self.heater_status_to_proto(&result)))
     }
 }
