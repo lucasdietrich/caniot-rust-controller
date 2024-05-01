@@ -15,7 +15,7 @@ use crate::caniot::{self, emu, Frame, RequestData, ResponseData};
 use crate::caniot::{DeviceId, Request};
 use crate::controller::actor::ControllerMessage;
 use crate::controller::{
-    Device, DeviceAction, DeviceActionResult, DeviceActionTrait, DeviceError, DeviceEvent,
+    Device, DeviceAction, DeviceActionResult, DeviceActionTrait, DeviceActionVerdict, DeviceError,
     DeviceProcessContext, DeviceTrait, DeviceVerdict, DeviceWrapperTrait, PendingAction,
 };
 use crate::shutdown::Shutdown;
@@ -37,6 +37,8 @@ use tokio::sync::{mpsc, oneshot};
 use tokio::time::sleep;
 
 const QUERY_DEFAULT_TIMEOUT_MS: u32 = 1000; // 1s
+const ACTION_DEFAULT_TIMEOUT_MS: u32 = QUERY_DEFAULT_TIMEOUT_MS; // 1s
+
 const CHANNEL_SIZE: usize = 10;
 const DEVICES_COUNT: usize = 63;
 
@@ -197,30 +199,6 @@ impl Controller {
         }
     }
 
-    async fn handle_device_verdict<A: DeviceActionTrait>(
-        iface: &mut CanInterface,
-        stats: &mut ControllerStats,
-        did: DeviceId,
-        ctx: &mut DeviceProcessContext,
-        verdict: DeviceVerdict<A>,
-    ) -> Result<Option<A::Result>, ControllerError> {
-        let action = match verdict {
-            DeviceVerdict::None => None,
-            DeviceVerdict::Request(request) => {
-                let request = Request::new(did, request);
-                Self::iface_send_caniot_frame(iface, stats, &request).await?;
-                None
-            }
-            DeviceVerdict::ActionPendingOn(request) => {
-                let request = Request::new(did, request);
-                Self::iface_send_caniot_frame(iface, stats, &request).await?;
-                None
-            }
-            DeviceVerdict::ActionResult(result) => Some(result),
-        };
-        Ok(action)
-    }
-
     async fn handle_caniot_frame(
         &mut self,
         frame: caniot::Response,
@@ -255,34 +233,27 @@ impl Controller {
             self.devices.insert(frame.device_id, new_device);
             self.devices.get_mut(&frame.device_id).unwrap()
         };
+        let device_did = device.did;
 
-        // Check if an action is answered by the pending queries being answered
-        // TODO
-
-        let answered_action = answered_pending_action
-            .as_ref()
-            .map(|pending_action| &pending_action.action);
         let mut device_context = DeviceProcessContext::default();
-        let verdict = device.handle_frame(&frame.data, answered_action, &mut device_context)?;
+
+        // Let the device handle the frame
+        let verdict = device.handle_frame(&frame.data, &mut device_context)?;
+        match verdict {
+            DeviceVerdict::None => {}
+            DeviceVerdict::Request(request) => {
+                let request = Request::new(device_did, request);
+                Self::iface_send_caniot_frame(&mut self.iface, &mut self.stats, &request).await?;
+            }
+        }
 
         // Set next process time
         device.schedule_next_process_in(device_context.next_process);
 
-        // Send requests to device
-        let device_did = device.did;
-        let action_result = Self::handle_device_verdict(
-            &mut self.iface,
-            &mut self.stats,
-            device_did,
-            &mut device_context,
-            verdict,
-        )
-        .await?;
-
-        if let Some(action_result) = action_result {
-            if let Some(pending_action) = answered_pending_action.take() {
-                pending_action.send(Ok(action_result));
-            }
+        // Let the device compute the action result if any
+        if let Some(answered_action) = answered_pending_action {
+            let action_result = device.handle_action_result(&answered_action.action)?;
+            answered_action.send(Ok(action_result));
         }
 
         Ok(())
@@ -358,25 +329,20 @@ impl Controller {
         // Use iterator directly to avoid unnecessary indexing and cloning
         for (did, device) in self.devices.iter_mut() {
             if device.needs_process() {
-                // Check if action is pending for this device
-                // if let Some(pending_action) = &device.pending_action {
-                //     if pending_action.is_expired() {}
-                // }
-
                 // Check if device needs processing (requested by controller)
                 let mut device_context = DeviceProcessContext::default();
-                let verdict = device.handle_event(&DeviceEvent::Process, &mut device_context)?;
+                let verdict = device.process(&mut device_context)?;
                 device.mark_processed();
                 device.schedule_next_process_in(device_context.next_process);
 
-                let _ = Self::handle_device_verdict(
-                    &mut self.iface,
-                    &mut self.stats,
-                    *did,
-                    &mut device_context,
-                    verdict,
-                )
-                .await?;
+                match verdict {
+                    DeviceVerdict::None => {}
+                    DeviceVerdict::Request(request) => {
+                        let request = Request::new(*did, request);
+                        Self::iface_send_caniot_frame(&mut self.iface, &mut self.stats, &request)
+                            .await?;
+                    }
+                }
             }
         }
 
@@ -477,6 +443,7 @@ impl Controller {
         did: Option<DeviceId>,
         action: DeviceAction,
         respond_to: Sender<Result<DeviceActionResult, ControllerError>>,
+        timeout_ms: Option<u32>,
     ) {
         let result = self.handle_api_device_action_inner(did, action).await;
 
@@ -490,7 +457,7 @@ impl Controller {
 
                 self.pending_queries.push(PendingQuery::new(
                     request,
-                    1000,
+                    timeout_ms.unwrap_or(ACTION_DEFAULT_TIMEOUT_MS),
                     super::pending_query::PendingQueryTenant::Action(
                         pending_action::PendingAction::new(action, respond_to),
                     ),
@@ -525,14 +492,13 @@ impl Controller {
                 device.schedule_next_process_in(device_context.next_process);
                 let did = device.did;
                 let result_or_pending = match verdict {
-                    DeviceVerdict::None | DeviceVerdict::Request(..) => {
-                        panic!("DeviceAction must be answered by DeviceVerdict::ActionPendingOn or DeviceVerdict::ActionResult");
-                    }
-                    DeviceVerdict::ActionPendingOn(request) => {
+                    DeviceActionVerdict::ActionPendingOn(request) => {
                         let request = Request::new(did, request);
                         ActionResultOrPending::Pending(action, request)
                     }
-                    DeviceVerdict::ActionResult(result) => ActionResultOrPending::Result(result),
+                    DeviceActionVerdict::ActionResult(result) => {
+                        ActionResultOrPending::Result(result)
+                    }
                 };
 
                 Ok(result_or_pending)
@@ -566,8 +532,10 @@ impl Controller {
                 did,
                 action,
                 respond_to,
+                timeout_ms,
             } => {
-                self.handle_api_device_action(did, action, respond_to).await;
+                self.handle_api_device_action(did, action, respond_to, timeout_ms)
+                    .await;
             }
         }
 

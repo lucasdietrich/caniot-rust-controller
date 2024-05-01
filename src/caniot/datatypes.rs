@@ -314,10 +314,14 @@ impl TryFrom<&[u8]> for HeatingControllerTelemetry {
         if payload.len() >= 3 {
             Ok(HeatingControllerTelemetry {
                 modes: [
-                    HeatingMode::from_u8(payload[0] & 0xf).unwrap(),
-                    HeatingMode::from_u8((payload[0] & 0xf0) >> 4).unwrap(),
-                    HeatingMode::from_u8(payload[1] & 0xf).unwrap(),
-                    HeatingMode::from_u8((payload[1] & 0xf0) >> 4).unwrap(),
+                    HeatingMode::from_u8(payload[0] & 0xf)
+                        .ok_or(ProtocolError::PayloadDecodeError)?,
+                    HeatingMode::from_u8((payload[0] & 0xf0) >> 4)
+                        .ok_or(ProtocolError::PayloadDecodeError)?,
+                    HeatingMode::from_u8(payload[1] & 0xf)
+                        .ok_or(ProtocolError::PayloadDecodeError)?,
+                    HeatingMode::from_u8((payload[1] & 0xf0) >> 4)
+                        .ok_or(ProtocolError::PayloadDecodeError)?,
                 ],
                 power_status: payload[2] & 0b0000_0001 != 0,
             })

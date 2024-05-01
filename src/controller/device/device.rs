@@ -20,7 +20,7 @@ use crate::{
 use super::{
     actions::{DeviceAction, DeviceActionResult},
     context::DeviceProcessContext,
-    verdict::DeviceVerdict,
+    verdict::{DeviceActionVerdict, DeviceVerdict},
     DeviceError, DeviceTrait, DeviceWrapperTrait,
 };
 
@@ -110,14 +110,14 @@ impl DeviceTrait for Device {
         &mut self,
         action: &DeviceAction,
         ctx: &mut DeviceProcessContext,
-    ) -> Result<DeviceVerdict<Self::Action>, DeviceError> {
+    ) -> Result<DeviceActionVerdict<Self::Action>, DeviceError> {
         match action {
-            DeviceAction::Reset => Ok(DeviceVerdict::default()), // BlcCommand::HARDWARE_RESET
+            DeviceAction::Reset => Err(DeviceError::NotImplemented), // BlcCommand::HARDWARE_RESET
 
             DeviceAction::Inner(inner_action) => {
                 if let Some(inner_device) = self.inner.as_mut() {
                     let inner_verdict = inner_device.wrapper_handle_action(inner_action, ctx)?;
-                    Ok(DeviceVerdict::from_inner_verdict(inner_verdict))
+                    Ok(DeviceActionVerdict::from_inner_verdict(inner_verdict))
                 } else {
                     Err(DeviceError::NoInnerDevice)
                 }
@@ -125,12 +125,28 @@ impl DeviceTrait for Device {
         }
     }
 
+    fn handle_action_result(
+        &self,
+        delayed_action: &Self::Action,
+    ) -> Result<<Self::Action as DeviceActionTrait>::Result, DeviceError> {
+        match delayed_action {
+            DeviceAction::Inner(inner_action) => {
+                if let Some(inner_device) = self.inner.as_ref() {
+                    let result = inner_device.wrapper_handle_delayed_action_result(inner_action)?;
+                    Ok(DeviceActionResult::new_boxed_inner(result))
+                } else {
+                    Err(DeviceError::NoInnerDevice)
+                }
+            }
+            _ => Err(DeviceError::NotImplemented),
+        }
+    }
+
     fn handle_frame(
         &mut self,
         frame: &ResponseData,
-        action: Option<&Self::Action>,
         ctx: &mut DeviceProcessContext,
-    ) -> Result<DeviceVerdict<Self::Action>, DeviceError> {
+    ) -> Result<DeviceVerdict, DeviceError> {
         self.mark_last_seen();
 
         // Update device stats
@@ -140,42 +156,16 @@ impl DeviceTrait for Device {
             ResponseData::Error { .. } => self.stats.err_rx += 1,
         }
 
-        let verdict = if let Some(ref mut inner) = self.inner {
-            let action = action.and_then(|action| match action {
-                DeviceAction::Inner(inner_action) => Some(inner_action),
-                _ => None,
-            });
-
-            let inner_result = inner.wrapper_handle_frame(frame, action, ctx)?;
-            Ok(DeviceVerdict::from_inner_verdict(inner_result))
+        if let Some(ref mut inner) = self.inner {
+            inner.wrapper_handle_frame(frame, ctx)
         } else {
             Ok(DeviceVerdict::default())
-        };
-
-        // Check that verdict match parameters
-        match (&verdict, &action) {
-            (Ok(DeviceVerdict::ActionPendingOn(_)), _) => {
-                panic!("ActionPendingOn should not be returned from handle_frame")
-            }
-            (Ok(DeviceVerdict::ActionResult(_)), None) => {
-                panic!("ActionResult should not be returned from handle_frame without action")
-            }
-            (Ok(DeviceVerdict::Request(_)), Some(_)) | (Ok(DeviceVerdict::None), Some(_)) => {
-                panic!("ActionResult should be returned from handle_frame with action")
-            }
-            _ => {}
-        };
-
-        verdict
+        }
     }
 
-    fn process(
-        &mut self,
-        ctx: &mut DeviceProcessContext,
-    ) -> Result<DeviceVerdict<Self::Action>, DeviceError> {
+    fn process(&mut self, ctx: &mut DeviceProcessContext) -> Result<DeviceVerdict, DeviceError> {
         if let Some(ref mut inner) = self.inner {
-            let inner_result = inner.wrapper_process(ctx)?;
-            Ok(DeviceVerdict::from_inner_verdict(inner_result))
+            inner.wrapper_process(ctx)
         } else {
             Ok(DeviceVerdict::default())
         }

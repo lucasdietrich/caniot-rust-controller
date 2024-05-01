@@ -8,67 +8,63 @@ use crate::{
 use super::actions::{DeviceAction, DeviceActionResult};
 
 #[derive(Debug, Default)]
-
-pub enum DeviceVerdict<A: DeviceActionTrait> {
+pub enum DeviceVerdict {
     #[default]
     None,
     Request(RequestData),
+}
+
+#[derive(Debug)]
+pub enum DeviceActionVerdict<A: DeviceActionTrait> {
     ActionResult(A::Result),
     ActionPendingOn(RequestData),
 }
 
-impl DeviceVerdict<DeviceAction> {
+impl DeviceActionVerdict<DeviceAction> {
     // Converts a DeviceVerdictWrapper returned by an inner device to a DeviceVerdict<DeviceAction>
-    pub fn from_inner_verdict(inner: DeviceVerdictWrapper) -> Self {
+    pub fn from_inner_verdict(inner: DeviceActionVerdictWrapper) -> Self {
         match inner {
-            DeviceVerdictWrapper::None => DeviceVerdict::None,
-            DeviceVerdictWrapper::ActionResult(result) => {
-                DeviceVerdict::ActionResult(DeviceActionResult::new_boxed_inner(result))
+            DeviceActionVerdictWrapper::ActionResult(result) => {
+                DeviceActionVerdict::ActionResult(DeviceActionResult::new_boxed_inner(result))
             }
-            DeviceVerdictWrapper::Request(request) => DeviceVerdict::Request(request),
-            DeviceVerdictWrapper::PendingActionOnRequest(request) => {
-                DeviceVerdict::ActionPendingOn(request)
+            DeviceActionVerdictWrapper::PendingActionOnRequest(request) => {
+                DeviceActionVerdict::ActionPendingOn(request)
             }
         }
     }
 }
 
-impl<A: DeviceActionTrait> DeviceVerdict<A> {
+impl<A: DeviceActionTrait> DeviceActionVerdict<A> {
     pub fn is_pending_action(&self) -> bool {
-        matches!(self, DeviceVerdict::ActionPendingOn(_))
+        matches!(self, DeviceActionVerdict::ActionPendingOn(_))
     }
 
     pub fn get_request_action_pending_on(&self) -> Option<&RequestData> {
         match self {
-            DeviceVerdict::ActionPendingOn(request) => Some(request),
+            DeviceActionVerdict::ActionPendingOn(request) => Some(request),
             _ => None,
         }
     }
 }
 
-impl<A> DeviceActionResultTrait for DeviceVerdict<A> where A: DeviceActionTrait {}
+impl<A> DeviceActionResultTrait for DeviceActionVerdict<A> where A: DeviceActionTrait {}
 
-pub enum DeviceVerdictWrapper {
-    None,
+pub enum DeviceActionVerdictWrapper {
     ActionResult(Box<dyn DeviceActionResultTrait>),
-    Request(RequestData),
     PendingActionOnRequest(RequestData),
 }
 
-impl<A> From<DeviceVerdict<A>> for DeviceVerdictWrapper
+impl<A> From<DeviceActionVerdict<A>> for DeviceActionVerdictWrapper
 where
     A: DeviceActionTrait,
 {
-    fn from(verdict: DeviceVerdict<A>) -> Self {
+    fn from(verdict: DeviceActionVerdict<A>) -> Self {
         match verdict {
-            DeviceVerdict::None => DeviceVerdictWrapper::None,
-            DeviceVerdict::ActionResult(result) => DeviceVerdictWrapper::ActionResult(Box::new(
-                result,
-            )
-                as Box<dyn DeviceActionResultTrait>),
-            DeviceVerdict::Request(request) => DeviceVerdictWrapper::Request(request),
-            DeviceVerdict::ActionPendingOn(request) => {
-                DeviceVerdictWrapper::PendingActionOnRequest(request)
+            DeviceActionVerdict::ActionResult(result) => DeviceActionVerdictWrapper::ActionResult(
+                Box::new(result) as Box<dyn DeviceActionResultTrait>,
+            ),
+            DeviceActionVerdict::ActionPendingOn(request) => {
+                DeviceActionVerdictWrapper::PendingActionOnRequest(request)
             }
         }
     }

@@ -33,6 +33,7 @@ pub enum ControllerMessage {
         action: DeviceAction,
         respond_to:
             oneshot::Sender<Result<<DeviceAction as DeviceActionTrait>::Result, ControllerError>>,
+        timeout_ms: Option<u32>,
     },
 }
 
@@ -79,11 +80,13 @@ impl ControllerHandle {
         &self,
         did: Option<DeviceId>,
         action: DeviceAction,
+        timeout_ms: Option<u32>,
     ) -> Result<DeviceActionResult, ControllerError> {
         self.query(|respond_to| ControllerMessage::DeviceAction {
             did,
             action,
             respond_to,
+            timeout_ms,
         })
         .await
     }
@@ -93,6 +96,7 @@ impl ControllerHandle {
         &self,
         did: Option<DeviceId>,
         action: A,
+        timeout_ms: Option<u32>,
     ) -> Result<A::Result, ControllerError>
     // # IMPORTANT NOTE: TODO
     // The A::Result type which is returned by the action must implement the Clone trait.
@@ -104,7 +108,7 @@ impl ControllerHandle {
         A::Result: Clone,
     {
         let action = DeviceAction::new_inner(action);
-        let result = self.device_action(did, action).await?;
+        let result = self.device_action(did, action, timeout_ms).await?;
         match result {
             DeviceActionResult::Inner(inner) => match inner.deref().downcast_ref::<A::Result>() {
                 Some(result) => Ok(result.clone()),

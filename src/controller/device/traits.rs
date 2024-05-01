@@ -9,8 +9,8 @@ use crate::caniot;
 use as_any::{AsAny, Downcast};
 
 use super::{
-    verdict::{DeviceVerdict, DeviceVerdictWrapper},
-    DeviceError, DeviceEvent, DeviceProcessContext,
+    verdict::{DeviceActionVerdict, DeviceActionVerdictWrapper, DeviceVerdict},
+    DeviceError, DeviceProcessContext,
 };
 
 pub trait DeviceTrait: Send + Debug {
@@ -19,9 +19,8 @@ pub trait DeviceTrait: Send + Debug {
     fn handle_frame(
         &mut self,
         _frame: &caniot::ResponseData,
-        _action: Option<&Self::Action>, // Action to which the response frame is related if any
         _ctx: &mut DeviceProcessContext,
-    ) -> Result<DeviceVerdict<Self::Action>, DeviceError> {
+    ) -> Result<DeviceVerdict, DeviceError> {
         Ok(DeviceVerdict::default())
     }
 
@@ -29,38 +28,20 @@ pub trait DeviceTrait: Send + Debug {
         &mut self,
         _action: &Self::Action,
         _ctx: &mut DeviceProcessContext,
-    ) -> Result<DeviceVerdict<Self::Action>, DeviceError> {
+    ) -> Result<DeviceActionVerdict<Self::Action>, DeviceError> {
         Err(DeviceError::NotImplemented)
     }
 
-    // // Building an action result shouldn't alter the device state (i.e. &self only)
-    // fn handle_delayed_action_result(
-    //     &self,
-    //     _delayed_action: &Self::Action,
-    // ) -> Result<<Self::Action as DeviceActionTrait>::Result, DeviceError> {
-    //     Err(DeviceError::NotImplemented)
-    // }
-
-    fn process(
-        &mut self,
-        _ctx: &mut DeviceProcessContext,
-    ) -> Result<DeviceVerdict<Self::Action>, DeviceError> {
-        Ok(DeviceVerdict::default())
+    // Building an action result shouldn't alter the device state (i.e. &self only)
+    fn handle_action_result(
+        &self,
+        _delayed_action: &Self::Action,
+    ) -> Result<<Self::Action as DeviceActionTrait>::Result, DeviceError> {
+        Err(DeviceError::NotImplemented)
     }
 
-    fn handle_event(
-        &mut self,
-        event: &DeviceEvent<Self::Action>,
-        ctx: &mut DeviceProcessContext,
-    ) -> Result<DeviceVerdict<Self::Action>, DeviceError> {
-        match event {
-            DeviceEvent::Process => self.process(ctx),
-            DeviceEvent::Action(action) => self.handle_action(action, ctx),
-            DeviceEvent::Frame(frame) => self.handle_frame(frame, None, ctx),
-            DeviceEvent::FrameForAction(frame, action) => {
-                self.handle_frame(frame, Some(action), ctx)
-            }
-        }
+    fn process(&mut self, _ctx: &mut DeviceProcessContext) -> Result<DeviceVerdict, DeviceError> {
+        Ok(DeviceVerdict::default())
     }
 }
 
@@ -70,9 +51,8 @@ pub trait DeviceWrapperTrait: Send + Debug {
     fn wrapper_handle_frame(
         &mut self,
         frame: &caniot::ResponseData,
-        action: Option<&Box<dyn DeviceActionWrapperTrait>>,
         ctx: &mut DeviceProcessContext,
-    ) -> Result<DeviceVerdictWrapper, DeviceError>;
+    ) -> Result<DeviceVerdict, DeviceError>;
 
     // Check if the action type can be handled by this device
     fn wrapper_can_handle_action(&self, action: &dyn DeviceActionWrapperTrait) -> bool;
@@ -81,20 +61,19 @@ pub trait DeviceWrapperTrait: Send + Debug {
         &mut self,
         action: &Box<dyn DeviceActionWrapperTrait>,
         ctx: &mut DeviceProcessContext,
-    ) -> Result<DeviceVerdictWrapper, DeviceError>;
+    ) -> Result<DeviceActionVerdictWrapper, DeviceError>;
 
-    // fn wrapper_handle_delayed_action_result(
-    //     &self,
-    //     delayed_action: &Box<dyn DeviceActionWrapperTrait>,
-    //     ctx: &mut DeviceProcessContext,
-    // ) -> Result<Box<dyn DeviceActionResultTrait>, DeviceError> {
-    //     Err(DeviceError::NotImplemented)
-    // }
+    fn wrapper_handle_delayed_action_result(
+        &self,
+        _delayed_action: &Box<dyn DeviceActionWrapperTrait>,
+    ) -> Result<Box<dyn DeviceActionResultTrait>, DeviceError> {
+        Err(DeviceError::NotImplemented)
+    }
 
     fn wrapper_process(
         &mut self,
         ctx: &mut DeviceProcessContext,
-    ) -> Result<DeviceVerdictWrapper, DeviceError>;
+    ) -> Result<DeviceVerdict, DeviceError>;
 }
 
 /// Automatically implement DeviceWrapperTrait for any DeviceTrait
@@ -109,51 +88,41 @@ where
     fn wrapper_handle_frame(
         &mut self,
         frame: &caniot::ResponseData,
-        action: Option<&Box<dyn DeviceActionWrapperTrait>>,
         ctx: &mut DeviceProcessContext,
-    ) -> Result<DeviceVerdictWrapper, DeviceError> {
-        let action = action
-            .map(|action| match action.deref().downcast_ref::<T::Action>() {
-                Some(action) => Ok(action),
-                None => Err(DeviceError::UnsupportedAction),
-            })
-            .transpose()?;
-
-        self.handle_frame(frame, action, ctx)
-            .map(DeviceVerdictWrapper::from)
+    ) -> Result<DeviceVerdict, DeviceError> {
+        self.handle_frame(frame, ctx)
     }
 
     fn wrapper_handle_action(
         &mut self,
         action: &Box<dyn DeviceActionWrapperTrait>,
         ctx: &mut DeviceProcessContext,
-    ) -> Result<DeviceVerdictWrapper, DeviceError> {
+    ) -> Result<DeviceActionVerdictWrapper, DeviceError> {
         match action.deref().downcast_ref::<T::Action>() {
             Some(action) => self
                 .handle_action(action, ctx)
-                .map(DeviceVerdictWrapper::from),
+                .map(DeviceActionVerdictWrapper::from),
             None => Err(DeviceError::UnsupportedAction),
         }
     }
 
-    // fn wrapper_handle_delayed_action_result(
-    //     &self,
-    //     delayed_action: &Box<dyn DeviceActionWrapperTrait>,
-    //     ctx: &mut DeviceProcessContext,
-    // ) -> Result<Box<dyn DeviceActionResultTrait>, DeviceError> {
-    //     match delayed_action.deref().downcast_ref::<T::Action>() {
-    //         Some(delayed_action) => self
-    //             .handle_delayed_action_result(delayed_action)
-    //             .map(|result| Box::new(result) as Box<dyn DeviceActionResultTrait>),
-    //         None => Err(DeviceError::UnsupportedAction),
-    //     }
-    // }
+    fn wrapper_handle_delayed_action_result(
+        &self,
+        delayed_action: &Box<dyn DeviceActionWrapperTrait>,
+    ) -> Result<Box<dyn DeviceActionResultTrait>, DeviceError> {
+        match delayed_action.deref().downcast_ref::<T::Action>() {
+            Some(delayed_action) => self
+                .handle_action_result(delayed_action)
+                .map(|result| Box::new(result) as Box<dyn DeviceActionResultTrait>),
+            None => Err(DeviceError::UnsupportedAction),
+        }
+    }
 
     fn wrapper_process(
         &mut self,
         ctx: &mut DeviceProcessContext,
-    ) -> Result<DeviceVerdictWrapper, DeviceError> {
-        self.process(ctx).map(DeviceVerdictWrapper::from)
+    ) -> Result<DeviceVerdict, DeviceError> {
+        self.process(ctx)
     }
 }
 
