@@ -29,8 +29,6 @@ impl Behavior for HeatersController {
         if endpoint == &ct::Endpoint::ApplicationDefault {
             let command = HeatingControllerCommand::try_from(payload.as_slice()).unwrap();
 
-            debug!("HeatersController command: {:?}", command);
-
             for (i, mode) in command.modes.iter().enumerate() {
                 if mode != &HeatingMode::None {
                     self.modes[i] = *mode;

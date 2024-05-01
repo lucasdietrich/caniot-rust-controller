@@ -17,7 +17,8 @@ pub fn init_logger() {
 
     builder
         .format_level(true)
-        .format_target(true)
+        .format_target(false)
+        // .format_module_path(false)
         .format_timestamp_millis()
         .filter_level(log::LevelFilter::Debug);
 
