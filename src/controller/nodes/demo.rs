@@ -5,7 +5,7 @@ use crate::{
     caniot::{self, emu::Device, RequestData, Response, ResponseData},
     controller::{
         ControllerAPI, ControllerError, DeviceActionResultTrait, DeviceActionTrait, DeviceError,
-        DeviceProcessOutput, DeviceTrait,
+        DeviceProcessContext, DeviceProcessOutput, DeviceTrait,
     },
 };
 
@@ -32,10 +32,10 @@ impl DemoController {
         self.active = active;
 
         let result = DeviceProcessOutput {
-            requests: vec![RequestData::Command {
+            request: Some(RequestData::Command {
                 endpoint: caniot::Endpoint::ApplicationDefault,
                 payload: vec![active as u8],
-            }],
+            }),
             action_result: Some(DemoActionResult::Active(active)),
             ..Default::default()
         };
@@ -50,6 +50,7 @@ impl DeviceTrait for DemoController {
     fn handle_action(
         &mut self,
         action: &DemoAction,
+        ctx: &mut DeviceProcessContext,
     ) -> Result<DeviceProcessOutput<DemoAction>, DeviceError> {
         println!("DemoNode::handle_action({:?})", action);
         match action {
@@ -63,6 +64,7 @@ impl DeviceTrait for DemoController {
     fn handle_frame(
         &mut self,
         frame: &caniot::ResponseData,
+        ctx: &mut DeviceProcessContext,
     ) -> Result<DeviceProcessOutput<DemoAction>, DeviceError> {
         if let caniot::ResponseData::Telemetry {
             endpoint: _,
@@ -77,11 +79,15 @@ impl DeviceTrait for DemoController {
         Ok(DeviceProcessOutput::default())
     }
 
-    fn process(&mut self) -> Result<DeviceProcessOutput<DemoAction>, DeviceError> {
-        let mut result = DeviceProcessOutput::default();
-        result.request_process_in_s(5);
+    fn process(
+        &mut self,
+        ctx: &mut DeviceProcessContext,
+    ) -> Result<DeviceProcessOutput<DemoAction>, DeviceError> {
+        ctx.request_process_in_s(5);
+
         println!("DemoNode::process()");
-        Ok(result)
+
+        Ok(DeviceProcessOutput::default())
     }
 }
 

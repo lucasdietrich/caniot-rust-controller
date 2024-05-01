@@ -2,7 +2,10 @@ use log::info;
 
 use crate::{
     caniot::{self, HeatingControllerCommand, HeatingControllerTelemetry, HeatingMode},
-    controller::{DeviceActionResultTrait, DeviceActionTrait, DeviceProcessOutput, DeviceTrait},
+    controller::{
+        DeviceActionResultTrait, DeviceActionTrait, DeviceProcessContext, DeviceProcessOutput,
+        DeviceTrait,
+    },
 };
 
 #[derive(Debug, Default, Clone)]
@@ -16,6 +19,7 @@ impl DeviceTrait for HeatersController {
     fn handle_action(
         &mut self,
         action: &Self::Action,
+        ctx: &mut DeviceProcessContext,
     ) -> Result<DeviceProcessOutput<Self::Action>, crate::controller::DeviceError> {
         let mut out = DeviceProcessOutput::default();
 
@@ -26,7 +30,7 @@ impl DeviceTrait for HeatersController {
                     modes: [heaters[0], heaters[1], heaters[2], heaters[3]],
                 };
 
-                out.add_request_data(caniot::RequestData::Command {
+                out.set_request_data(caniot::RequestData::Command {
                     endpoint: caniot::Endpoint::ApplicationDefault,
                     payload: command.into(),
                 });
@@ -41,6 +45,7 @@ impl DeviceTrait for HeatersController {
     fn handle_frame(
         &mut self,
         frame: &caniot::ResponseData,
+        ctx: &mut DeviceProcessContext,
     ) -> Result<DeviceProcessOutput<Self::Action>, crate::controller::DeviceError> {
         match &frame {
             &caniot::ResponseData::Telemetry { endpoint, payload }

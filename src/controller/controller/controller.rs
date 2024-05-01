@@ -15,7 +15,7 @@ use crate::caniot::{DeviceId, Request};
 use crate::controller::actor::ControllerMessage;
 use crate::controller::{
     Device, DeviceAction, DeviceActionResult, DeviceActionTrait, DeviceError, DeviceEvent,
-    DeviceProcessOutput, DeviceTrait, DeviceWrapperTrait,
+    DeviceProcessContext, DeviceProcessOutput, DeviceTrait, DeviceWrapperTrait,
 };
 use crate::shutdown::Shutdown;
 
@@ -192,11 +192,13 @@ impl Controller {
             self.devices.get_mut(&frame.device_id).unwrap()
         };
 
+        let mut device_context = DeviceProcessContext::default();
+
         // Update device stats
-        let device_result = device.handle_frame(&frame.data)?;
+        let device_result = device.handle_frame(&frame.data, &mut device_context)?;
 
         // Set next process time
-        device.schedule_next_process_in(device_result.next_process);
+        device.schedule_next_process_in(device_context.next_process);
 
         // TODO broadcast should be handled differently as the oneshot channel cannot be used to send multiple responses
         let pivot = self
@@ -210,7 +212,7 @@ impl Controller {
 
         // Send requests to device
         let device_did = device.did;
-        for request_data in device_result.requests {
+        if let Some(request_data) = device_result.request {
             let request = Request::new(device_did, request_data);
             self.send_caniot_frame(&request).await?;
         }
@@ -290,16 +292,18 @@ impl Controller {
         // Process devices
         for (did, device) in self.devices.iter_mut() {
             if device.needs_process() {
-                let device_result = device.handle_event(&DeviceEvent::Process)?;
+                let mut device_context = DeviceProcessContext::default();
+                let device_result =
+                    device.handle_event(&DeviceEvent::Process, &mut device_context)?;
                 device.mark_processed();
-                device.schedule_next_process_in(device_result.next_process);
+                device.schedule_next_process_in(device_context.next_process);
                 results.push((did.to_owned(), device_result));
             }
         }
 
         // Send requests to device
         for (did, result) in results {
-            for request_data in result.requests {
+            if let Some(request_data) = result.request {
                 let request = Request::new(did, request_data);
                 self.send_caniot_frame(&request).await?;
             }
@@ -416,11 +420,13 @@ impl Controller {
 
         info!("Found device {} for action", device.did);
 
-        match device.handle_action(&action) {
+        let mut device_context = DeviceProcessContext::default();
+
+        match device.handle_action(&action, &mut device_context) {
             Ok(result) => {
                 let did = device.did;
-                device.schedule_next_process_in(result.next_process);
-                for request_data in result.requests {
+                device.schedule_next_process_in(device_context.next_process);
+                if let Some(request_data) = result.request {
                     let request = Request::new(did, request_data);
                     self.send_caniot_frame(&request).await?;
                 }

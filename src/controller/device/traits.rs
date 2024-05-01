@@ -8,7 +8,9 @@ use crate::caniot;
 
 use as_any::{AsAny, Downcast};
 
-use super::{DeviceError, DeviceEvent, DeviceProcessOutput, DeviceProcessOutputWrapper};
+use super::{
+    DeviceError, DeviceEvent, DeviceProcessContext, DeviceProcessOutput, DeviceProcessOutputWrapper,
+};
 
 pub trait DeviceTrait: Send + Debug {
     type Action: DeviceActionTrait;
@@ -16,6 +18,7 @@ pub trait DeviceTrait: Send + Debug {
     fn handle_frame(
         &mut self,
         _frame: &caniot::ResponseData,
+        ctx: &mut DeviceProcessContext,
     ) -> Result<DeviceProcessOutput<Self::Action>, DeviceError> {
         Ok(DeviceProcessOutput::default())
     }
@@ -23,22 +26,27 @@ pub trait DeviceTrait: Send + Debug {
     fn handle_action(
         &mut self,
         _action: &Self::Action,
+        ctx: &mut DeviceProcessContext,
     ) -> Result<DeviceProcessOutput<Self::Action>, DeviceError> {
         Err(DeviceError::NotImplemented)
     }
 
-    fn process(&mut self) -> Result<DeviceProcessOutput<Self::Action>, DeviceError> {
+    fn process(
+        &mut self,
+        ctx: &mut DeviceProcessContext,
+    ) -> Result<DeviceProcessOutput<Self::Action>, DeviceError> {
         Ok(DeviceProcessOutput::default())
     }
 
     fn handle_event(
         &mut self,
         event: &DeviceEvent<Self::Action>,
+        ctx: &mut DeviceProcessContext,
     ) -> Result<DeviceProcessOutput<Self::Action>, DeviceError> {
         match event {
-            DeviceEvent::Process => self.process(),
-            DeviceEvent::Action(action) => self.handle_action(action),
-            DeviceEvent::Frame(frame) => self.handle_frame(frame),
+            DeviceEvent::Process => self.process(ctx),
+            DeviceEvent::Action(action) => self.handle_action(action, ctx),
+            DeviceEvent::Frame(frame) => self.handle_frame(frame, ctx),
         }
     }
 }
@@ -49,6 +57,7 @@ pub trait DeviceWrapperTrait: Send + Debug {
     fn wrapper_handle_frame(
         &mut self,
         frame: &caniot::ResponseData,
+        ctx: &mut DeviceProcessContext,
     ) -> Result<DeviceProcessOutputWrapper, DeviceError>;
 
     // Check if the action type can be handled by this device
@@ -57,9 +66,13 @@ pub trait DeviceWrapperTrait: Send + Debug {
     fn wrapper_handle_action(
         &mut self,
         action: &Box<dyn DeviceActionWrapperTrait>,
+        ctx: &mut DeviceProcessContext,
     ) -> Result<DeviceProcessOutputWrapper, DeviceError>;
 
-    fn wrapper_process(&mut self) -> Result<DeviceProcessOutputWrapper, DeviceError>;
+    fn wrapper_process(
+        &mut self,
+        ctx: &mut DeviceProcessContext,
+    ) -> Result<DeviceProcessOutputWrapper, DeviceError>;
 }
 
 /// Automatically implement DeviceWrapperTrait for any DeviceTrait
@@ -74,25 +87,30 @@ where
     fn wrapper_handle_frame(
         &mut self,
         frame: &caniot::ResponseData,
+        ctx: &mut DeviceProcessContext,
     ) -> Result<DeviceProcessOutputWrapper, DeviceError> {
-        self.handle_frame(frame)
+        self.handle_frame(frame, ctx)
             .map(DeviceProcessOutputWrapper::from)
     }
 
     fn wrapper_handle_action(
         &mut self,
         action: &Box<dyn DeviceActionWrapperTrait>,
+        ctx: &mut DeviceProcessContext,
     ) -> Result<DeviceProcessOutputWrapper, DeviceError> {
         match action.deref().downcast_ref::<T::Action>() {
             Some(action) => self
-                .handle_action(action)
+                .handle_action(action, ctx)
                 .map(DeviceProcessOutputWrapper::from),
             None => Err(DeviceError::UnsupportedAction),
         }
     }
 
-    fn wrapper_process(&mut self) -> Result<DeviceProcessOutputWrapper, DeviceError> {
-        self.process().map(DeviceProcessOutputWrapper::from)
+    fn wrapper_process(
+        &mut self,
+        ctx: &mut DeviceProcessContext,
+    ) -> Result<DeviceProcessOutputWrapper, DeviceError> {
+        self.process(ctx).map(DeviceProcessOutputWrapper::from)
     }
 }
 
