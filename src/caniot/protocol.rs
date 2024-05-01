@@ -253,14 +253,14 @@ impl Response {
                     device_id: self.device_id,
                     direction: Direction::Response,
                     msg_type: Type::Telemetry,
-                    action: Action::Read,
+                    action: Action::Write,
                     endpoint: *endpoint,
                 },
                 ErrorSource::Attribute(_) => Id {
                     device_id: self.device_id,
                     direction: Direction::Response,
                     msg_type: Type::Attribute,
-                    action: Action::Read,
+                    action: Action::Write,
                     endpoint: Endpoint::ApplicationDefault,
                 },
             },
@@ -395,22 +395,22 @@ impl TryFrom<CanFrame> for Frame<ResponseData> {
         let payload: Vec<u8> = frame.data().to_vec();
 
         let data = if id.direction == Direction::Response {
-            match id.msg_type {
-                Type::Telemetry => ResponseData::Telemetry {
-                    endpoint: id.endpoint,
-                    payload,
-                },
-                Type::Attribute => ResponseData::Attribute {
-                    key: u16::from_le_bytes(payload[0..2].try_into().unwrap()),
-                    value: u32::from_le_bytes(payload[2..6].try_into().unwrap()),
-                },
+            if id.action == Action::Read {
+                match id.msg_type {
+                    Type::Telemetry => ResponseData::Telemetry {
+                        endpoint: id.endpoint,
+                        payload,
+                    },
+                    Type::Attribute => ResponseData::Attribute {
+                        key: u16::from_le_bytes(payload[0..2].try_into().unwrap()),
+                        value: u32::from_le_bytes(payload[2..6].try_into().unwrap()),
+                    },
+                }
+            } else {
+                parse_error_payload(id.get_endpoint(), &payload)?
             }
         } else {
-            if id.action == Action::Write {
-                parse_error_payload(id.get_endpoint(), &payload)?
-            } else {
-                return Err(ConversionError::NotValidResponse);
-            }
+            return Err(ConversionError::NotValidResponse);
         };
 
         Ok(Frame {
