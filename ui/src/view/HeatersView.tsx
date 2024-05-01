@@ -57,13 +57,13 @@ function HeatersView() {
               <Badge
                 status={heatersStatus?.getPowerStatus() ? "success" : "error"}
                 text={
-                  <>
+                  <Space size="middle">
                     Chauffage
                     <Spin
                       spinning={loading}
                       indicator={<LoadingOutlined spin />}
                     />
-                  </>
+                  </Space>
                 }
               />
             }
