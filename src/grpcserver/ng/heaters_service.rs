@@ -1,3 +1,4 @@
+use log::debug;
 use num_traits::{FromPrimitive, ToPrimitive};
 use tonic::{Request, Response, Result, Status};
 
@@ -48,10 +49,15 @@ impl HeatersService for NgHeaters {
     async fn set_state(&self, req: Request<m::Command>) -> Result<Response<m::Status>, Status> {
         let api = self.shared.controller_handle.clone();
         let heaters = req.into_inner().heater;
+
+        debug!("Request: {:?}", heaters);
+
         let heaters = heaters
             .iter()
             .map(|h| HeatingMode::from_i32(*h).unwrap_or_default())
             .collect();
+
+        debug!("Heaters: {:?}", heaters);
 
         let action = heaters::HeaterAction::SetStatus(heaters);
 
@@ -59,6 +65,8 @@ impl HeatersService for NgHeaters {
             .device_action_inner(None, action)
             .await
             .map_err(|e| Status::internal(format!("Error in set_state: {:?}", e)))?;
+
+        debug!("Result: {:?}", result);
 
         Ok(Response::new(self.heater_status_to_proto(&result)))
     }

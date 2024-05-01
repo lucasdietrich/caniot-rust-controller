@@ -275,7 +275,7 @@ impl TryFrom<&[u8]> for HeatingControllerCommand {
     type Error = ProtocolError;
 
     fn try_from(payload: &[u8]) -> Result<Self, ProtocolError> {
-        if payload.len() >= 3 {
+        if payload.len() >= 2 {
             Ok(HeatingControllerCommand {
                 modes: [
                     HeatingMode::from_u8(payload[0] & 0xf).unwrap(),

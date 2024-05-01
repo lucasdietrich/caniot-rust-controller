@@ -440,22 +440,21 @@ impl TryFrom<CanFrame> for Frame<RequestData> {
         let payload: Vec<u8> = value.data().to_vec();
 
         let data = if id.direction == Direction::Query {
-            match id.msg_type {
-                Type::Telemetry => RequestData::Telemetry {
+            match (id.msg_type, id.action) {
+                (Type::Telemetry, Action::Read) => RequestData::Telemetry {
                     endpoint: id.endpoint,
                 },
-                Type::Attribute => {
-                    if id.action == Action::Read {
-                        RequestData::AttributeRead {
-                            key: u16::from_le_bytes(payload[0..2].try_into().unwrap()),
-                        }
-                    } else {
-                        RequestData::AttributeWrite {
-                            key: u16::from_le_bytes(payload[0..2].try_into().unwrap()),
-                            value: u32::from_le_bytes(payload[2..6].try_into().unwrap()),
-                        }
-                    }
-                }
+                (Type::Telemetry, Action::Write) => RequestData::Command {
+                    endpoint: id.endpoint,
+                    payload: payload,
+                },
+                (Type::Attribute, Action::Read) => RequestData::AttributeRead {
+                    key: u16::from_le_bytes(payload[0..2].try_into().unwrap()),
+                },
+                (Type::Attribute, Action::Write) => RequestData::AttributeWrite {
+                    key: u16::from_le_bytes(payload[0..2].try_into().unwrap()),
+                    value: u32::from_le_bytes(payload[2..6].try_into().unwrap()),
+                },
             }
         } else {
             return Err(ConversionError::NotValidRequest);

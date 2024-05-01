@@ -2,6 +2,8 @@ use crate::caniot;
 
 use super::Device;
 
+// TODO implement default behavior
+// errorcode not implemented yet
 pub trait Behavior: Send + Sync {
     // Initialize the behavior context
     fn set_did(&mut self, did: &caniot::DeviceId);

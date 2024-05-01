@@ -1,14 +1,13 @@
 use log::info;
 
 use crate::{
-    caniot::{self, HeatingControllerTelemetry, HeatingMode},
+    caniot::{self, HeatingControllerCommand, HeatingControllerTelemetry, HeatingMode},
     controller::{DeviceActionResultTrait, DeviceActionTrait, DeviceProcessOutput, DeviceTrait},
 };
 
 #[derive(Debug, Default, Clone)]
 pub struct HeatersController {
     pub status: HeaterStatus,
-    pub requested_status: HeaterStatus,
 }
 
 impl DeviceTrait for HeatersController {
@@ -18,16 +17,25 @@ impl DeviceTrait for HeatersController {
         &mut self,
         action: &Self::Action,
     ) -> Result<DeviceProcessOutput<Self::Action>, crate::controller::DeviceError> {
+        let mut out = DeviceProcessOutput::default();
+
         match action {
             HeaterAction::GetStatus => {}
             HeaterAction::SetStatus(heaters) => {
-                for (i, heater) in heaters.iter().enumerate() {
-                    self.requested_status.heaters[i] = *heater;
-                }
+                let command = HeatingControllerCommand {
+                    modes: [heaters[0], heaters[1], heaters[2], heaters[3]],
+                };
+
+                out.add_request_data(caniot::RequestData::Command {
+                    endpoint: caniot::Endpoint::ApplicationDefault,
+                    payload: command.into(),
+                });
             }
         };
 
-        Ok(DeviceProcessOutput::new_action_result(self.status.clone()))
+        out.set_action_result(self.status.clone());
+
+        Ok(out)
     }
 
     fn handle_frame(

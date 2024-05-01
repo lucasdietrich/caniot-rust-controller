@@ -9,7 +9,7 @@ pub struct PendingQuery {
     // query pending
     pub query: caniot::Request,
 
-    // closure to call when response is received
+    // channel to reply to when query is answered
     sender: oneshot::Sender<Result<caniot::Response, ControllerError>>,
 
     // timeout in milliseconds

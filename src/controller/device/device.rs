@@ -191,15 +191,23 @@ impl<A: DeviceActionTrait> DeviceProcessOutput<A> {
         self.request_process_in_ms(0);
     }
 
+    pub fn set_action_result(&mut self, result: A::Result) {
+        self.action_result = Some(result);
+    }
+
+    pub fn add_request_data(&mut self, request: RequestData) {
+        self.requests.push(request);
+    }
+
     pub fn new_request_data(request_data: RequestData) -> Self {
         let mut result = DeviceProcessOutput::<A>::default();
-        result.requests.push(request_data);
+        result.add_request_data(request_data);
         result
     }
 
     pub fn new_action_result(action_result: A::Result) -> Self {
         let mut result = DeviceProcessOutput::<A>::default();
-        result.action_result = Some(action_result);
+        result.set_action_result(action_result);
         result
     }
 }
