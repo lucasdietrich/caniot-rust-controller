@@ -1,5 +1,9 @@
 # CANIOT Rust Controller
 
+## Overview
+
+![res/pics/ui_heaters.png](res/pics/ui_heaters.png)
+
 ## Build for Raspberry Pi 3
 
 Requirements:
