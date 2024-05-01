@@ -1,6 +1,5 @@
 use super::{DeviceActionResultTrait, DeviceActionTrait, DeviceActionWrapperTrait};
 
-// #[derive(Clone)]
 pub enum DeviceAction {
     Reset,
     Inner(Box<dyn DeviceActionWrapperTrait>),

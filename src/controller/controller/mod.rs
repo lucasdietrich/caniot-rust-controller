@@ -9,3 +9,7 @@ pub use attach::*;
 pub use controller::*;
 pub use pending_query::PendingQuery;
 pub use traits::ControllerAPI;
+
+pub mod pending_action;
+
+pub use pending_action::*;

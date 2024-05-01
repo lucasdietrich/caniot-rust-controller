@@ -1,12 +1,16 @@
 use std::time::Duration;
 
-#[derive(Debug, Default)]
+#[derive(Clone, Default, Debug)]
 pub struct DeviceProcessContext {
     // Time to wait before processing the device again
     pub next_process: Option<Duration>,
 }
 
 impl DeviceProcessContext {
+    pub fn reset(&mut self) {
+        self.next_process = None;
+    }
+
     pub fn request_process_in(&mut self, delay: Duration) {
         self.next_process = Some(delay);
     }

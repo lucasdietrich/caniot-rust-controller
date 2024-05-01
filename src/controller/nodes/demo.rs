@@ -5,7 +5,7 @@ use crate::{
     caniot::{self, emu::Device, RequestData, Response, ResponseData},
     controller::{
         ControllerAPI, ControllerError, DeviceActionResultTrait, DeviceActionTrait, DeviceError,
-        DeviceProcessContext, DeviceProcessOutput, DeviceTrait,
+        DeviceProcessContext, DeviceTrait, DeviceVerdict,
     },
 };
 
@@ -15,32 +15,23 @@ pub struct DemoController {
 }
 
 impl DemoController {
-    pub fn get_active(&self) -> Result<DeviceProcessOutput<DemoAction>, DeviceError> {
+    pub fn get_active(&self) -> Result<DeviceVerdict<DemoAction>, DeviceError> {
         println!("DemoNode::get_active() -> {}", self.active);
 
-        Ok(DeviceProcessOutput::new_action_result(
-            DemoActionResult::Active(self.active),
-        ))
+        Ok(DeviceVerdict::ActionResult(DemoActionResult::Active(
+            self.active,
+        )))
     }
 
-    pub fn set_active(
-        &mut self,
-        active: bool,
-    ) -> Result<DeviceProcessOutput<DemoAction>, DeviceError> {
+    pub fn set_active(&mut self, active: bool) -> Result<DeviceVerdict<DemoAction>, DeviceError> {
         println!("DemoNode::set_active({})", active);
 
         self.active = active;
 
-        let result = DeviceProcessOutput {
-            request: Some(RequestData::Command {
-                endpoint: caniot::Endpoint::ApplicationDefault,
-                payload: vec![active as u8],
-            }),
-            action_result: Some(DemoActionResult::Active(active)),
-            ..Default::default()
-        };
-
-        Ok(result)
+        Ok(DeviceVerdict::ActionPendingOn(RequestData::Command {
+            endpoint: caniot::Endpoint::ApplicationDefault,
+            payload: vec![active as u8],
+        }))
     }
 }
 
@@ -51,7 +42,7 @@ impl DeviceTrait for DemoController {
         &mut self,
         action: &DemoAction,
         ctx: &mut DeviceProcessContext,
-    ) -> Result<DeviceProcessOutput<DemoAction>, DeviceError> {
+    ) -> Result<DeviceVerdict<DemoAction>, DeviceError> {
         println!("DemoNode::handle_action({:?})", action);
         match action {
             DemoAction::GetActive => self.get_active(),
@@ -64,8 +55,9 @@ impl DeviceTrait for DemoController {
     fn handle_frame(
         &mut self,
         frame: &caniot::ResponseData,
+        action: Option<&Self::Action>,
         ctx: &mut DeviceProcessContext,
-    ) -> Result<DeviceProcessOutput<DemoAction>, DeviceError> {
+    ) -> Result<DeviceVerdict<DemoAction>, DeviceError> {
         if let caniot::ResponseData::Telemetry {
             endpoint: _,
             payload,
@@ -76,18 +68,18 @@ impl DeviceTrait for DemoController {
                 self.active = payload[0] != 0;
             }
         }
-        Ok(DeviceProcessOutput::default())
+        Ok(DeviceVerdict::default())
     }
 
     fn process(
         &mut self,
         ctx: &mut DeviceProcessContext,
-    ) -> Result<DeviceProcessOutput<DemoAction>, DeviceError> {
+    ) -> Result<DeviceVerdict<DemoAction>, DeviceError> {
         ctx.request_process_in_s(5);
 
         println!("DemoNode::process()");
 
-        Ok(DeviceProcessOutput::default())
+        Ok(DeviceVerdict::default())
     }
 }
 

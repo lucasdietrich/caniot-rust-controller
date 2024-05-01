@@ -23,6 +23,9 @@ pub enum ControllerMessage {
     Query {
         query: caniot::Request,
         timeout_ms: Option<u32>,
+
+        // If Some, the controller will respond to the sender with the result of the query.
+        // If None, the controller will send the query and not wait for a response.
         respond_to: Option<oneshot::Sender<Result<caniot::Response, ControllerError>>>,
     },
     DeviceAction {
@@ -61,7 +64,7 @@ impl ControllerHandle {
         let (sender, receiver) = oneshot::channel();
         let message = build_message_closure(sender);
         self.sender.send(message).await.unwrap();
-        receiver.await.unwrap()
+        receiver.await.expect("Sender dropped before response")
     }
 
     pub async fn get_stats(&self) -> (ControllerStats, Vec<DeviceStatsEntry>, CanStats) {

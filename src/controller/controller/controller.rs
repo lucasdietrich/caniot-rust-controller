@@ -2,30 +2,31 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
-use embedded_can::Frame;
+use as_any::Downcast;
 use itertools::{partition, Itertools};
 use tokio::runtime::Runtime;
+use tokio::sync::oneshot::{Receiver, Sender};
 
 use crate::bus::{CanInterface, CanInterfaceError};
 use crate::caniot::emu::{
     emu_pool1_add_devices_to_iface, emu_pool2_realistic_add_devices_to_iface,
 };
-use crate::caniot::{self, emu};
+use crate::caniot::{self, emu, Frame, ResponseData};
 use crate::caniot::{DeviceId, Request};
 use crate::controller::actor::ControllerMessage;
 use crate::controller::{
     Device, DeviceAction, DeviceActionResult, DeviceActionTrait, DeviceError, DeviceEvent,
-    DeviceProcessContext, DeviceProcessOutput, DeviceTrait, DeviceWrapperTrait,
+    DeviceProcessContext, DeviceTrait, DeviceVerdict, DeviceWrapperTrait, PendingAction,
 };
 use crate::shutdown::Shutdown;
 
-use super::ControllerAPI;
+use super::{pending_action, ControllerAPI};
 
 use super::super::{actor, DemoController, GarageController};
 use super::attach::device_attach_controller;
 use super::PendingQuery;
 
-use log::info;
+use log::{info, warn};
 use serde::{Deserialize, Serialize};
 
 use socketcan::CanFrame;
@@ -94,6 +95,18 @@ pub enum ControllerError {
     DeviceError(#[from] DeviceError),
 }
 
+enum ActionResultOrPending {
+    // Action Result
+    Result(DeviceActionResult),
+
+    // Pending Action on Device (DID)
+    Pending(
+        DeviceAction,
+        DeviceId,
+        Receiver<Result<Frame<ResponseData>, ControllerError>>,
+    ),
+}
+
 pub struct Controller {
     // CAN interface
     pub iface: CanInterface,
@@ -143,17 +156,25 @@ impl Controller {
         self.handle.clone()
     }
 
-    pub async fn send_caniot_frame(
-        &mut self,
+    pub async fn iface_send_caniot_frame(
+        iface: &mut CanInterface,
+        stats: &mut ControllerStats,
         request: &caniot::Request,
     ) -> Result<(), ControllerError> {
         info!("TX {}", request);
 
         let can_frame = request.into();
 
-        self.iface.send(can_frame).await?;
-        self.stats.tx += 1;
+        iface.send(can_frame).await?;
+        stats.tx += 1;
         Ok(())
+    }
+
+    pub async fn send_caniot_frame(
+        &mut self,
+        request: &caniot::Request,
+    ) -> Result<(), ControllerError> {
+        Self::iface_send_caniot_frame(&mut self.iface, &mut self.stats, request).await
     }
 
     pub async fn query_sched(
@@ -176,11 +197,46 @@ impl Controller {
         }
     }
 
-    async fn handle_caniot_response(
+    async fn handle_device_verdict<A: DeviceActionTrait>(
+        iface: &mut CanInterface,
+        stats: &mut ControllerStats,
+        did: DeviceId,
+        ctx: &mut DeviceProcessContext,
+        verdict: DeviceVerdict<A>,
+    ) -> Result<Option<A::Result>, ControllerError> {
+        let action = match verdict {
+            DeviceVerdict::None => None,
+            DeviceVerdict::Request(request) => {
+                let request = Request::new(did, request);
+                Self::iface_send_caniot_frame(iface, stats, &request).await?;
+                None
+            }
+            DeviceVerdict::ActionPendingOn(request) => {
+                let request = Request::new(did, request);
+                Self::iface_send_caniot_frame(iface, stats, &request).await?;
+                None
+            }
+            DeviceVerdict::ActionResult(result) => Some(result),
+        };
+        Ok(action)
+    }
+
+    async fn handle_caniot_frame(
         &mut self,
         frame: caniot::Response,
     ) -> Result<(), ControllerError> {
         self.stats.rx += 1;
+
+        // Find pending queries that can be answered by this frame
+        // TODO broadcast should be handled differently as the oneshot channel cannot be used to send multiple responses
+        let pivot = self
+            .pending_queries
+            .partition_point(|pq| pq.match_response(&frame));
+
+        // if a frame can answer multiple pending queries, remove all of them
+        for pq in self.pending_queries.drain(..pivot) {
+            pq.reply_with_frame(frame.clone());
+        }
 
         // Get or create device
         let device = if let Some(device) = self.devices.get_mut(&frame.device_id) {
@@ -192,30 +248,27 @@ impl Controller {
             self.devices.get_mut(&frame.device_id).unwrap()
         };
 
+        // Check if an action is answered by the pending queries being answered
+        // TODO
+
         let mut device_context = DeviceProcessContext::default();
 
         // Update device stats
-        let device_result = device.handle_frame(&frame.data, &mut device_context)?;
+        let verdict = device.handle_frame(&frame.data, None, &mut device_context)?;
 
         // Set next process time
         device.schedule_next_process_in(device_context.next_process);
 
-        // TODO broadcast should be handled differently as the oneshot channel cannot be used to send multiple responses
-        let pivot = self
-            .pending_queries
-            .partition_point(|pq| pq.match_response(&frame));
-
-        // if a frame can answer multiple pending queries, remove all of them
-        for pq in self.pending_queries.drain(..pivot) {
-            pq.reply_with_frame(frame.clone());
-        }
-
         // Send requests to device
         let device_did = device.did;
-        if let Some(request_data) = device_result.request {
-            let request = Request::new(device_did, request_data);
-            self.send_caniot_frame(&request).await?;
-        }
+        Self::handle_device_verdict(
+            &mut self.iface,
+            &mut self.stats,
+            device_did,
+            &mut device_context,
+            verdict,
+        )
+        .await?;
 
         Ok(())
     }
@@ -287,25 +340,28 @@ impl Controller {
     }
 
     async fn process_devices(&mut self) -> Result<(), ControllerError> {
-        let mut results = Vec::new();
-
-        // Process devices
+        // Use iterator directly to avoid unnecessary indexing and cloning
         for (did, device) in self.devices.iter_mut() {
             if device.needs_process() {
+                // Check if action is pending for this device
+                if let Some(pending_action) = &device.pending_action {
+                    if pending_action.is_expired() {}
+                }
+
+                // Check if device needs processing (requested by controller)
                 let mut device_context = DeviceProcessContext::default();
-                let device_result =
-                    device.handle_event(&DeviceEvent::Process, &mut device_context)?;
+                let verdict = device.handle_event(&DeviceEvent::Process, &mut device_context)?;
                 device.mark_processed();
                 device.schedule_next_process_in(device_context.next_process);
-                results.push((did.to_owned(), device_result));
-            }
-        }
 
-        // Send requests to device
-        for (did, result) in results {
-            if let Some(request_data) = result.request {
-                let request = Request::new(did, request_data);
-                self.send_caniot_frame(&request).await?;
+                let _ = Self::handle_device_verdict(
+                    &mut self.iface,
+                    &mut self.stats,
+                    *did,
+                    &mut device_context,
+                    verdict,
+                )
+                .await?;
             }
         }
 
@@ -326,7 +382,7 @@ impl Controller {
                     match caniot::Response::try_from(frame) {
                         Ok(frame) => {
                             info!("RX {}", frame);
-                            let result = self.handle_caniot_response(frame).await;
+                            let result = self.handle_caniot_frame(frame).await;
                             if let Err(err) = result {
                                 error!("Failed to handle CANIOT frame {}", err);
                             }
@@ -405,7 +461,32 @@ impl Controller {
         &mut self,
         did: Option<DeviceId>,
         action: DeviceAction,
-    ) -> Result<DeviceActionResult, ControllerError> {
+        respond_to: Sender<Result<DeviceActionResult, ControllerError>>,
+    ) {
+        let result = self.handle_api_device_action_inner(did, action).await;
+
+        match result {
+            Ok(ActionResultOrPending::Result(result)) => {
+                let _ = respond_to.send(Ok(result));
+            }
+            Ok(ActionResultOrPending::Pending(action, did, pq_receiver)) => {
+                let device = self.get_device_by_did(&did).unwrap(); // Device must exist
+                let pending_action = PendingAction::new(action, respond_to, None, pq_receiver);
+                if let Err(pending_action) = device.set_pending_action(pending_action) {
+                    pending_action.answer(Err(DeviceError::PendingAction.into()));
+                }
+            }
+            Err(err) => {
+                let _ = respond_to.send(Err(err));
+            }
+        }
+    }
+
+    async fn handle_api_device_action_inner(
+        &mut self,
+        did: Option<DeviceId>,
+        action: DeviceAction,
+    ) -> Result<ActionResultOrPending, ControllerError> {
         // Find device by DID or by action
         let device = match did {
             Some(did) => {
@@ -418,20 +499,25 @@ impl Controller {
             None => self.get_device_by_action(&action),
         }?;
 
-        info!("Found device {} for action", device.did);
-
         let mut device_context = DeviceProcessContext::default();
-
         match device.handle_action(&action, &mut device_context) {
-            Ok(result) => {
-                let did = device.did;
+            Ok(verdict) => {
                 device.schedule_next_process_in(device_context.next_process);
-                if let Some(request_data) = result.request {
-                    let request = Request::new(did, request_data);
-                    self.send_caniot_frame(&request).await?;
-                }
+                let did = device.did;
+                let result_or_pending = match verdict {
+                    DeviceVerdict::None | DeviceVerdict::Request(..) => {
+                        panic!("DeviceAction must be answered by DeviceVerdict::ActionPendingOn or DeviceVerdict::ActionResult");
+                    }
+                    DeviceVerdict::ActionPendingOn(request) => {
+                        let request = Request::new(did, request);
+                        let (pq_sender, pq_receiver) = oneshot::channel();
+                        self.query_sched(request, None, pq_sender).await;
+                        ActionResultOrPending::Pending(action, did, pq_receiver)
+                    }
+                    DeviceVerdict::ActionResult(result) => ActionResultOrPending::Result(result),
+                };
 
-                result.action_result.ok_or(DeviceError::NoActionResult)
+                Ok(result_or_pending)
             }
             Err(err) => Err(err),
         }
@@ -463,8 +549,7 @@ impl Controller {
                 action,
                 respond_to,
             } => {
-                let response = self.handle_api_device_action(did, action).await;
-                let _ = respond_to.send(response);
+                self.handle_api_device_action(did, action, respond_to).await;
             }
         }
 
