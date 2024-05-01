@@ -1,7 +1,11 @@
-import { Badge, Card, Col, Form, Result, Row, Space } from "antd";
+import { Badge, Card, Col, Form, Result, Row, Space, Spin } from "antd";
 import React, { useEffect, useState } from "react";
 import HeaterModeSelector from "../components/HeaterModeSelector";
-import { CheckCircleFilled, CheckCircleOutlined } from "@ant-design/icons";
+import {
+  CheckCircleFilled,
+  CheckCircleOutlined,
+  LoadingOutlined,
+} from "@ant-design/icons";
 import {
   Command,
   State,
@@ -9,19 +13,24 @@ import {
 } from "@caniot-controller/caniot-api-grpc-web/api/ng_heaters_pb";
 import heatersStore from "../store/HeatersStore";
 import { Empty } from "google-protobuf/google/protobuf/empty_pb";
+import Icon from "@ant-design/icons/lib/components/Icon";
 
 function HeatersView() {
   const [heatersStatus, setHeatersStatus] = useState<Status | undefined>(
     undefined
   );
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     heatersStore.getStatus(new Empty(), (resp: Status) => {
+      setLoading(false);
       setHeatersStatus(resp);
     });
   }, []);
 
   const onModeChange = (heaterIndex: number, mode: State) => {
+    setLoading(true);
+
     console.log("Heater", heaterIndex, "mode changed to", mode);
 
     let command = new Command();
@@ -35,6 +44,7 @@ function HeatersView() {
     heatersStore.setStatus(command, (resp) => {
       console.log("Heaters status updated", resp.getHeaterList());
       setHeatersStatus(resp);
+      setLoading(false);
     });
   };
 
@@ -46,7 +56,15 @@ function HeatersView() {
             title={
               <Badge
                 status={heatersStatus?.getPowerStatus() ? "success" : "error"}
-                text="Chauffages"
+                text={
+                  <>
+                    Chauffage
+                    <Spin
+                      spinning={loading}
+                      indicator={<LoadingOutlined spin />}
+                    />
+                  </>
+                }
               />
             }
           >

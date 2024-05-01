@@ -22,11 +22,12 @@ import {
   Space,
   Spin,
 } from "antd";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { LuLeaf, LuThermometerSnowflake } from "react-icons/lu";
 import { PiSnowflakeLight, PiSnowflakeThin } from "react-icons/pi";
 import { TbSnowflake } from "react-icons/tb";
 import heatersStore from "../store/HeatersStore";
+import useFormItemStatus from "antd/es/form/hooks/useFormItemStatus";
 
 interface IProps {
   label: string;
@@ -37,28 +38,31 @@ interface IProps {
 
 function HeaterModeSelector({
   label,
-  heaterIndex: name,
+  heaterIndex,
   initialMode = State.NONE,
   onModeChange = () => {},
 }: IProps) {
   const [form] = Form.useForm();
 
-  console.log("HeaterModeSelector", name, initialMode);
+  console.log("HeaterModeSelector", heaterIndex, initialMode);
 
   const disabled = initialMode === State.NONE;
 
   const onChange = (e: RadioChangeEvent) => {
-    onModeChange(name, e.target.value);
+    onModeChange(heaterIndex, e.target.value);
   };
 
+  // Reseting the fields is required in order to have the initial values set correctly
+  // https://github.com/ant-design/ant-design/issues/22372
+  useEffect(() => form.resetFields(), [initialMode]);
+
   return (
-    <Form form={form}>
-      <Form.Item label={label} name={name}>
+    <Form form={form} initialValues={{ [heaterIndex]: initialMode }}>
+      <Form.Item label={label} name={heaterIndex}>
         <Radio.Group
           disabled={disabled}
           buttonStyle="solid"
           onChange={onChange}
-          value={initialMode}
         >
           <Radio.Button value={State.OFF}>
             <PoweroffOutlined /> Arrêt

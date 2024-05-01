@@ -11,7 +11,7 @@ use crate::bus::{CanInterface, CanInterfaceError};
 use crate::caniot::emu::{
     emu_pool1_add_devices_to_iface, emu_pool2_realistic_add_devices_to_iface,
 };
-use crate::caniot::{self, emu, Frame, ResponseData};
+use crate::caniot::{self, emu, Frame, RequestData, ResponseData};
 use crate::caniot::{DeviceId, Request};
 use crate::controller::actor::ControllerMessage;
 use crate::controller::{
@@ -20,6 +20,7 @@ use crate::controller::{
 };
 use crate::shutdown::Shutdown;
 
+use super::pending_query::PendingQueryTenant;
 use super::{pending_action, ControllerAPI};
 
 use super::super::{actor, DemoController, GarageController};
@@ -100,11 +101,7 @@ enum ActionResultOrPending {
     Result(DeviceActionResult),
 
     // Pending Action on Device (DID)
-    Pending(
-        DeviceAction,
-        DeviceId,
-        Receiver<Result<Frame<ResponseData>, ControllerError>>,
-    ),
+    Pending(DeviceAction, Frame<RequestData>),
 }
 
 pub struct Controller {
@@ -192,8 +189,11 @@ impl Controller {
             error!("Failed to send CANIOT frame: {:?}", err);
             let _ = sender.send(Err(err)); // Send None, but do not panic if receiver is dropped
         } else {
-            self.pending_queries
-                .push(PendingQuery::new(request, sender, timeout_ms));
+            self.pending_queries.push(PendingQuery::new(
+                request,
+                timeout_ms,
+                super::pending_query::PendingQueryTenant::Query(sender),
+            ));
         }
     }
 
@@ -226,6 +226,7 @@ impl Controller {
         frame: caniot::Response,
     ) -> Result<(), ControllerError> {
         self.stats.rx += 1;
+        let mut answered_pending_action: Option<PendingAction> = None;
 
         // Find pending queries that can be answered by this frame
         // TODO broadcast should be handled differently as the oneshot channel cannot be used to send multiple responses
@@ -235,7 +236,14 @@ impl Controller {
 
         // if a frame can answer multiple pending queries, remove all of them
         for pq in self.pending_queries.drain(..pivot) {
-            pq.reply_with_frame(frame.clone());
+            if let Some(pq_tenant) = pq.end_with_frame(frame.clone()) {
+                match pq_tenant {
+                    PendingQueryTenant::Action(pending_action) => {
+                        answered_pending_action.replace(pending_action);
+                    }
+                    _ => {}
+                }
+            }
         }
 
         // Get or create device
@@ -251,17 +259,18 @@ impl Controller {
         // Check if an action is answered by the pending queries being answered
         // TODO
 
+        let answered_action = answered_pending_action
+            .as_ref()
+            .map(|pending_action| &pending_action.action);
         let mut device_context = DeviceProcessContext::default();
-
-        // Update device stats
-        let verdict = device.handle_frame(&frame.data, None, &mut device_context)?;
+        let verdict = device.handle_frame(&frame.data, answered_action, &mut device_context)?;
 
         // Set next process time
         device.schedule_next_process_in(device_context.next_process);
 
         // Send requests to device
         let device_did = device.did;
-        Self::handle_device_verdict(
+        let action_result = Self::handle_device_verdict(
             &mut self.iface,
             &mut self.stats,
             device_did,
@@ -269,6 +278,12 @@ impl Controller {
             verdict,
         )
         .await?;
+
+        if let Some(action_result) = action_result {
+            if let Some(pending_action) = answered_pending_action.take() {
+                pending_action.send(Ok(action_result));
+            }
+        }
 
         Ok(())
     }
@@ -335,7 +350,7 @@ impl Controller {
                 "Pending query {} timed out after {} ms",
                 pq.query, pq.timeout_ms
             );
-            pq.reply(Err(ControllerError::Timeout));
+            pq.end_with_error(ControllerError::Timeout);
         }
     }
 
@@ -344,9 +359,9 @@ impl Controller {
         for (did, device) in self.devices.iter_mut() {
             if device.needs_process() {
                 // Check if action is pending for this device
-                if let Some(pending_action) = &device.pending_action {
-                    if pending_action.is_expired() {}
-                }
+                // if let Some(pending_action) = &device.pending_action {
+                //     if pending_action.is_expired() {}
+                // }
 
                 // Check if device needs processing (requested by controller)
                 let mut device_context = DeviceProcessContext::default();
@@ -469,12 +484,17 @@ impl Controller {
             Ok(ActionResultOrPending::Result(result)) => {
                 let _ = respond_to.send(Ok(result));
             }
-            Ok(ActionResultOrPending::Pending(action, did, pq_receiver)) => {
-                let device = self.get_device_by_did(&did).unwrap(); // Device must exist
-                let pending_action = PendingAction::new(action, respond_to, None, pq_receiver);
-                if let Err(pending_action) = device.set_pending_action(pending_action) {
-                    pending_action.answer(Err(DeviceError::PendingAction.into()));
-                }
+            Ok(ActionResultOrPending::Pending(action, request)) => {
+                // TODO improve sending pending action
+                let _ = self.send_caniot_frame(&request).await;
+
+                self.pending_queries.push(PendingQuery::new(
+                    request,
+                    1000,
+                    super::pending_query::PendingQueryTenant::Action(
+                        pending_action::PendingAction::new(action, respond_to),
+                    ),
+                ));
             }
             Err(err) => {
                 let _ = respond_to.send(Err(err));
@@ -510,9 +530,7 @@ impl Controller {
                     }
                     DeviceVerdict::ActionPendingOn(request) => {
                         let request = Request::new(did, request);
-                        let (pq_sender, pq_receiver) = oneshot::channel();
-                        self.query_sched(request, None, pq_sender).await;
-                        ActionResultOrPending::Pending(action, did, pq_receiver)
+                        ActionResultOrPending::Pending(action, request)
                     }
                     DeviceVerdict::ActionResult(result) => ActionResultOrPending::Result(result),
                 };

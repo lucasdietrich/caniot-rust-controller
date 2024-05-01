@@ -17,7 +17,7 @@ pub enum DeviceError {
     #[error("Not implemented")]
     NotImplemented,
     #[error("Pending action still active")]
-    PendingAction,
+    AlreadyPendingAction,
     #[error("Protocol error")]
     ProtocolError(#[from] caniot::ProtocolError),
 }

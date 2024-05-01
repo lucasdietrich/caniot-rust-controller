@@ -1,16 +1,53 @@
 use std::time::{Duration, Instant};
 
-use super::ControllerError;
-use crate::caniot;
+use super::{ControllerError, PendingAction};
+use crate::{caniot, controller::DeviceAction};
 use tokio::sync::oneshot;
+
+/// Initiator of a pending query, it represents the entity that is waiting for the query to be answered
+#[derive(Debug)]
+pub enum PendingQueryTenant {
+    // channel to reply to when query is answered
+    Query(oneshot::Sender<Result<caniot::Response, ControllerError>>),
+
+    // The pending action the query is associated with
+    Action(PendingAction),
+}
+
+impl PendingQueryTenant {
+    pub fn end_with_error(self, error: ControllerError) -> Option<PendingQueryTenant> {
+        match self {
+            Self::Query(sender) => {
+                let _ = sender.send(Err(error)); // Do not panic if receiver is dropped
+                None
+            }
+            Self::Action(pending_action) => {
+                pending_action.send(Err(error));
+                None
+            }
+        }
+    }
+
+    pub fn end_with_frame(self, frame: caniot::Response) -> Option<PendingQueryTenant> {
+        match self {
+            Self::Query(sender) => {
+                let _ = sender.send(Ok(frame)); // Do not panic if receiver is dropped
+                None
+            }
+            Self::Action(mut pending_action) => {
+                pending_action.set_response(frame);
+                Some(PendingQueryTenant::Action(pending_action))
+            }
+        }
+    }
+}
 
 #[derive(Debug)]
 pub struct PendingQuery {
+    pub tenant: PendingQueryTenant,
+
     // query pending
     pub query: caniot::Request,
-
-    // channel to reply to when query is answered
-    sender: oneshot::Sender<Result<caniot::Response, ControllerError>>,
 
     // timeout in milliseconds
     pub timeout_ms: u32,
@@ -20,27 +57,31 @@ pub struct PendingQuery {
 }
 
 impl PendingQuery {
-    pub fn new(
-        query: caniot::Request,
-        sender: oneshot::Sender<Result<caniot::Response, ControllerError>>,
-        timeout_ms: u32,
-    ) -> Self {
+    pub fn new(query: caniot::Request, timeout_ms: u32, tenant: PendingQueryTenant) -> Self {
         Self {
             query,
-            sender,
             timeout_ms,
             sent_at: std::time::Instant::now(),
+            tenant,
         }
     }
 
-    /// Answer the pending query with a response
-    pub fn reply(self, response: Result<caniot::Response, ControllerError>) {
-        let _ = self.sender.send(response); // Do not panic if receiver is dropped
+    pub fn end_with_frame(self, frame: caniot::Response) -> Option<PendingQueryTenant> {
+        self.tenant.end_with_frame(frame)
     }
 
-    /// Answer the pending query with a response
-    pub fn reply_with_frame(self, response: caniot::Response) {
-        self.reply(Ok(response))
+    pub fn end_with_error(self, error: ControllerError) -> Option<PendingQueryTenant> {
+        self.tenant.end_with_error(error)
+    }
+
+    pub fn end(
+        self,
+        response: Result<caniot::Response, ControllerError>,
+    ) -> Option<PendingQueryTenant> {
+        match response {
+            Ok(frame) => self.end_with_frame(frame),
+            Err(error) => self.end_with_error(error),
+        }
     }
 
     /// Check whether the response matches the query

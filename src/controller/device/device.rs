@@ -49,11 +49,6 @@ pub struct Device {
     // Internal
     pub next_requested_process: Option<Instant>,
     pub last_process: Option<Instant>,
-
-    // Pending action
-    pub pending_action: Option<PendingAction>,
-    // Strategies (e.g. for retries)
-    // pub strategies: Vec<Box<dyn DeviceStrategy>>,
 }
 
 impl Device {
@@ -65,7 +60,7 @@ impl Device {
             inner: None,
             next_requested_process: None,
             last_process: None,
-            pending_action: None,
+            // pending_action: None,
         }
     }
 
@@ -93,7 +88,7 @@ impl Device {
         self.next_requested_process
     }
 
-    pub fn time_to_next_requested_process(&self) -> Option<Duration> {
+    pub fn time_to_next_process(&self) -> Option<Duration> {
         if self.last_process.is_none() {
             return Some(Duration::from_secs(0));
         } else if let Some(next_process) = self.next_requested_process {
@@ -105,45 +100,6 @@ impl Device {
         }
 
         None
-    }
-
-    pub fn time_to_pending_action_timeout(&self) -> Option<Duration> {
-        self.pending_action.as_ref().map(|pending_action| {
-            let elapsed = pending_action.issued_at.elapsed();
-            let timeout = Duration::from_millis(pending_action.timeout_ms as u64);
-            if elapsed >= timeout {
-                Duration::from_secs(0)
-            } else {
-                timeout - elapsed
-            }
-        })
-    }
-
-    pub fn time_to_next_process(&self) -> Option<Duration> {
-        match (
-            self.time_to_pending_action_timeout(),
-            self.time_to_next_requested_process(),
-        ) {
-            (Some(action_timeout), Some(process_timeout)) => {
-                Some(action_timeout.min(process_timeout))
-            }
-            (Some(action_timeout), None) => Some(action_timeout),
-            (None, Some(process_timeout)) => Some(process_timeout),
-            (None, None) => None,
-        }
-    }
-
-    pub fn is_action_pending(&self) -> bool {
-        self.pending_action.is_some()
-    }
-
-    pub fn set_pending_action(&mut self, action: PendingAction) -> Result<(), PendingAction> {
-        if self.pending_action.is_some() {
-            return Err(action);
-        }
-
-        self.pending_action = Some(action);
-        Ok(())
     }
 }
 
@@ -177,14 +133,14 @@ impl DeviceTrait for Device {
     ) -> Result<DeviceVerdict<Self::Action>, DeviceError> {
         self.mark_last_seen();
 
-        // update stats
+        // Update device stats
         match frame {
             ResponseData::Telemetry { .. } => self.stats.telemetry_rx += 1,
             ResponseData::Attribute { .. } => self.stats.attribute_rx += 1,
             ResponseData::Error { .. } => self.stats.err_rx += 1,
         }
 
-        if let Some(ref mut inner) = self.inner {
+        let verdict = if let Some(ref mut inner) = self.inner {
             let action = action.and_then(|action| match action {
                 DeviceAction::Inner(inner_action) => Some(inner_action),
                 _ => None,
@@ -194,7 +150,23 @@ impl DeviceTrait for Device {
             Ok(DeviceVerdict::from_inner_verdict(inner_result))
         } else {
             Ok(DeviceVerdict::default())
-        }
+        };
+
+        // Check that verdict match parameters
+        match (&verdict, &action) {
+            (Ok(DeviceVerdict::ActionPendingOn(_)), _) => {
+                panic!("ActionPendingOn should not be returned from handle_frame")
+            }
+            (Ok(DeviceVerdict::ActionResult(_)), None) => {
+                panic!("ActionResult should not be returned from handle_frame without action")
+            }
+            (Ok(DeviceVerdict::Request(_)), Some(_)) | (Ok(DeviceVerdict::None), Some(_)) => {
+                panic!("ActionResult should be returned from handle_frame with action")
+            }
+            _ => {}
+        };
+
+        verdict
     }
 
     fn process(

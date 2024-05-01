@@ -65,7 +65,11 @@ impl DeviceTrait for HeatersController {
             _ => {}
         };
 
-        Ok(DeviceVerdict::default())
+        if action.is_some() {
+            Ok(DeviceVerdict::ActionResult(self.status.clone()))
+        } else {
+            Ok(DeviceVerdict::default())
+        }
     }
 }
 
