@@ -1,34 +1,34 @@
-use super::{DeviceActionResultTrait, DeviceActionTrait, DeviceActionWrapperTrait};
+use super::{ActionResultTrait, ActionTrait, ActionWrapperTrait};
 
 pub enum DeviceAction {
     Reset,
-    Inner(Box<dyn DeviceActionWrapperTrait>),
+    Inner(Box<dyn ActionWrapperTrait>),
 }
 
 impl DeviceAction {
-    pub fn new_inner<A: DeviceActionTrait>(action: A) -> Self {
+    pub fn new_inner<A: ActionTrait>(action: A) -> Self {
         Self::Inner(Box::new(action))
     }
 }
 
-impl DeviceActionTrait for DeviceAction {
+impl ActionTrait for DeviceAction {
     type Result = DeviceActionResult;
 }
 
 // #[derive(Clone)]
 pub enum DeviceActionResult {
     Reset,
-    Inner(Box<dyn DeviceActionResultTrait>),
+    Inner(Box<dyn ActionResultTrait>),
 }
 
 impl DeviceActionResult {
-    pub fn new_inner<R: DeviceActionResultTrait>(result: R) -> Self {
+    pub fn new_inner<R: ActionResultTrait>(result: R) -> Self {
         Self::Inner(Box::new(result))
     }
 
-    pub fn new_boxed_inner(result: Box<dyn DeviceActionResultTrait>) -> Self {
+    pub fn new_boxed_inner(result: Box<dyn ActionResultTrait>) -> Self {
         Self::Inner(result)
     }
 }
 
-impl DeviceActionResultTrait for DeviceActionResult {}
+impl ActionResultTrait for DeviceActionResult {}

@@ -15,13 +15,13 @@ use crate::caniot::{self, emu, Frame, RequestData, ResponseData};
 use crate::caniot::{DeviceId, Request};
 use crate::controller::actor::ControllerMessage;
 use crate::controller::{
-    Device, DeviceAction, DeviceActionResult, DeviceActionTrait, DeviceActionVerdict, DeviceError,
-    DeviceProcessContext, DeviceTrait, DeviceVerdict, DeviceWrapperTrait, PendingAction,
+    ActionTrait, ActionVerdict, Device, DeviceAction, DeviceActionResult, DeviceError, DeviceTrait,
+    DeviceWrapperTrait, PendingAction, ProcessContext, Verdict,
 };
 use crate::shutdown::Shutdown;
 
+use super::pending_action;
 use super::pending_query::PendingQueryTenant;
-use super::{pending_action, ControllerAPI};
 
 use super::super::{actor, DemoController, GarageController};
 use super::attach::device_attach_controller;
@@ -235,13 +235,13 @@ impl Controller {
         };
         let device_did = device.did;
 
-        let mut device_context = DeviceProcessContext::default();
+        let mut device_context = ProcessContext::default();
 
         // Let the device handle the frame
         let verdict = device.handle_frame(&frame.data, &mut device_context)?;
         match verdict {
-            DeviceVerdict::None => {}
-            DeviceVerdict::Request(request) => {
+            Verdict::None => {}
+            Verdict::Request(request) => {
                 let request = Request::new(device_did, request);
                 Self::iface_send_caniot_frame(&mut self.iface, &mut self.stats, &request).await?;
             }
@@ -330,14 +330,14 @@ impl Controller {
         for (did, device) in self.devices.iter_mut() {
             if device.needs_process() {
                 // Check if device needs processing (requested by controller)
-                let mut device_context = DeviceProcessContext::default();
+                let mut device_context = ProcessContext::default();
                 let verdict = device.process(&mut device_context)?;
                 device.mark_processed();
                 device.schedule_next_process_in(device_context.next_process);
 
                 match verdict {
-                    DeviceVerdict::None => {}
-                    DeviceVerdict::Request(request) => {
+                    Verdict::None => {}
+                    Verdict::Request(request) => {
                         let request = Request::new(*did, request);
                         Self::iface_send_caniot_frame(&mut self.iface, &mut self.stats, &request)
                             .await?;
@@ -486,19 +486,17 @@ impl Controller {
             None => self.get_device_by_action(&action),
         }?;
 
-        let mut device_context = DeviceProcessContext::default();
+        let mut device_context = ProcessContext::default();
         match device.handle_action(&action, &mut device_context) {
             Ok(verdict) => {
                 device.schedule_next_process_in(device_context.next_process);
                 let did = device.did;
                 let result_or_pending = match verdict {
-                    DeviceActionVerdict::ActionPendingOn(request) => {
+                    ActionVerdict::ActionPendingOn(request) => {
                         let request = Request::new(did, request);
                         ActionResultOrPending::Pending(action, request)
                     }
-                    DeviceActionVerdict::ActionResult(result) => {
-                        ActionResultOrPending::Result(result)
-                    }
+                    ActionVerdict::ActionResult(result) => ActionResultOrPending::Result(result),
                 };
 
                 Ok(result_or_pending)

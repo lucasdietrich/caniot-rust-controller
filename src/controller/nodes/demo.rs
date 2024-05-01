@@ -4,8 +4,8 @@ use rocket::Request;
 use crate::{
     caniot::{self, emu::Device, RequestData, Response, ResponseData},
     controller::{
-        ControllerAPI, ControllerError, DeviceActionResultTrait, DeviceActionTrait,
-        DeviceActionVerdict, DeviceError, DeviceProcessContext, DeviceTrait, DeviceVerdict,
+        ActionResultTrait, ActionTrait, ActionVerdict, ControllerError, DeviceError, DeviceTrait,
+        ProcessContext, Verdict,
     },
 };
 
@@ -15,19 +15,16 @@ pub struct DemoController {
 }
 
 impl DemoController {
-    pub fn get_active(&self) -> Result<DeviceActionVerdict<DemoAction>, DeviceError> {
-        Ok(DeviceActionVerdict::ActionResult(DemoActionResult::Active(
+    pub fn get_active(&self) -> Result<ActionVerdict<DemoAction>, DeviceError> {
+        Ok(ActionVerdict::ActionResult(DemoActionResult::Active(
             self.active,
         )))
     }
 
-    pub fn set_active(
-        &mut self,
-        active: bool,
-    ) -> Result<DeviceActionVerdict<DemoAction>, DeviceError> {
+    pub fn set_active(&mut self, active: bool) -> Result<ActionVerdict<DemoAction>, DeviceError> {
         self.active = active;
 
-        Ok(DeviceActionVerdict::ActionPendingOn(RequestData::Command {
+        Ok(ActionVerdict::ActionPendingOn(RequestData::Command {
             endpoint: caniot::Endpoint::ApplicationDefault,
             payload: vec![active as u8],
         }))
@@ -40,8 +37,8 @@ impl DeviceTrait for DemoController {
     fn handle_action(
         &mut self,
         action: &DemoAction,
-        ctx: &mut DeviceProcessContext,
-    ) -> Result<DeviceActionVerdict<DemoAction>, DeviceError> {
+        ctx: &mut ProcessContext,
+    ) -> Result<ActionVerdict<DemoAction>, DeviceError> {
         match action {
             DemoAction::GetActive => self.get_active(),
             DemoAction::Activate => self.set_active(true),
@@ -53,8 +50,8 @@ impl DeviceTrait for DemoController {
     fn handle_frame(
         &mut self,
         frame: &caniot::ResponseData,
-        ctx: &mut DeviceProcessContext,
-    ) -> Result<DeviceVerdict, DeviceError> {
+        ctx: &mut ProcessContext,
+    ) -> Result<Verdict, DeviceError> {
         if let caniot::ResponseData::Telemetry {
             endpoint: _,
             payload,
@@ -65,13 +62,13 @@ impl DeviceTrait for DemoController {
             }
         }
 
-        Ok(DeviceVerdict::default())
+        Ok(Verdict::default())
     }
 
-    fn process(&mut self, ctx: &mut DeviceProcessContext) -> Result<DeviceVerdict, DeviceError> {
+    fn process(&mut self, ctx: &mut ProcessContext) -> Result<Verdict, DeviceError> {
         ctx.request_process_in_s(5);
 
-        Ok(DeviceVerdict::default())
+        Ok(Verdict::default())
     }
 }
 
@@ -88,8 +85,8 @@ pub enum DemoActionResult {
     Active(bool),
 }
 
-impl DeviceActionTrait for DemoAction {
+impl ActionTrait for DemoAction {
     type Result = DemoActionResult;
 }
 
-impl DeviceActionResultTrait for DemoActionResult {}
+impl ActionResultTrait for DemoActionResult {}

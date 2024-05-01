@@ -3,8 +3,7 @@ use log::info;
 use crate::{
     caniot::{self, HeatingControllerCommand, HeatingControllerTelemetry, HeatingMode},
     controller::{
-        DeviceActionResultTrait, DeviceActionTrait, DeviceActionVerdict, DeviceProcessContext,
-        DeviceTrait, DeviceVerdict,
+        ActionResultTrait, ActionTrait, ActionVerdict, DeviceTrait, ProcessContext, Verdict,
     },
 };
 
@@ -25,11 +24,11 @@ pub enum HeaterAction {
     SetStatus(Vec<HeatingMode>),
 }
 
-impl DeviceActionTrait for HeaterAction {
+impl ActionTrait for HeaterAction {
     type Result = HeaterStatus;
 }
 
-impl DeviceActionResultTrait for HeaterStatus {}
+impl ActionResultTrait for HeaterStatus {}
 
 impl DeviceTrait for HeatersController {
     type Action = HeaterAction;
@@ -37,16 +36,16 @@ impl DeviceTrait for HeatersController {
     fn handle_action(
         &mut self,
         action: &Self::Action,
-        ctx: &mut DeviceProcessContext,
-    ) -> Result<DeviceActionVerdict<Self::Action>, crate::controller::DeviceError> {
+        ctx: &mut ProcessContext,
+    ) -> Result<ActionVerdict<Self::Action>, crate::controller::DeviceError> {
         let verdict = match action {
-            HeaterAction::GetStatus => DeviceActionVerdict::ActionResult(self.status.clone()),
+            HeaterAction::GetStatus => ActionVerdict::ActionResult(self.status.clone()),
             HeaterAction::SetStatus(heaters) => {
                 let command = HeatingControllerCommand {
                     modes: [heaters[0], heaters[1], heaters[2], heaters[3]],
                 };
 
-                DeviceActionVerdict::ActionPendingOn(caniot::RequestData::Command {
+                ActionVerdict::ActionPendingOn(caniot::RequestData::Command {
                     endpoint: caniot::Endpoint::ApplicationDefault,
                     payload: command.into(),
                 })
@@ -59,15 +58,15 @@ impl DeviceTrait for HeatersController {
     fn handle_action_result(
         &self,
         _action: &Self::Action,
-    ) -> Result<<Self::Action as DeviceActionTrait>::Result, crate::controller::DeviceError> {
+    ) -> Result<<Self::Action as ActionTrait>::Result, crate::controller::DeviceError> {
         Ok(self.status.clone())
     }
 
     fn handle_frame(
         &mut self,
         frame: &caniot::ResponseData,
-        ctx: &mut DeviceProcessContext,
-    ) -> Result<DeviceVerdict, crate::controller::DeviceError> {
+        ctx: &mut ProcessContext,
+    ) -> Result<Verdict, crate::controller::DeviceError> {
         match &frame {
             &caniot::ResponseData::Telemetry { endpoint, payload }
                 if endpoint == &caniot::Endpoint::ApplicationDefault =>
@@ -82,6 +81,6 @@ impl DeviceTrait for HeatersController {
             _ => {}
         };
 
-        Ok(DeviceVerdict::default())
+        Ok(Verdict::default())
     }
 }

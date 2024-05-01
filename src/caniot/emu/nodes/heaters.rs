@@ -1,5 +1,3 @@
-use log::debug;
-
 use super::super::Behavior;
 use crate::caniot::{
     self as ct, HeatingControllerCommand, HeatingControllerTelemetry, HeatingMode,

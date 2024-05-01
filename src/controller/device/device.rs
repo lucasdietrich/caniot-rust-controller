@@ -12,15 +12,13 @@ use crate::{
         self, emu::device, Action, BlcCommand, BlcPayload, DeviceId, RequestData, Response,
         ResponseData,
     },
-    controller::{
-        DeviceActionResultTrait, DeviceActionTrait, DeviceActionWrapperTrait, PendingAction,
-    },
+    controller::{ActionResultTrait, ActionTrait, ActionWrapperTrait, PendingAction},
 };
 
 use super::{
     actions::{DeviceAction, DeviceActionResult},
-    context::DeviceProcessContext,
-    verdict::{DeviceActionVerdict, DeviceVerdict},
+    context::ProcessContext,
+    verdict::{ActionVerdict, Verdict},
     DeviceError, DeviceTrait, DeviceWrapperTrait,
 };
 
@@ -109,15 +107,15 @@ impl DeviceTrait for Device {
     fn handle_action(
         &mut self,
         action: &DeviceAction,
-        ctx: &mut DeviceProcessContext,
-    ) -> Result<DeviceActionVerdict<Self::Action>, DeviceError> {
+        ctx: &mut ProcessContext,
+    ) -> Result<ActionVerdict<Self::Action>, DeviceError> {
         match action {
             DeviceAction::Reset => Err(DeviceError::NotImplemented), // BlcCommand::HARDWARE_RESET
 
             DeviceAction::Inner(inner_action) => {
                 if let Some(inner_device) = self.inner.as_mut() {
                     let inner_verdict = inner_device.wrapper_handle_action(inner_action, ctx)?;
-                    Ok(DeviceActionVerdict::from_inner_verdict(inner_verdict))
+                    Ok(ActionVerdict::from_inner_verdict(inner_verdict))
                 } else {
                     Err(DeviceError::NoInnerDevice)
                 }
@@ -128,7 +126,7 @@ impl DeviceTrait for Device {
     fn handle_action_result(
         &self,
         delayed_action: &Self::Action,
-    ) -> Result<<Self::Action as DeviceActionTrait>::Result, DeviceError> {
+    ) -> Result<<Self::Action as ActionTrait>::Result, DeviceError> {
         match delayed_action {
             DeviceAction::Inner(inner_action) => {
                 if let Some(inner_device) = self.inner.as_ref() {
@@ -145,8 +143,8 @@ impl DeviceTrait for Device {
     fn handle_frame(
         &mut self,
         frame: &ResponseData,
-        ctx: &mut DeviceProcessContext,
-    ) -> Result<DeviceVerdict, DeviceError> {
+        ctx: &mut ProcessContext,
+    ) -> Result<Verdict, DeviceError> {
         self.mark_last_seen();
 
         // Update device stats
@@ -159,15 +157,15 @@ impl DeviceTrait for Device {
         if let Some(ref mut inner) = self.inner {
             inner.wrapper_handle_frame(frame, ctx)
         } else {
-            Ok(DeviceVerdict::default())
+            Ok(Verdict::default())
         }
     }
 
-    fn process(&mut self, ctx: &mut DeviceProcessContext) -> Result<DeviceVerdict, DeviceError> {
+    fn process(&mut self, ctx: &mut ProcessContext) -> Result<Verdict, DeviceError> {
         if let Some(ref mut inner) = self.inner {
             inner.wrapper_process(ctx)
         } else {
-            Ok(DeviceVerdict::default())
+            Ok(Verdict::default())
         }
     }
 }

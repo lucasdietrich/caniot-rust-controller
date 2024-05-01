@@ -12,9 +12,3 @@ pub use heaters::*;
 
 #[cfg(test)]
 mod garage_test;
-
-pub enum Node {
-    Demo(DemoController),
-    Garage(GarageController),
-    Heaters(HeatersController),
-}

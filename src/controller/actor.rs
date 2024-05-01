@@ -12,8 +12,8 @@ use crate::{
 use serde::Serialize;
 
 use super::{
-    Controller, ControllerAPI, ControllerError, ControllerStats, DemoAction, DeviceAction,
-    DeviceActionResult, DeviceActionResultTrait, DeviceActionTrait, DeviceStats, GarageDoorCommand,
+    ActionResultTrait, ActionTrait, Controller, ControllerError, ControllerStats, DemoAction,
+    DeviceAction, DeviceActionResult, DeviceStats, GarageDoorCommand,
 };
 
 pub enum ControllerMessage {
@@ -31,8 +31,7 @@ pub enum ControllerMessage {
     DeviceAction {
         did: Option<DeviceId>,
         action: DeviceAction,
-        respond_to:
-            oneshot::Sender<Result<<DeviceAction as DeviceActionTrait>::Result, ControllerError>>,
+        respond_to: oneshot::Sender<Result<<DeviceAction as ActionTrait>::Result, ControllerError>>,
         timeout_ms: Option<u32>,
     },
 }
@@ -52,6 +51,28 @@ pub struct DeviceStatsEntry {
 impl ControllerHandle {
     pub fn new(sender: mpsc::Sender<ControllerMessage>) -> Self {
         Self { sender }
+    }
+
+    pub async fn device_request(
+        &self,
+        frame: ct::Request,
+        timeout_ms: Option<u32>,
+    ) -> Result<ct::Response, ControllerError> {
+        self.query(|sender| ControllerMessage::Query {
+            query: frame,
+            timeout_ms,
+            respond_to: Some(sender),
+        })
+        .await
+    }
+
+    pub async fn device_send(&self, frame: ct::Request) -> Result<(), ControllerError> {
+        self.query(|_sender| ControllerMessage::Query {
+            query: frame,
+            timeout_ms: None,
+            respond_to: None,
+        })
+        .await
     }
 
     /// Query a controller message
@@ -92,7 +113,7 @@ impl ControllerHandle {
     }
 
     // Send a specific (typed) device action to the controller of the device.
-    pub async fn device_action_inner<A: DeviceActionTrait>(
+    pub async fn device_action_inner<A: ActionTrait>(
         &self,
         did: Option<DeviceId>,
         action: A,
@@ -117,30 +138,5 @@ impl ControllerHandle {
             _ => panic!("Unexpected DeviceActionResult variant"),
         }
         // Err(ControllerError::NotImplemented)
-    }
-}
-
-#[async_trait]
-impl ControllerAPI for ControllerHandle {
-    async fn query(
-        &self,
-        frame: ct::Request,
-        timeout_ms: Option<u32>,
-    ) -> Result<ct::Response, ControllerError> {
-        self.query(|sender| ControllerMessage::Query {
-            query: frame,
-            timeout_ms,
-            respond_to: Some(sender),
-        })
-        .await
-    }
-
-    async fn send(&self, frame: ct::Request) -> Result<(), ControllerError> {
-        self.query(|_sender| ControllerMessage::Query {
-            query: frame,
-            timeout_ms: None,
-            respond_to: None,
-        })
-        .await
     }
 }

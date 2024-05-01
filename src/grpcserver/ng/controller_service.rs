@@ -2,7 +2,7 @@ use rocket::response;
 use tonic::{Request, Response, Result, Status};
 
 use crate::caniot::{self, ResponseData};
-use crate::controller::{ControllerAPI, ControllerError};
+use crate::controller::ControllerError;
 use crate::{grpcserver::datetime_to_prost_timestamp, shared::SharedHandle};
 
 use super::model::Telemetry;
@@ -54,7 +54,7 @@ impl ControllerService for NgController {
         let reply = self
             .shared
             .controller_handle
-            .query(query, req.timeout)
+            .device_request(query, req.timeout)
             .await;
 
         // Handle request error
