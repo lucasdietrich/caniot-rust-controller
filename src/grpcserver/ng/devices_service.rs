@@ -3,7 +3,6 @@ use tonic::{Request, Response, Result, Status};
 use crate::{grpcserver::datetime_to_prost_timestamp, shared::SharedHandle};
 
 use super::model::{
-    self,
     caniot_devices_service_server::{CaniotDevicesService, CaniotDevicesServiceServer},
     *,
 };

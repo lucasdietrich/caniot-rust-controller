@@ -1,6 +1,5 @@
 use crate::{
-    caniot::{self, Endpoint, Response, Xps},
-    controller::ControllerError,
+    caniot::{Xps},
 };
 
 use super::super::super::caniot::*;

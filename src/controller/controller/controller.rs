@@ -2,20 +2,20 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
-use as_any::Downcast;
+
 use itertools::{partition, Itertools};
 use tokio::runtime::Runtime;
-use tokio::sync::oneshot::{Receiver, Sender};
+use tokio::sync::oneshot::{Sender};
 
 use crate::bus::{CanInterface, CanInterfaceError};
 use crate::caniot::emu::{
-    emu_pool1_add_devices_to_iface, emu_pool2_realistic_add_devices_to_iface,
+    emu_pool2_realistic_add_devices_to_iface,
 };
-use crate::caniot::{self, emu, Frame, RequestData, ResponseData};
+use crate::caniot::{self, Frame, RequestData};
 use crate::caniot::{DeviceId, Request};
 use crate::controller::actor::ControllerMessage;
 use crate::controller::{
-    ActionTrait, ActionVerdict, Device, DeviceAction, DeviceActionResult, DeviceError, DeviceTrait,
+    ActionVerdict, Device, DeviceAction, DeviceActionResult, DeviceError, DeviceTrait,
     DeviceWrapperTrait, PendingAction, ProcessContext, Verdict,
 };
 use crate::shutdown::Shutdown;
@@ -23,14 +23,14 @@ use crate::shutdown::Shutdown;
 use super::pending_action;
 use super::pending_query::PendingQueryTenant;
 
-use super::super::{actor, DemoController, GarageController};
+use super::super::{actor};
 use super::attach::device_attach_controller;
 use super::PendingQuery;
 
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
 
-use socketcan::CanFrame;
+
 use thiserror::Error;
 use tokio::select;
 use tokio::sync::{mpsc, oneshot};

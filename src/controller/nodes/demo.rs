@@ -1,10 +1,10 @@
-use as_any::Downcast;
-use rocket::Request;
+
+
 
 use crate::{
-    caniot::{self, emu::Device, RequestData, Response, ResponseData},
+    caniot::{self, RequestData},
     controller::{
-        ActionResultTrait, ActionTrait, ActionVerdict, ControllerError, DeviceError, DeviceTrait,
+        ActionResultTrait, ActionTrait, ActionVerdict, DeviceError, DeviceTrait,
         ProcessContext, Verdict,
     },
 };
@@ -37,7 +37,7 @@ impl DeviceTrait for DemoController {
     fn handle_action(
         &mut self,
         action: &DemoAction,
-        ctx: &mut ProcessContext,
+        _ctx: &mut ProcessContext,
     ) -> Result<ActionVerdict<DemoAction>, DeviceError> {
         match action {
             DemoAction::GetActive => self.get_active(),
@@ -50,7 +50,7 @@ impl DeviceTrait for DemoController {
     fn handle_frame(
         &mut self,
         frame: &caniot::ResponseData,
-        ctx: &mut ProcessContext,
+        _ctx: &mut ProcessContext,
     ) -> Result<Verdict, DeviceError> {
         if let caniot::ResponseData::Telemetry {
             endpoint: _,

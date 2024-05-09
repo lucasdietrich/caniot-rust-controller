@@ -12,7 +12,7 @@ impl DemoController {
 }
 
 impl Behavior for DemoController {
-    fn on_command(&mut self, endpoint: &ct::Endpoint, payload: Vec<u8>) -> Option<ct::ErrorCode> {
+    fn on_command(&mut self, _endpoint: &ct::Endpoint, payload: Vec<u8>) -> Option<ct::ErrorCode> {
         if payload.len() >= 1 {
             if payload[0] == 0 {
                 self.status = false;
@@ -23,20 +23,20 @@ impl Behavior for DemoController {
         None
     }
 
-    fn on_telemetry(&mut self, endpoint: &ct::Endpoint) -> Option<Vec<u8>> {
+    fn on_telemetry(&mut self, _endpoint: &ct::Endpoint) -> Option<Vec<u8>> {
         let telemetry = vec![self.status as u8];
         return Some(telemetry);
     }
 
-    fn on_read_attribute(&mut self, key: u16) -> Option<u32> {
+    fn on_read_attribute(&mut self, _key: u16) -> Option<u32> {
         None
     }
 
-    fn on_write_attribute(&mut self, key: u16, value: u32) -> Option<ct::ErrorCode> {
+    fn on_write_attribute(&mut self, _key: u16, _value: u32) -> Option<ct::ErrorCode> {
         None
     }
 
-    fn set_did(&mut self, did: &ct::DeviceId) {
+    fn set_did(&mut self, _did: &ct::DeviceId) {
         // Do nothing
     }
 }

@@ -30,7 +30,7 @@ impl InternalService for NgInternal {
         let response = HelloResponse {
             message: format!("Hello {}!", request.into_inner().name),
             timestamp: Some(systemtime_to_prost_timestamp(SystemTime::now())),
-            map: map,
+            map,
             strings: vec![
                 "hello".to_string(),
                 "world".to_string(),

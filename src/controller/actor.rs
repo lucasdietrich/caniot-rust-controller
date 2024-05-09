@@ -1,6 +1,6 @@
 use std::ops::Deref;
 
-use as_any::{AsAny, Downcast};
+use as_any::{Downcast};
 use chrono::{DateTime, Utc};
 use tokio::sync::{mpsc, oneshot};
 
@@ -12,8 +12,8 @@ use crate::{
 use serde::Serialize;
 
 use super::{
-    ActionResultTrait, ActionTrait, Controller, ControllerError, ControllerStats, DemoAction,
-    DeviceAction, DeviceActionResult, DeviceStats, GarageDoorCommand,
+    ActionTrait, ControllerError, ControllerStats,
+    DeviceAction, DeviceActionResult, DeviceStats,
 };
 
 pub enum ControllerMessage {

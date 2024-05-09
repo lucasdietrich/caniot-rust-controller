@@ -1,4 +1,4 @@
-use log::info;
+
 
 use crate::{
     caniot::{self, HeatingControllerCommand, HeatingControllerTelemetry, HeatingMode},
@@ -36,7 +36,7 @@ impl DeviceTrait for HeatersController {
     fn handle_action(
         &mut self,
         action: &Self::Action,
-        ctx: &mut ProcessContext,
+        _ctx: &mut ProcessContext,
     ) -> Result<ActionVerdict<Self::Action>, crate::controller::DeviceError> {
         let verdict = match action {
             HeaterAction::GetStatus => ActionVerdict::ActionResult(self.status.clone()),
@@ -65,7 +65,7 @@ impl DeviceTrait for HeatersController {
     fn handle_frame(
         &mut self,
         frame: &caniot::ResponseData,
-        ctx: &mut ProcessContext,
+        _ctx: &mut ProcessContext,
     ) -> Result<Verdict, crate::controller::DeviceError> {
         match &frame {
             &caniot::ResponseData::Telemetry { endpoint, payload }

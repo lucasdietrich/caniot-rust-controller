@@ -1,11 +1,10 @@
-use log::debug;
+
 use num_traits::{FromPrimitive, ToPrimitive};
 use tonic::{Request, Response, Result, Status};
 
 use crate::{
     caniot::HeatingMode,
-    controller::{demo, heaters, DeviceAction},
-    grpcserver::datetime_to_prost_timestamp,
+    controller::{heaters},
     shared::SharedHandle,
 };
 

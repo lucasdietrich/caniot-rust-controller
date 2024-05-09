@@ -161,19 +161,17 @@ impl Device {
                     }
                 }
             }
-        } else {
-            if self.get_remaining_to_telemetry() == Duration::from_secs(0) {
-                let endpoint = self.telemetry_endpoint;
-                match self.handle_telemetry(&endpoint) {
-                    Ok(payload) => Some(caniot::ResponseData::Telemetry { endpoint, payload }),
-                    Err(error) => Some(caniot::ResponseData::Error {
-                        source: caniot::ErrorSource::Telemetry(endpoint, None),
-                        error: Some(error),
-                    }),
-                }
-            } else {
-                None
+        } else if self.get_remaining_to_telemetry() == Duration::from_secs(0) {
+            let endpoint = self.telemetry_endpoint;
+            match self.handle_telemetry(&endpoint) {
+                Ok(payload) => Some(caniot::ResponseData::Telemetry { endpoint, payload }),
+                Err(error) => Some(caniot::ResponseData::Error {
+                    source: caniot::ErrorSource::Telemetry(endpoint, None),
+                    error: Some(error),
+                }),
             }
+        } else {
+            None
         }
         .map(|data| caniot::Response {
             device_id: self.did,

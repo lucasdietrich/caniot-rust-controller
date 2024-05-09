@@ -1,11 +1,11 @@
-use rocket::response;
+use std::ops::BitAnd;
+
 use tonic::{Request, Response, Result, Status};
 
-use crate::caniot::{self, ResponseData};
+use crate::caniot::{self};
 use crate::controller::ControllerError;
-use crate::{grpcserver::datetime_to_prost_timestamp, shared::SharedHandle};
+use crate::shared::SharedHandle;
 
-use super::model::Telemetry;
 use super::model::{
     self,
     controller_service_server::{ControllerService, ControllerServiceServer},
@@ -16,7 +16,10 @@ pub struct NgController {
     pub shared: SharedHandle,
 }
 
-fn convert_payload(payload: &Vec<u32>) -> Vec<u8> {
+fn convert_payload<'a, T>(payload: &'a [T]) -> Vec<u8>
+where
+    &'a T: BitAnd<u32, Output = u32> + Copy,
+{
     let mut bytes = Vec::new();
     for p in &payload[..8] {
         bytes.push((p & 0xff) as u8);
@@ -41,7 +44,7 @@ impl ControllerService for NgController {
             }
             model::request::Query::Command(a) => {
                 let ep = caniot::Endpoint::try_from(a.endpoint).unwrap();
-                caniot::build_command_request(caniot_did, ep, convert_payload(&a.payload))
+                caniot::build_command_request(caniot_did, ep, convert_payload(a.payload.as_slice()))
             }
             model::request::Query::Attribute(a) => match a.value {
                 Some(value) => {
@@ -72,7 +75,7 @@ impl ControllerService for NgController {
         }
 
         // Handle device response
-        let response = reply.unwrap();
+        let _response = reply.unwrap();
 
         // let resp = match result.unwrap().data {
         //     ResponseData::Telemetry { endpoint, payload } => {}

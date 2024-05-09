@@ -37,7 +37,7 @@ pub fn new_context(
 ) -> SharedHandle {
     Arc::new(Shared {
         rt,
-        controller_handle: controller_handle,
+        controller_handle,
         config: config.clone(),
         notify_shutdown,
     })

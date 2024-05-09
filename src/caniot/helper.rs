@@ -57,20 +57,20 @@ pub fn build_telemetry_response(
 
 #[derive(Debug, Clone)]
 pub struct ResponseMatch {
-    is_reponse: bool,
+    is_response: bool,
     is_error: bool,
 }
 
 impl ResponseMatch {
     pub fn new(is_response: bool, is_error: bool) -> Self {
         Self {
-            is_reponse: is_response,
-            is_error: is_error,
+            is_response,
+            is_error,
         }
     }
 
     pub fn is_response(&self) -> bool {
-        self.is_reponse
+        self.is_response
     }
 
     pub fn is_error(&self) -> bool {
@@ -78,11 +78,11 @@ impl ResponseMatch {
     }
 
     pub fn is_valid_response(&self) -> bool {
-        self.is_reponse && !self.is_error
+        self.is_response && !self.is_error
     }
 
     pub fn is_response_error(&self) -> bool {
-        self.is_reponse && self.is_error
+        self.is_response && self.is_error
     }
 }
 

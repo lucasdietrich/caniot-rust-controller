@@ -2,7 +2,7 @@ use thiserror::Error;
 
 use crate::caniot;
 
-use super::ActionTrait;
+
 
 #[derive(Error, Debug)]
 pub enum DeviceError {

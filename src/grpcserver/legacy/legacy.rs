@@ -9,7 +9,7 @@ pub mod model {
 }
 
 use crate::{
-    controller::{ControllerError, DeviceAction, GarageDoorCommand},
+    controller::{GarageDoorCommand},
     shared::SharedHandle,
 };
 
@@ -33,7 +33,7 @@ impl CanController for LegacyCaniotController {
             model::GarageDoorCommand::CommandLeft => (true, false),
             model::GarageDoorCommand::CommandRight => (false, true),
         };
-        let command = GarageDoorCommand {
+        let _command = GarageDoorCommand {
             left_door_activate: left,
             right_door_activate: right,
         };

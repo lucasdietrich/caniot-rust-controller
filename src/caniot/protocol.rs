@@ -446,7 +446,7 @@ impl TryFrom<CanFrame> for Frame<RequestData> {
                 },
                 (Type::Telemetry, Action::Write) => RequestData::Command {
                     endpoint: id.endpoint,
-                    payload: payload,
+                    payload,
                 },
                 (Type::Attribute, Action::Read) => RequestData::AttributeRead {
                     key: u16::from_le_bytes(payload[0..2].try_into().unwrap()),
