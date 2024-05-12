@@ -2,11 +2,13 @@ syntax = "proto3";
 
 package ng;
 
-message DeviceId {
+message DeviceIdInfos {
   uint32 did = 1;
   uint32 cls = 2;
   uint32 sid = 3;
 }
+
+message DeviceId { uint32 did = 1; }
 
 enum Endpoint {
   EndpointAppDefault = 0;

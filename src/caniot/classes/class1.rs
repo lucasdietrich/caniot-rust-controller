@@ -1,10 +1,12 @@
+use serde::Serialize;
+
 use crate::caniot::{ProtocolError, Temperature, Xps};
 
 use super::traits::{Class, ClassCommandTrait, ClassTelemetryTrait};
 
 const CLASS1_IO_COUNT: usize = 19;
 
-#[derive(Debug, Default, Clone, Copy, PartialEq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Serialize)]
 pub struct Telemetry {
     pub ios: [bool; CLASS1_IO_COUNT],
 
@@ -46,14 +48,17 @@ impl TryFrom<&[u8]> for Telemetry {
                 ])),
                 temp_out: [
                     Temperature::from_raw_u10(u16::from_le_bytes([
-                        payload[4] >> 2,
-                        payload[5] & 0b0000_1111,
+                        (payload[4] >> 2) | (payload[5] & 0b0000_0011) << 6,
+                        (payload[5] & 0b0000_1100) >> 2,
                     ])),
                     Temperature::from_raw_u10(u16::from_le_bytes([
-                        payload[5] >> 4,
-                        payload[6] & 0b0011_1111,
+                        (payload[5] >> 4) | (payload[6] & 0b0000_1111) << 4,
+                        (payload[6] & 0b0011_0000) >> 4,
                     ])),
-                    Temperature::from_raw_u10(u16::from_le_bytes([payload[6] >> 6, payload[7]])),
+                    Temperature::from_raw_u10(u16::from_le_bytes([
+                        (payload[6] >> 6) | (payload[7] & 0b0011_1111) << 2,
+                        (payload[7] & 0b1100_0000) >> 6,
+                    ])),
                 ],
             })
         } else {

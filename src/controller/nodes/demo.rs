@@ -47,7 +47,7 @@ impl DeviceControllerTrait for DemoController {
     fn handle_frame(
         &mut self,
         frame: &caniot::ResponseData,
-        as_class_blc: &Option<BlcClassTelemetry>,
+        _as_class_blc: &Option<BlcClassTelemetry>,
         _ctx: &mut ProcessContext,
     ) -> Result<Verdict, DeviceError> {
         if let caniot::ResponseData::Telemetry {

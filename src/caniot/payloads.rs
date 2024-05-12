@@ -1,4 +1,5 @@
 use num::FromPrimitive;
+use serde::Serialize;
 
 use super::{class0, class1, HeatingMode, ProtocolError, TS, TSP};
 
@@ -112,7 +113,7 @@ impl Into<[u8; 8]> for BlcCommand {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy, Serialize)]
 pub enum BlcClassTelemetry {
     Class0(class0::Telemetry),
     Class1(class1::Telemetry),

@@ -6,23 +6,18 @@ import { DevicesList } from "@caniot-controller/caniot-api-grpc-web/api/ng_devic
 import devicesStore from "../store/DevicesStore";
 
 function DevicesView() {
-  const [devicesList, setDevicesList] = useState<DevicesList | undefined>(
-    undefined
-  );
+  const [devicesList, setDevicesList] = useState<DevicesList | undefined>(undefined);
   const [refreshData, setRefreshData] = useState<boolean>(false);
 
   useEffect(() => {
-    devicesStore.getList(new Empty(), (resp: DevicesList) => {
+    devicesStore.getList((resp: DevicesList) => {
       setDevicesList(resp);
     });
   }, [refreshData]);
 
   return (
     <Space direction="vertical" size="middle" style={{ display: "flex" }}>
-      <Card
-        title={"Devices (" + devicesList?.getDevicesList().length + ")"}
-        size="small"
-      >
+      <Card title={"Devices (" + devicesList?.getDevicesList().length + ")"} size="small">
         <DevicesTable devicesList={devicesList} />
       </Card>
     </Space>

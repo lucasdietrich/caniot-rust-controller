@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::hash::Hash;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -13,7 +14,7 @@ use crate::caniot::{DeviceId, Request};
 use crate::controller::actor::ControllerMessage;
 use crate::controller::{
     ActionVerdict, Device, DeviceAction, DeviceActionResult, DeviceControllerTrait,
-    DeviceControllerWrapperTrait, DeviceError, PendingAction, ProcessContext, Verdict,
+    DeviceControllerWrapperTrait, DeviceError, DeviceInfos, PendingAction, ProcessContext, Verdict,
 };
 use crate::shutdown::Shutdown;
 
@@ -165,10 +166,30 @@ impl Controller {
         Ok(())
     }
 
+    fn device_get_or_create(devices: &mut HashMap<DeviceId, Device>, did: DeviceId) -> &mut Device {
+        devices.entry(did).or_insert_with(|| {
+            let mut new_device = Device::new(did);
+            device_attach_controller(&mut new_device);
+            new_device
+        })
+    }
+
     pub async fn send_caniot_frame(
         &mut self,
         request: &caniot::Request,
     ) -> Result<(), ControllerError> {
+        // Get or instantiate device
+        let device_did = request.device_id;
+        let device = Self::device_get_or_create(&mut self.devices, device_did);
+
+        // update device stats
+        match request.data {
+            RequestData::Telemetry { .. } => device.stats.telemetry_tx += 1,
+            RequestData::Command { .. } => device.stats.command_tx += 1,
+            RequestData::AttributeRead { .. } => device.stats.attribute_rx += 1,
+            RequestData::AttributeWrite { .. } => device.stats.attribute_tx += 1,
+        }
+
         Self::iface_send_caniot_frame(&mut self.iface, &mut self.stats, request).await
     }
 
@@ -221,15 +242,8 @@ impl Controller {
         }
 
         // Get or create device
-        let device = if let Some(device) = self.devices.get_mut(&frame.device_id) {
-            device
-        } else {
-            let mut new_device = Device::new(frame.device_id);
-            device_attach_controller(&mut new_device);
-            self.devices.insert(frame.device_id, new_device);
-            self.devices.get_mut(&frame.device_id).unwrap()
-        };
-        let device_did = device.did;
+        let device_did = frame.device_id;
+        let device = Self::device_get_or_create(&mut self.devices, device_did);
 
         let mut device_context = ProcessContext::default();
 
@@ -400,6 +414,17 @@ impl Controller {
             .collect()
     }
 
+    fn get_devices_infos(&self, did: Option<DeviceId>) -> Vec<DeviceInfos> {
+        self.devices
+            .iter()
+            .filter(|(device_did, _device)| match did {
+                Some(ref did) => &did == device_did,
+                None => true,
+            })
+            .map(|(_did, device)| device.into())
+            .collect()
+    }
+
     fn get_device_by_did(&mut self, did: &DeviceId) -> Result<&mut Device, ControllerError> {
         self.devices
             .get_mut(did)
@@ -498,6 +523,9 @@ impl Controller {
             ControllerMessage::GetStats { respond_to } => {
                 let _ =
                     respond_to.send((self.stats, self.get_devices_stats(), self.iface.get_stats()));
+            }
+            ControllerMessage::GetDevices { did, respond_to } => {
+                let _ = respond_to.send(self.get_devices_infos(did));
             }
             ControllerMessage::Query {
                 query,

@@ -1,14 +1,11 @@
 import { notification } from "antd";
 import EventEmitter from "events";
-import { HandleError } from "./helpers";
+import { HandleError, HandleSuccess } from "./helpers";
 
 import { Empty } from "google-protobuf/google/protobuf/empty_pb";
 // import google_protobuf_empty_pb from "google-protobuf/google/protobuf/empty_pb.js";
 
-import {
-  Status,
-  Command,
-} from "@caniot-controller/caniot-api-grpc-web/api/ng_heaters_pb";
+import { Status, Command } from "@caniot-controller/caniot-api-grpc-web/api/ng_heaters_pb";
 
 import { HeatersServiceClient } from "@caniot-controller/caniot-api-grpc-web/api/Ng_heatersServiceClientPb";
 
@@ -27,10 +24,7 @@ class HeatersStore extends EventEmitter {
         return;
       }
 
-      notification.success({
-        message: "HeatersStore::GetStatus succeeded",
-        duration: 3,
-      });
+      HandleSuccess("HeatersStore::GetStatus succeeded");
 
       callbackFunc(resp);
     });
@@ -43,10 +37,7 @@ class HeatersStore extends EventEmitter {
         return;
       }
 
-      notification.success({
-        message: "HeatersStore::SetStatus succeeded",
-        duration: 3,
-      });
+      HandleSuccess("HeatersStore::SetStatus succeeded");
 
       callbackFunc(resp);
     });

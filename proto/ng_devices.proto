@@ -8,24 +8,61 @@ import "google/protobuf/empty.proto";
 
 service CaniotDevicesService {
   rpc GetList(google.protobuf.Empty) returns (DevicesList) {}
+  rpc Get(DeviceId) returns (Device) {}
+
+  // specifics
+  rpc GetHeatersDevice(google.protobuf.Empty) returns (Device) {}
 }
 
 message DeviceStats {
   uint32 rx = 1;
   uint32 tx = 2;
   uint32 telemetry_rx = 3;
-  uint32 command_tx = 4;
-  uint32 attribute_rx = 5;
-  uint32 attribute_tx = 6;
-  uint32 err_rx = 7;
+  uint32 telemetry_tx = 4;
+  uint32 command_tx = 5;
+  uint32 attribute_rx = 6;
+  uint32 attribute_tx = 7;
+  uint32 err_rx = 8;
+}
+
+message Class0Telemetry {
+  bool oc1 = 1;
+  bool oc2 = 2;
+  bool rl1 = 3;
+  bool rl2 = 4;
+
+  bool in1 = 5;
+  bool in2 = 6;
+  bool in3 = 7;
+  bool in4 = 8;
+
+  optional float int_temp = 9;
+  optional float ext_temp0 = 10;
+  optional float ext_temp1 = 11;
+  optional float ext_temp2 = 12;
+}
+
+message Class1Telemetry {
+  repeated bool ios = 1 [ packed = true ];
+  optional float int_temp = 9;
+  optional float ext_temp0 = 10;
+  optional float ext_temp1 = 11;
+  optional float ext_temp2 = 12;
 }
 
 message Device {
-  DeviceId did = 1;
+  DeviceIdInfos did = 1;
   string name = 2;
-  string status = 6;
-  google.protobuf.Timestamp lastSeen = 7;
-  DeviceStats stats = 8;
+  string status = 3;
+  google.protobuf.Timestamp lastSeen = 4;
+  optional uint32 lastSeenFromNow = 5; // seconds
+
+  DeviceStats stats = 6;
+
+  oneof measures {
+    Class0Telemetry class0 = 10;
+    Class1Telemetry class1 = 11;
+  };
 }
 
 message DevicesList { repeated Device devices = 1; }

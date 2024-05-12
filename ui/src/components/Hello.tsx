@@ -27,9 +27,7 @@ function Hello({ resp, children }: PropsWithChildren<IProps>) {
   return (
     <List
       dataSource={datas}
-      renderItem={(item) => (
-        <ListLabelledItem label={item[0]}>{item[1]}</ListLabelledItem>
-      )}
+      renderItem={(item) => <ListLabelledItem label={item[0]}>{item[1]}</ListLabelledItem>}
     >
       {children}
     </List>

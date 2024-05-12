@@ -14,3 +14,10 @@ export function HandleError(e: RpcError) {
     duration: 3,
   });
 }
+
+export function HandleSuccess(message: string) {
+  // notification.success({
+  //   message: message,
+  //   duration: 3,
+  // });
+}

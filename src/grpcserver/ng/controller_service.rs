@@ -63,7 +63,7 @@ impl ControllerService for NgController {
         // Handle request error
         if let Err(err) = reply {
             return Ok(Response::new(model::Response {
-                did: Some(did),
+                did: Some(caniot_did.into()),
                 response: None,
                 response_time: 0,
                 status: match err {
@@ -91,7 +91,7 @@ impl ControllerService for NgController {
         // let r2 = model::response::Response::Attribute(model::Attribute { key: 0, value: 0 });
 
         Ok(Response::new(model::Response {
-            did: Some(did),
+            did: Some(caniot_did.into()),
             response: None,
             response_time: 0,
             status: model::Status::Ok as i32,

@@ -48,7 +48,7 @@ pub fn emu_pool2_realistic_add_devices_to_iface(iface: &mut CanInterface) {
         Duration::from_secs(30),
     );
     demo_controller.add_behavior(Box::new(Class0Behavior::default()));
-    demo_controller.set_telemetry_endpoint(caniot::Endpoint::ApplicationDefault);
+    demo_controller.set_telemetry_endpoint(caniot::Endpoint::BoardControl);
     demo_controller.add_behavior(Box::new(super::DemoController::new()));
     iface.add_device(demo_controller);
 }

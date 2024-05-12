@@ -24,16 +24,24 @@ function DevicesTable({ devicesList }: IProps) {
       dataIndex: "last_seen",
       key: "last_seen",
     },
+    {
+      title: "Temperature",
+      dataIndex: "temp_in",
+      key: "temp_in",
+    },
   ];
 
   const dataSource = devicesList.getDevicesList().map((device, index) => {
     let lastseen: Timestamp | undefined = device.getLastseen();
     let lastseen_fmt = lastseen?.toDate().toLocaleString();
 
+    let temp = device.getClass1()?.getIntTemp().toFixed(2) || "N/A";
+
     return {
       key: index,
       did: device.getDid()?.getCls() + " / " + device.getDid()?.getSid(),
       last_seen: lastseen_fmt || "",
+      temp_in: temp + " °C",
     };
   });
 

@@ -1,6 +1,6 @@
 import { notification } from "antd";
 import EventEmitter from "events";
-import { HandleError } from "./helpers";
+import { HandleError, HandleSuccess } from "./helpers";
 import {
   HelloRequest,
   HelloResponse,
@@ -23,11 +23,7 @@ class InternalStore extends EventEmitter {
         return;
       }
 
-      notification.success({
-        message: "Hello succeeded",
-        description: resp.getMessage(),
-        duration: 3,
-      });
+      HandleSuccess("InternalStore::Hello succeeded");
 
       callbackFunc(resp);
     });

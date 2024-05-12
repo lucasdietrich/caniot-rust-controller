@@ -28,4 +28,5 @@
         "editor.tabSize": 2
     },
     "editor.formatOnSave": true,
+    "prettier.printWidth": 100
 }

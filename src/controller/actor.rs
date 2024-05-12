@@ -1,6 +1,6 @@
 use std::ops::Deref;
 
-use as_any::{Downcast};
+use as_any::Downcast;
 use chrono::{DateTime, Utc};
 use tokio::sync::{mpsc, oneshot};
 
@@ -12,13 +12,17 @@ use crate::{
 use serde::Serialize;
 
 use super::{
-    ActionTrait, ControllerError, ControllerStats,
-    DeviceAction, DeviceActionResult, DeviceStats,
+    ActionTrait, ControllerError, ControllerStats, DeviceAction, DeviceActionResult, DeviceInfos,
+    DeviceStats,
 };
 
 pub enum ControllerMessage {
     GetStats {
         respond_to: oneshot::Sender<(ControllerStats, Vec<DeviceStatsEntry>, CanStats)>,
+    },
+    GetDevices {
+        did: Option<DeviceId>,
+        respond_to: oneshot::Sender<Vec<DeviceInfos>>,
     },
     Query {
         query: caniot::Request,
@@ -92,6 +96,24 @@ impl ControllerHandle {
     pub async fn get_stats(&self) -> (ControllerStats, Vec<DeviceStatsEntry>, CanStats) {
         self.query(|respond_to| ControllerMessage::GetStats { respond_to })
             .await
+    }
+
+    pub async fn get_devices_infos_list(&self) -> Vec<DeviceInfos> {
+        self.query(|respond_to| ControllerMessage::GetDevices {
+            did: None,
+            respond_to,
+        })
+        .await
+    }
+
+    pub async fn get_device_infos(&self, did: DeviceId) -> Option<DeviceInfos> {
+        self.query(|respond_to| ControllerMessage::GetDevices {
+            did: Some(did),
+            respond_to,
+        })
+        .await
+        .into_iter()
+        .next()
     }
 
     // Send a generic device action to the controller of the device.

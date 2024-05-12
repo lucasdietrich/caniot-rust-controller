@@ -1,8 +1,9 @@
 use super::traits::{Class, ClassCommandTrait, ClassTelemetryTrait};
 use crate::caniot::{ProtocolError, Temperature, Xps};
 use num::FromPrimitive;
+use serde::Serialize;
 
-#[derive(Debug, Default, Clone, Copy, PartialEq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Serialize)]
 pub struct Telemetry {
     pub oc1: bool,
     pub oc2: bool,
@@ -47,16 +48,16 @@ impl TryFrom<&[u8]> for Telemetry {
                 ])),
                 temp_out: [
                     Temperature::from_raw_u10(u16::from_le_bytes([
-                        payload[3] >> 2,
-                        payload[4] & 0b0000_1111,
+                        (payload[3] >> 2) | (payload[4] & 0b0000_0011) << 6,
+                        (payload[4] & 0b0000_1100) >> 2,
                     ])),
                     Temperature::from_raw_u10(u16::from_le_bytes([
-                        payload[4] >> 4,
-                        payload[5] & 0b0000_1111,
+                        (payload[4] >> 4) | (payload[5] & 0b0000_1111) << 4,
+                        (payload[5] & 0b0011_0000) >> 4,
                     ])),
                     Temperature::from_raw_u10(u16::from_le_bytes([
-                        payload[5] >> 6,
-                        payload[6] & 0b0000_0011,
+                        (payload[5] >> 6) | (payload[6] & 0b0011_1111) << 2,
+                        (payload[6] & 0b1100_0000) >> 6,
                     ])),
                 ],
             })

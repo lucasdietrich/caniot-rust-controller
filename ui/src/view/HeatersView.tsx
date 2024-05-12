@@ -1,37 +1,42 @@
 import { Badge, Card, Col, Form, Result, Row, Space, Spin } from "antd";
 import React, { useEffect, useState } from "react";
 import HeaterModeSelector from "../components/HeaterModeSelector";
-import {
-  CheckCircleFilled,
-  CheckCircleOutlined,
-  LoadingOutlined,
-} from "@ant-design/icons";
-import {
-  Command,
-  State,
-  Status,
-} from "@caniot-controller/caniot-api-grpc-web/api/ng_heaters_pb";
+import { CheckCircleFilled, CheckCircleOutlined, LoadingOutlined } from "@ant-design/icons";
+import { Command, State, Status } from "@caniot-controller/caniot-api-grpc-web/api/ng_heaters_pb";
 import heatersStore from "../store/HeatersStore";
 import { Empty } from "google-protobuf/google/protobuf/empty_pb";
 import Icon from "@ant-design/icons/lib/components/Icon";
+import DeviceStatusCard from "../components/DeviceStatusCard";
+import { Device } from "@caniot-controller/caniot-api-grpc-web/api/ng_devices_pb";
+import devicesStore from "../store/DevicesStore";
+import { DeviceId } from "@caniot-controller/caniot-api-grpc-web/api/common_pb";
+
+const REFRESH_INTERVAL = 5000; // ms
 
 function HeatersView() {
-  const [heatersStatus, setHeatersStatus] = useState<Status | undefined>(
-    undefined
-  );
+  const [heatersStatus, setHeatersStatus] = useState<Status | undefined>(undefined);
   const [loading, setLoading] = useState(true);
+  const [heatersDevice, setHeatersDevice] = useState<Device | undefined>(undefined);
+  const [time, setTime] = useState(Date.now());
 
   useEffect(() => {
     heatersStore.getStatus(new Empty(), (resp: Status) => {
       setLoading(false);
       setHeatersStatus(resp);
     });
-  }, []);
+
+    devicesStore.getHeatersDevice((resp: Device) => {
+      setHeatersDevice(resp);
+    });
+
+    const interval = setInterval(() => setTime(Date.now()), REFRESH_INTERVAL);
+    return () => {
+      clearInterval(interval);
+    };
+  }, [time]);
 
   const onModeChange = (heaterIndex: number, mode: State) => {
     setLoading(true);
-
-    console.log("Heater", heaterIndex, "mode changed to", mode);
 
     let command = new Command();
 
@@ -42,7 +47,6 @@ function HeatersView() {
 
     command.setHeaterList(HeaterModesList);
     heatersStore.setStatus(command, (resp) => {
-      console.log("Heaters status updated", resp.getHeaterList());
       setHeatersStatus(resp);
       setLoading(false);
     });
@@ -59,10 +63,7 @@ function HeatersView() {
                 text={
                   <Space size="middle">
                     Chauffage
-                    <Spin
-                      spinning={loading}
-                      indicator={<LoadingOutlined spin />}
-                    />
+                    <Spin spinning={loading} indicator={<LoadingOutlined spin />} />
                   </Space>
                 }
               />
@@ -95,7 +96,7 @@ function HeatersView() {
           </Card>
         </Col>
         <Col span={8}>
-          <Card title="Test"></Card>
+          <DeviceStatusCard title="Chauffage" resp={heatersDevice} />
         </Col>
       </Row>
     </>

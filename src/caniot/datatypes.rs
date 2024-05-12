@@ -5,10 +5,11 @@ use std::{
 
 use num_derive::{FromPrimitive, ToPrimitive};
 use num_traits::FromPrimitive;
+use serde::Serialize;
 
 use super::*;
 
-#[derive(Clone, Copy, PartialEq, Default)]
+#[derive(Clone, Copy, PartialEq, Default, Serialize)]
 pub struct Temperature(Option<i16>);
 
 impl Temperature {
@@ -17,6 +18,18 @@ impl Temperature {
     const VALUE_U10_INVALID_MARKER: u16 = Self::VALUE_U10_MASK;
     const VALUE_U10_MAX_VALID: u16 = 1000;
     const VALUE_U16_MASK: u16 = 0xFFFF;
+    const VALUE_F_MIN: f32 = -28.0;
+    const VALUE_F_MAX: f32 = 72.0;
+    const VALUE_I16_MIN: i16 = -2800;
+    const VALUE_I16_MAX: i16 = 7200;
+
+    pub fn new(val: i16) -> Self {
+        if val < Self::VALUE_I16_MIN || val > Self::VALUE_I16_MAX {
+            Self::INVALID
+        } else {
+            Temperature(Some(val))
+        }
+    }
 
     pub fn from_raw_u16(raw: u16) -> Self {
         if raw == Self::VALUE_U16_MASK {
@@ -67,6 +80,14 @@ impl Temperature {
         }
     }
 
+    pub fn from_celsius(val: f32) -> Self {
+        if val < Self::VALUE_F_MIN || val > Self::VALUE_F_MAX {
+            Self::INVALID
+        } else {
+            Temperature(Some((val * 100.0) as i16))
+        }
+    }
+
     pub fn random() -> Self {
         let rand = rand::random::<u16>() % 1001;
         Temperature::from_raw_u10(rand)
@@ -91,6 +112,17 @@ impl Debug for Temperature {
         match self.to_celsius() {
             Some(val) => write!(f, "{} °C (raw {})", val, self.0.unwrap()),
             None => write!(f, "INVALID °C"),
+        }
+    }
+}
+
+impl TryFrom<Temperature> for f32 {
+    type Error = ();
+
+    fn try_from(value: Temperature) -> Result<Self, Self::Error> {
+        match value.to_celsius() {
+            Some(val) => Ok(val),
+            None => Err(()),
         }
     }
 }

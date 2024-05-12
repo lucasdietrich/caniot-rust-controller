@@ -23,6 +23,7 @@ pub struct DeviceStats {
     pub rx: usize,
     pub tx: usize,
     pub telemetry_rx: usize,
+    pub telemetry_tx: usize,
     pub command_tx: usize,
     pub attribute_rx: usize,
     pub attribute_tx: usize,
@@ -45,7 +46,7 @@ pub struct Device {
     pub last_process: Option<Instant>,
 
     // Last class telemetry values
-    pub last_class_telemetry: Option<BlcClassTelemetry>,
+    pub measures: Option<BlcClassTelemetry>,
 }
 
 impl Device {
@@ -57,12 +58,18 @@ impl Device {
             controller: None,
             next_requested_process: None,
             last_process: None,
-            last_class_telemetry: None,
+            measures: None,
         }
     }
 
     pub fn mark_last_seen(&mut self) {
         self.last_seen = Some(Utc::now());
+    }
+
+    pub fn last_seen_from_now(&self) -> Option<u32> {
+        self.last_seen
+            .as_ref()
+            .map(|t| (Utc::now() - *t).num_seconds() as u32)
     }
 
     pub fn mark_processed(&mut self) {
@@ -170,12 +177,12 @@ impl Device {
 
         // Update the last class telemetry values
         if let Some(as_class_blc) = as_class_blc {
-            self.last_class_telemetry = Some(as_class_blc);
+            self.measures = Some(as_class_blc);
         }
 
         // Let the inner device controller handle the frame
         if let Some(ref mut inner) = self.controller {
-            inner.wrapper_handle_frame(frame, &self.last_class_telemetry, ctx)
+            inner.wrapper_handle_frame(frame, &self.measures, ctx)
         } else {
             Ok(Verdict::default())
         }

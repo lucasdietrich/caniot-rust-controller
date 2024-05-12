@@ -9,19 +9,8 @@ import {
   ThunderboltFilled,
   ThunderboltOutlined,
 } from "@ant-design/icons";
-import {
-  Command,
-  State,
-} from "@caniot-controller/caniot-api-grpc-web/api/ng_heaters_pb";
-import {
-  Button,
-  Form,
-  Radio,
-  RadioChangeEvent,
-  Select,
-  Space,
-  Spin,
-} from "antd";
+import { Command, State } from "@caniot-controller/caniot-api-grpc-web/api/ng_heaters_pb";
+import { Button, Form, Radio, RadioChangeEvent, Select, Space, Spin } from "antd";
 import React, { useEffect, useState } from "react";
 import { LuLeaf, LuThermometerSnowflake } from "react-icons/lu";
 import { PiSnowflakeLight, PiSnowflakeThin } from "react-icons/pi";
@@ -44,8 +33,6 @@ function HeaterModeSelector({
 }: IProps) {
   const [form] = Form.useForm();
 
-  console.log("HeaterModeSelector", heaterIndex, initialMode);
-
   const disabled = initialMode === State.NONE;
 
   const onChange = (e: RadioChangeEvent) => {
@@ -59,11 +46,7 @@ function HeaterModeSelector({
   return (
     <Form form={form} initialValues={{ [heaterIndex]: initialMode }}>
       <Form.Item label={label} name={heaterIndex}>
-        <Radio.Group
-          disabled={disabled}
-          buttonStyle="solid"
-          onChange={onChange}
-        >
+        <Radio.Group disabled={disabled} buttonStyle="solid" onChange={onChange}>
           <Radio.Button value={State.OFF}>
             <PoweroffOutlined /> Arrêt
           </Radio.Button>
