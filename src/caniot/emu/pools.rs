@@ -5,7 +5,7 @@ use crate::{
     caniot::{self, DeviceId},
 };
 
-use super::{Device, HeatersController};
+use super::{Class0Behavior, Class1Behavior, Device, HeatersController};
 
 pub fn emu_pool1_add_devices_to_iface(iface: &mut CanInterface) {
     let mut dev1 = Device::new(1, Duration::from_secs(5));
@@ -36,9 +36,10 @@ pub fn emu_pool2_realistic_add_devices_to_iface(iface: &mut CanInterface) {
         DeviceId::new(1, 0).unwrap().to_u8(),
         Duration::from_secs(30),
     );
-    let heaters_behavior = HeatersController::new();
-    heaters_controller.set_telemetry_endpoint(caniot::Endpoint::ApplicationDefault);
-    heaters_controller.add_behavior(Box::new(heaters_behavior));
+    heaters_controller.add_telemetry_on_boot(caniot::Endpoint::ApplicationDefault);
+    heaters_controller.set_telemetry_endpoint(caniot::Endpoint::BoardControl);
+    heaters_controller.add_behavior(Box::new(Class1Behavior::default()));
+    heaters_controller.add_behavior(Box::new(HeatersController::new()));
     iface.add_device(heaters_controller);
 
     // Add demo device
@@ -46,8 +47,8 @@ pub fn emu_pool2_realistic_add_devices_to_iface(iface: &mut CanInterface) {
         DeviceId::new(0, 0).unwrap().to_u8(),
         Duration::from_secs(30),
     );
-    let demo_behavior = super::DemoController::new();
+    demo_controller.add_behavior(Box::new(Class0Behavior::default()));
     demo_controller.set_telemetry_endpoint(caniot::Endpoint::ApplicationDefault);
-    demo_controller.add_behavior(Box::new(demo_behavior));
+    demo_controller.add_behavior(Box::new(super::DemoController::new()));
     iface.add_device(demo_controller);
 }

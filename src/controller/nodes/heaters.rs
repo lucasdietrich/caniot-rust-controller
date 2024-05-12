@@ -1,9 +1,10 @@
-
-
 use crate::{
-    caniot::{self, HeatingControllerCommand, HeatingControllerTelemetry, HeatingMode},
+    caniot::{
+        self, BlcClassTelemetry, HeatingControllerCommand, HeatingControllerTelemetry, HeatingMode,
+    },
     controller::{
-        ActionResultTrait, ActionTrait, ActionVerdict, DeviceTrait, ProcessContext, Verdict,
+        ActionResultTrait, ActionTrait, ActionVerdict, DeviceControllerTrait, ProcessContext,
+        Verdict,
     },
 };
 
@@ -30,7 +31,7 @@ impl ActionTrait for HeaterAction {
 
 impl ActionResultTrait for HeaterStatus {}
 
-impl DeviceTrait for HeatersController {
+impl DeviceControllerTrait for HeatersController {
     type Action = HeaterAction;
 
     fn handle_action(
@@ -65,6 +66,7 @@ impl DeviceTrait for HeatersController {
     fn handle_frame(
         &mut self,
         frame: &caniot::ResponseData,
+        as_class_blc: &Option<BlcClassTelemetry>,
         _ctx: &mut ProcessContext,
     ) -> Result<Verdict, crate::controller::DeviceError> {
         match &frame {

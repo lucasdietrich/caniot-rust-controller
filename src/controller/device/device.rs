@@ -1,24 +1,21 @@
-
 use chrono::{DateTime, Utc};
 
 use serde::Serialize;
-use std::{
-    time::{Duration, Instant},
-};
+use std::time::{Duration, Instant};
 
 use crate::{
     caniot::{
-        DeviceId,
-        ResponseData,
+        utils::blc_parse_telemetry_as_class, BlcClassTelemetry, DeviceId, Endpoint, ResponseData,
     },
-    controller::{ActionTrait},
+    controller::ActionTrait,
 };
 
 use super::{
     actions::{DeviceAction, DeviceActionResult},
     context::ProcessContext,
+    traits::ActionWrapperTrait,
     verdict::{ActionVerdict, Verdict},
-    DeviceError, DeviceTrait, DeviceWrapperTrait,
+    DeviceControllerTrait, DeviceControllerWrapperTrait, DeviceError,
 };
 
 #[derive(Serialize, Debug, Clone, Copy, Default)]
@@ -41,11 +38,14 @@ pub struct Device {
     pub stats: DeviceStats,
 
     // Inner implementation
-    pub inner: Option<Box<dyn DeviceWrapperTrait>>,
+    pub controller: Option<Box<dyn DeviceControllerWrapperTrait>>,
 
     // Internal
     pub next_requested_process: Option<Instant>,
     pub last_process: Option<Instant>,
+
+    // Last class telemetry values
+    pub last_class_telemetry: Option<BlcClassTelemetry>,
 }
 
 impl Device {
@@ -54,10 +54,10 @@ impl Device {
             did,
             last_seen: None,
             stats: DeviceStats::default(),
-            inner: None,
+            controller: None,
             next_requested_process: None,
             last_process: None,
-            // pending_action: None,
+            last_class_telemetry: None,
         }
     }
 
@@ -98,21 +98,25 @@ impl Device {
 
         None
     }
-}
 
-impl DeviceTrait for Device {
-    type Action = DeviceAction;
+    pub fn can_inner_controller_handle_action(&self, action: &dyn ActionWrapperTrait) -> bool {
+        if let Some(inner) = self.controller.as_ref() {
+            inner.wrapper_can_handle_action(action)
+        } else {
+            false
+        }
+    }
 
-    fn handle_action(
+    pub fn handle_action(
         &mut self,
         action: &DeviceAction,
         ctx: &mut ProcessContext,
-    ) -> Result<ActionVerdict<Self::Action>, DeviceError> {
+    ) -> Result<ActionVerdict<DeviceAction>, DeviceError> {
         match action {
             DeviceAction::Reset => Err(DeviceError::NotImplemented), // BlcCommand::HARDWARE_RESET
 
             DeviceAction::Inner(inner_action) => {
-                if let Some(inner_device) = self.inner.as_mut() {
+                if let Some(inner_device) = self.controller.as_mut() {
                     let inner_verdict = inner_device.wrapper_handle_action(inner_action, ctx)?;
                     Ok(ActionVerdict::from_inner_verdict(inner_verdict))
                 } else {
@@ -122,13 +126,13 @@ impl DeviceTrait for Device {
         }
     }
 
-    fn handle_action_result(
+    pub fn handle_action_result(
         &self,
-        delayed_action: &Self::Action,
-    ) -> Result<<Self::Action as ActionTrait>::Result, DeviceError> {
+        delayed_action: &DeviceAction,
+    ) -> Result<<DeviceAction as ActionTrait>::Result, DeviceError> {
         match delayed_action {
             DeviceAction::Inner(inner_action) => {
-                if let Some(inner_device) = self.inner.as_ref() {
+                if let Some(inner_device) = self.controller.as_ref() {
                     let result = inner_device.wrapper_handle_delayed_action_result(inner_action)?;
                     Ok(DeviceActionResult::new_boxed_inner(result))
                 } else {
@@ -139,9 +143,10 @@ impl DeviceTrait for Device {
         }
     }
 
-    fn handle_frame(
+    pub fn handle_frame(
         &mut self,
         frame: &ResponseData,
+        _as_class_blc: &Option<BlcClassTelemetry>,
         ctx: &mut ProcessContext,
     ) -> Result<Verdict, DeviceError> {
         self.mark_last_seen();
@@ -153,15 +158,31 @@ impl DeviceTrait for Device {
             ResponseData::Error { .. } => self.stats.err_rx += 1,
         }
 
-        if let Some(ref mut inner) = self.inner {
-            inner.wrapper_handle_frame(frame, ctx)
+        // Try to parse the telemetry frame as a class telemetry if possible
+        let as_class_blc = match frame {
+            ResponseData::Telemetry { endpoint, payload }
+                if endpoint == &Endpoint::BoardControl =>
+            {
+                blc_parse_telemetry_as_class(self.did.class, payload).ok()
+            }
+            _ => None,
+        };
+
+        // Update the last class telemetry values
+        if let Some(as_class_blc) = as_class_blc {
+            self.last_class_telemetry = Some(as_class_blc);
+        }
+
+        // Let the inner device controller handle the frame
+        if let Some(ref mut inner) = self.controller {
+            inner.wrapper_handle_frame(frame, &self.last_class_telemetry, ctx)
         } else {
             Ok(Verdict::default())
         }
     }
 
-    fn process(&mut self, ctx: &mut ProcessContext) -> Result<Verdict, DeviceError> {
-        if let Some(ref mut inner) = self.inner {
+    pub fn process(&mut self, ctx: &mut ProcessContext) -> Result<Verdict, DeviceError> {
+        if let Some(ref mut inner) = self.controller {
             inner.wrapper_process(ctx)
         } else {
             Ok(Verdict::default())

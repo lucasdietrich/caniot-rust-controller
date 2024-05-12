@@ -1,9 +1,6 @@
-use std::{
-    fmt::Debug,
-    ops::Deref,
-};
+use std::{fmt::Debug, ops::Deref};
 
-use crate::caniot;
+use crate::caniot::{self, BlcClassTelemetry};
 
 use as_any::{AsAny, Downcast};
 
@@ -12,12 +9,13 @@ use super::{
     DeviceError, ProcessContext,
 };
 
-pub trait DeviceTrait: Send + Debug {
+pub trait DeviceControllerTrait: Send + Debug {
     type Action: ActionTrait;
 
     fn handle_frame(
         &mut self,
         _frame: &caniot::ResponseData,
+        _as_class_blc: &Option<BlcClassTelemetry>,
         _ctx: &mut ProcessContext,
     ) -> Result<Verdict, DeviceError> {
         Ok(Verdict::default())
@@ -46,10 +44,11 @@ pub trait DeviceTrait: Send + Debug {
 
 /// This trait is used to wrap a DeviceTrait into a DeviceWrapperTrait and make it object safe
 /// so that we can make a list of devices with different types.
-pub trait DeviceWrapperTrait: Send + Debug {
+pub trait DeviceControllerWrapperTrait: Send + Debug {
     fn wrapper_handle_frame(
         &mut self,
         frame: &caniot::ResponseData,
+        as_class_blc: &Option<BlcClassTelemetry>,
         ctx: &mut ProcessContext,
     ) -> Result<Verdict, DeviceError>;
 
@@ -73,9 +72,9 @@ pub trait DeviceWrapperTrait: Send + Debug {
 }
 
 /// Automatically implement DeviceWrapperTrait for any DeviceTrait
-impl<T: DeviceTrait> DeviceWrapperTrait for T
+impl<T: DeviceControllerTrait> DeviceControllerWrapperTrait for T
 where
-    <T as DeviceTrait>::Action: 'static,
+    <T as DeviceControllerTrait>::Action: 'static,
 {
     fn wrapper_can_handle_action(&self, action: &dyn ActionWrapperTrait) -> bool {
         action.is::<T::Action>()
@@ -84,9 +83,10 @@ where
     fn wrapper_handle_frame(
         &mut self,
         frame: &caniot::ResponseData,
+        as_class_blc: &Option<BlcClassTelemetry>,
         ctx: &mut ProcessContext,
     ) -> Result<Verdict, DeviceError> {
-        self.handle_frame(frame, ctx)
+        self.handle_frame(frame, as_class_blc, ctx)
     }
 
     fn wrapper_handle_action(

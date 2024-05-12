@@ -1,6 +1,4 @@
-use crate::{
-    caniot::{Xps},
-};
+use crate::caniot::Xps;
 
 use super::super::super::caniot::*;
 
@@ -13,9 +11,9 @@ pub struct GarageDoorCommand {
 }
 
 #[allow(clippy::all)]
-impl Into<Class0Command> for GarageDoorCommand {
-    fn into(self) -> Class0Command {
-        Class0Command {
+impl Into<class0::Command> for GarageDoorCommand {
+    fn into(self) -> class0::Command {
+        class0::Command {
             crl1: if self.left_door_activate {
                 Xps::PulseOn
             } else {
@@ -38,8 +36,8 @@ pub struct GarageDoorStatus {
     pub garage_light_status: bool,
 }
 
-impl From<Class0Payload> for GarageDoorStatus {
-    fn from(payload: Class0Payload) -> Self {
+impl From<class0::Telemetry> for GarageDoorStatus {
+    fn from(payload: class0::Telemetry) -> Self {
         Self {
             left_door_status: payload.in3,
             right_door_status: payload.in4,

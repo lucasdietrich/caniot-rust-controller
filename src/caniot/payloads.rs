@@ -1,65 +1,208 @@
-use super::*;
-use num_derive::{FromPrimitive, ToPrimitive};
-use num_traits::{FromPrimitive, ToPrimitive};
+use num::FromPrimitive;
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, FromPrimitive)]
-pub enum Xps {
-    #[default]
-    None = 0,
-    SetOn = 1,
-    SetOff = 2,
-    Toggle = 3,
-    Reset = 4,
-    PulseOn = 5,
-    PulseOff = 6,
-    PulseCancel = 7,
+use super::{class0, class1, HeatingMode, ProtocolError, TS, TSP};
+
+trait TelemetryTrait<'a>: TryFrom<&'a [u8]> + Into<Vec<u8>> {}
+
+trait CommandTrait<'a>: Into<Vec<u8>> + TryFrom<&'a [u8]> {}
+
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+pub struct SystemCommand {
+    pub hardware_reset: bool,
+    pub _software_reset: bool, // deprecated
+    pub _watchdog_reset: bool, // deprecated
+    pub watchdog_enable: TS,
+    pub factory_reset: bool,
+    pub inhibit: TSP,
 }
 
-impl Xps {
-    pub fn set_at(&self, data: &mut [u8], position: usize) -> Result<(), ProtocolError> {
-        let len = data.len();
-        let msb_index = position * 3;
-        let msb_offset = msb_index & 0x7;
-        let msb_rem_size = 8 - msb_offset;
-        let byte_n = msb_index >> 3;
-        let xps = *self as u8;
-        data[byte_n] |= (xps << msb_offset) as u8;
+impl SystemCommand {
+    pub const HARDWARE_RESET: SystemCommand = SystemCommand {
+        hardware_reset: true,
+        _software_reset: false,
+        _watchdog_reset: false,
+        watchdog_enable: TS::None,
+        factory_reset: false,
+        inhibit: TSP::None,
+    };
+}
 
-        if msb_rem_size < 3 && (byte_n + 1) < len {
-            data[byte_n + 1] |= xps >> msb_rem_size;
-        }
+impl Into<u8> for SystemCommand {
+    fn into(self) -> u8 {
+        let mut payload = 0_u8;
 
-        Ok(())
+        payload |= self.hardware_reset as u8;
+        payload |= (self._software_reset as u8) << 1;
+        payload |= (self._watchdog_reset as u8) << 2;
+        payload |= (self.watchdog_enable as u8) << 3;
+        payload |= (self.factory_reset as u8) << 5;
+        payload |= (self.inhibit as u8) << 6;
+
+        payload
     }
 }
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, FromPrimitive)]
-pub enum TS {
-    #[default]
-    None = 0,
-    Set = 1,
-    Reset = 2,
-    Toggle = 3,
+impl From<u8> for SystemCommand {
+    fn from(value: u8) -> Self {
+        SystemCommand {
+            hardware_reset: value & 0b0000_0001 != 0,
+            _software_reset: value & 0b0000_0010 != 0,
+            _watchdog_reset: value & 0b0000_0100 != 0,
+            watchdog_enable: FromPrimitive::from_u8((value & 0b0000_1100) >> 2).unwrap(),
+            factory_reset: value & 0b0001_0000 != 0,
+            inhibit: FromPrimitive::from_u8((value & 0b1100_0000) >> 6).unwrap(),
+        }
+    }
 }
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, FromPrimitive)]
-pub enum TSP {
-    #[default]
-    None = 0,
-    Set = 1,
-    Reset = 2,
-    Pulse = 3,
+pub enum BlcClassCommand {
+    Class0(class0::Command),
+    Class1(class1::Command),
 }
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, FromPrimitive, ToPrimitive)]
-pub enum HeatingMode {
-    #[default]
-    None = 0,
-    Comfort = 1,
-    ComfortMin1 = 2,
-    ComfortMin2 = 3,
-    EnergySaving = 4,
-    FrostProtection = 5,
-    Stop = 6,
-    // unused
+impl Into<[u8; 7]> for BlcClassCommand {
+    fn into(self) -> [u8; 7] {
+        let mut vec: Vec<_> = match self {
+            BlcClassCommand::Class0(class0_command) => class0_command.into(),
+            BlcClassCommand::Class1(class1_command) => class1_command.into(),
+        };
+
+        if vec.len() > 7 {
+            panic!("Class command size error");
+        } else if vec.len() < 7 {
+            // fill
+            vec.resize(7, 0);
+        }
+
+        vec.try_into().unwrap()
+    }
+}
+
+pub struct BlcCommand {
+    pub class_payload: Option<BlcClassCommand>,
+    pub sys: SystemCommand,
+}
+
+impl BlcCommand {
+    pub const HARDWARE_RESET: BlcCommand = BlcCommand {
+        class_payload: None,
+        sys: SystemCommand::HARDWARE_RESET,
+    };
+}
+
+impl Into<[u8; 8]> for BlcCommand {
+    fn into(self) -> [u8; 8] {
+        let class_command: [u8; 7] = if let Some(class_command) = self.class_payload {
+            class_command.into()
+        } else {
+            [0; 7]
+        };
+
+        let command: [u8; 8] = [
+            class_command[0],
+            class_command[1],
+            class_command[2],
+            class_command[3],
+            class_command[4],
+            class_command[5],
+            class_command[6],
+            self.sys.into(),
+        ];
+        command
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum BlcClassTelemetry {
+    Class0(class0::Telemetry),
+    Class1(class1::Telemetry),
+}
+
+impl Into<Vec<u8>> for BlcClassTelemetry {
+    fn into(self) -> Vec<u8> {
+        match self {
+            BlcClassTelemetry::Class0(class0_telemetry) => class0_telemetry.into(),
+            BlcClassTelemetry::Class1(class1_telemetry) => class1_telemetry.into(),
+        }
+    }
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
+pub struct HeatingControllerCommand {
+    pub modes: [HeatingMode; 4],
+}
+
+impl<'a> CommandTrait<'a> for HeatingControllerCommand {}
+
+impl TryFrom<&[u8]> for HeatingControllerCommand {
+    type Error = ProtocolError;
+
+    fn try_from(payload: &[u8]) -> Result<Self, ProtocolError> {
+        if payload.len() >= 2 {
+            Ok(HeatingControllerCommand {
+                modes: [
+                    HeatingMode::from_u8(payload[0] & 0xf).unwrap(),
+                    HeatingMode::from_u8((payload[0] & 0xf0) >> 4).unwrap(),
+                    HeatingMode::from_u8(payload[1] & 0xf).unwrap(),
+                    HeatingMode::from_u8((payload[1] & 0xf0) >> 4).unwrap(),
+                ],
+            })
+        } else {
+            Err(ProtocolError::PayloadDecodeError)
+        }
+    }
+}
+
+impl Into<Vec<u8>> for HeatingControllerCommand {
+    fn into(self) -> Vec<u8> {
+        let mut payload = Vec::with_capacity(3);
+
+        payload.push(self.modes[0] as u8 | (self.modes[1] as u8) << 4);
+        payload.push(self.modes[2] as u8 | (self.modes[3] as u8) << 4);
+
+        payload
+    }
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
+pub struct HeatingControllerTelemetry {
+    pub modes: [HeatingMode; 4],
+    pub power_status: bool,
+}
+
+impl<'a> TelemetryTrait<'a> for HeatingControllerTelemetry {}
+impl TryFrom<&[u8]> for HeatingControllerTelemetry {
+    type Error = ProtocolError;
+
+    fn try_from(payload: &[u8]) -> Result<Self, ProtocolError> {
+        if payload.len() >= 3 {
+            Ok(HeatingControllerTelemetry {
+                modes: [
+                    HeatingMode::from_u8(payload[0] & 0xf)
+                        .ok_or(ProtocolError::PayloadDecodeError)?,
+                    HeatingMode::from_u8((payload[0] & 0xf0) >> 4)
+                        .ok_or(ProtocolError::PayloadDecodeError)?,
+                    HeatingMode::from_u8(payload[1] & 0xf)
+                        .ok_or(ProtocolError::PayloadDecodeError)?,
+                    HeatingMode::from_u8((payload[1] & 0xf0) >> 4)
+                        .ok_or(ProtocolError::PayloadDecodeError)?,
+                ],
+                power_status: payload[2] & 0b0000_0001 != 0,
+            })
+        } else {
+            Err(ProtocolError::PayloadDecodeError)
+        }
+    }
+}
+
+impl Into<Vec<u8>> for HeatingControllerTelemetry {
+    fn into(self) -> Vec<u8> {
+        let mut payload = Vec::with_capacity(3);
+
+        payload.push(self.modes[0] as u8 | (self.modes[1] as u8) << 4);
+        payload.push(self.modes[2] as u8 | (self.modes[3] as u8) << 4);
+        payload.push(self.power_status as u8);
+
+        payload
+    }
 }

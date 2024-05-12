@@ -1,10 +1,7 @@
-
-
-
 use crate::{
-    caniot::{self, RequestData},
+    caniot::{self, BlcClassTelemetry, RequestData},
     controller::{
-        ActionResultTrait, ActionTrait, ActionVerdict, DeviceError, DeviceTrait,
+        ActionResultTrait, ActionTrait, ActionVerdict, DeviceControllerTrait, DeviceError,
         ProcessContext, Verdict,
     },
 };
@@ -31,7 +28,7 @@ impl DemoController {
     }
 }
 
-impl DeviceTrait for DemoController {
+impl DeviceControllerTrait for DemoController {
     type Action = DemoAction;
 
     fn handle_action(
@@ -50,6 +47,7 @@ impl DeviceTrait for DemoController {
     fn handle_frame(
         &mut self,
         frame: &caniot::ResponseData,
+        as_class_blc: &Option<BlcClassTelemetry>,
         _ctx: &mut ProcessContext,
     ) -> Result<Verdict, DeviceError> {
         if let caniot::ResponseData::Telemetry {

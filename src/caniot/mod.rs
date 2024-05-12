@@ -1,4 +1,5 @@
 pub mod attributes;
+pub mod classes;
 pub mod datatypes;
 pub mod did;
 pub mod error;
@@ -8,6 +9,7 @@ pub mod protocol;
 pub mod types;
 
 pub use attributes::*;
+pub use classes::*;
 pub use datatypes::*;
 pub use did::*;
 pub use error::*;
@@ -18,6 +20,8 @@ pub use types::*;
 
 #[cfg(test)]
 mod attributes_test;
+#[cfg(test)]
+mod datatypes_test;
 #[cfg(test)]
 mod helper_test;
 #[cfg(test)]

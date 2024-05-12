@@ -7,7 +7,7 @@ fn enc() {
         left_door_activate: true,
         right_door_activate: true,
     };
-    let cmd: Class0Command = cmd.into();
+    let cmd: class0::Command = cmd.into();
     assert_eq!(cmd.crl1, Xps::PulseOn);
     assert_eq!(cmd.crl2, Xps::PulseOn);
     assert_eq!(cmd.coc1, Xps::None);
@@ -16,7 +16,7 @@ fn enc() {
 
 #[test]
 fn dec() {
-    let payload = Class0Payload {
+    let payload = class0::Telemetry {
         in2: true,
         in3: true,
         in4: true,

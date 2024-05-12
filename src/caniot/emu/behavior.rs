@@ -1,4 +1,4 @@
-use crate::caniot;
+use crate::caniot::{self, traits::Class, Temperature};
 
 use super::Device;
 
@@ -6,17 +6,28 @@ use super::Device;
 // errorcode not implemented yet
 pub trait Behavior: Send + Sync {
     // Initialize the behavior context
-    fn set_did(&mut self, did: &caniot::DeviceId);
+    fn set_did(&mut self, did: &caniot::DeviceId) {}
 
     // Handlers
-    fn on_telemetry(&mut self, endpoint: &caniot::Endpoint) -> Option<Vec<u8>>;
+    fn on_telemetry(&mut self, endpoint: &caniot::Endpoint) -> Option<Vec<u8>> {
+        None
+    }
+
     fn on_command(
         &mut self,
         endpoint: &caniot::Endpoint,
         payload: Vec<u8>,
-    ) -> Option<caniot::ErrorCode>;
-    fn on_read_attribute(&mut self, key: u16) -> Option<u32>;
-    fn on_write_attribute(&mut self, key: u16, value: u32) -> Option<caniot::ErrorCode>;
+    ) -> Option<caniot::ErrorCode> {
+        None
+    }
+
+    fn on_read_attribute(&mut self, key: u16) -> Option<u32> {
+        None
+    }
+
+    fn on_write_attribute(&mut self, key: u16, value: u32) -> Option<caniot::ErrorCode> {
+        None
+    }
 }
 
 impl Device {
@@ -31,29 +42,7 @@ impl Device {
 #[derive(Default)]
 pub struct DefaultBehavior();
 
-impl Behavior for DefaultBehavior {
-    fn set_did(&mut self, _did: &caniot::DeviceId) {}
-
-    fn on_telemetry(&mut self, _endpoint: &caniot::Endpoint) -> Option<Vec<u8>> {
-        None
-    }
-
-    fn on_command(
-        &mut self,
-        _endpoint: &caniot::Endpoint,
-        _payload: Vec<u8>,
-    ) -> Option<caniot::ErrorCode> {
-        None
-    }
-
-    fn on_read_attribute(&mut self, _key: u16) -> Option<u32> {
-        None
-    }
-
-    fn on_write_attribute(&mut self, _key: u16, _value: u32) -> Option<caniot::ErrorCode> {
-        None
-    }
-}
+impl Behavior for DefaultBehavior {}
 
 /// Counter behavior
 /// - Count up on command and return the count on telemetry
@@ -76,14 +65,6 @@ impl Behavior for CounterBehavior {
     ) -> Option<caniot::ErrorCode> {
         self.count += 1;
         Some(caniot::ErrorCode::Ok)
-    }
-
-    fn on_read_attribute(&mut self, _key: u16) -> Option<u32> {
-        None
-    }
-
-    fn on_write_attribute(&mut self, _key: u16, _value: u32) -> Option<caniot::ErrorCode> {
-        None
     }
 }
 
@@ -113,14 +94,6 @@ impl Behavior for EchoBehavior {
         self.last_command = Some(payload);
         Some(caniot::ErrorCode::Ok)
     }
-
-    fn on_read_attribute(&mut self, _key: u16) -> Option<u32> {
-        None
-    }
-
-    fn on_write_attribute(&mut self, _key: u16, _value: u32) -> Option<caniot::ErrorCode> {
-        None
-    }
 }
 
 /// Random behavior
@@ -149,5 +122,104 @@ impl Behavior for RandomBehavior {
 
     fn on_write_attribute(&mut self, _key: u16, _value: u32) -> Option<caniot::ErrorCode> {
         Some(caniot::ErrorCode::Ok)
+    }
+}
+
+#[derive(Default)]
+pub struct Class0Behavior {
+    pub oc1: bool,
+    pub oc2: bool,
+    pub rl1: bool,
+    pub rl2: bool,
+}
+
+impl Behavior for Class0Behavior {
+    fn set_did(&mut self, did: &caniot::DeviceId) {
+        if did.class != 0 {
+            panic!("Class0Behavior is only for class 0 devices");
+        }
+    }
+
+    fn on_telemetry(&mut self, endpoint: &caniot::Endpoint) -> Option<Vec<u8>> {
+        if endpoint == &caniot::Endpoint::BoardControl {
+            let mut telemetry = caniot::class0::Telemetry::default();
+
+            telemetry.in1 = rand::random();
+            telemetry.in2 = rand::random();
+            telemetry.in3 = rand::random();
+            telemetry.in4 = rand::random();
+
+            telemetry.oc1 = self.oc1;
+            telemetry.oc2 = self.oc2;
+            telemetry.rl1 = self.rl1;
+            telemetry.rl2 = self.rl2;
+
+            telemetry.temp_in = Temperature::random();
+            telemetry.temp_out = [
+                Temperature::random(),
+                Temperature::INVALID,
+                Temperature::INVALID,
+            ];
+
+            Some(caniot::BlcClassTelemetry::Class0(telemetry).into())
+        } else {
+            None
+        }
+    }
+
+    fn on_command(
+        &mut self,
+        endpoint: &caniot::Endpoint,
+        payload: Vec<u8>,
+    ) -> Option<caniot::ErrorCode> {
+        if endpoint == &caniot::Endpoint::BoardControl {
+            Some(caniot::ErrorCode::Ok)
+        } else {
+            None
+        }
+    }
+}
+
+#[derive(Default)]
+pub struct Class1Behavior {}
+
+impl Behavior for Class1Behavior {
+    fn set_did(&mut self, did: &caniot::DeviceId) {
+        if did.class != 1 {
+            panic!("Class1Behavior is only for class 1 devices");
+        }
+    }
+
+    fn on_telemetry(&mut self, endpoint: &caniot::Endpoint) -> Option<Vec<u8>> {
+        if endpoint == &caniot::Endpoint::BoardControl {
+            let mut telemetry = caniot::class1::Telemetry::default();
+
+            for (i, io) in telemetry.ios.iter_mut().enumerate() {
+                *io = rand::random();
+            }
+
+            telemetry.temp_in = Temperature::random();
+            telemetry.temp_out = [
+                Temperature::random(),
+                Temperature::INVALID,
+                Temperature::INVALID,
+            ];
+
+            Some(caniot::BlcClassTelemetry::Class1(telemetry).into())
+        } else {
+            None
+        }
+    }
+
+    fn on_command(
+        &mut self,
+        endpoint: &caniot::Endpoint,
+        payload: Vec<u8>,
+    ) -> Option<caniot::ErrorCode> {
+        if endpoint == &caniot::Endpoint::BoardControl {
+            Some(caniot::ErrorCode::Ok)
+        } else {
+            None
+        }
     }
 }

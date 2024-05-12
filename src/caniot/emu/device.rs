@@ -6,6 +6,8 @@ use super::{Behavior, DefaultBehavior};
 
 pub struct Device {
     pub did: DeviceId,
+
+    pub telemetries_on_boot: Vec<Endpoint>,
     pub telemetry_interval: Duration, // ms
     pub telemetry_endpoint: Endpoint,
 
@@ -24,6 +26,7 @@ impl Device {
 
         Self {
             did,
+            telemetries_on_boot: vec![Endpoint::BoardControl],
             telemetry_interval,
             telemetry_endpoint: Endpoint::BoardControl,
             start_time: Instant::now(),
@@ -38,6 +41,10 @@ impl Device {
 
     pub fn set_telemetry_interval(&mut self, interval: Duration) {
         self.telemetry_interval = interval;
+    }
+
+    pub fn add_telemetry_on_boot(&mut self, endpoint: Endpoint) {
+        self.telemetries_on_boot.push(endpoint);
     }
 
     fn read_attribute(&self, attr: impl TryInto<Attribute>) -> Option<u32> {
@@ -163,6 +170,14 @@ impl Device {
             }
         } else if self.get_remaining_to_telemetry() == Duration::from_secs(0) {
             let endpoint = self.telemetry_endpoint;
+            match self.handle_telemetry(&endpoint) {
+                Ok(payload) => Some(caniot::ResponseData::Telemetry { endpoint, payload }),
+                Err(error) => Some(caniot::ResponseData::Error {
+                    source: caniot::ErrorSource::Telemetry(endpoint, None),
+                    error: Some(error),
+                }),
+            }
+        } else if let Some(endpoint) = self.telemetries_on_boot.pop() {
             match self.handle_telemetry(&endpoint) {
                 Ok(payload) => Some(caniot::ResponseData::Telemetry { endpoint, payload }),
                 Err(error) => Some(caniot::ResponseData::Error {

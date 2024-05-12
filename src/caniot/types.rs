@@ -10,4 +10,12 @@ pub enum ProtocolError {
     CommandEncodeError,
     #[error("Unknown attribute key")]
     UnknownAttributeKey,
+    #[error("Invalid buffer size")]
+    BufferSizeError,
+    #[error("Invalid class payload size")]
+    ClassPayloadSizeError,
+    #[error("Invalid class command size")]
+    ClassCommandSizeError,
+    #[error("Unsupported caniot class")]
+    UnsupportedClass,
 }

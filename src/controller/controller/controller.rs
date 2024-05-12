@@ -2,34 +2,30 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
-
 use itertools::{partition, Itertools};
 use tokio::runtime::Runtime;
-use tokio::sync::oneshot::{Sender};
+use tokio::sync::oneshot::Sender;
 
 use crate::bus::{CanInterface, CanInterfaceError};
-use crate::caniot::emu::{
-    emu_pool2_realistic_add_devices_to_iface,
-};
-use crate::caniot::{self, Frame, RequestData};
+use crate::caniot::emu::emu_pool2_realistic_add_devices_to_iface;
+use crate::caniot::{self, BlcClassTelemetry, Frame, RequestData};
 use crate::caniot::{DeviceId, Request};
 use crate::controller::actor::ControllerMessage;
 use crate::controller::{
-    ActionVerdict, Device, DeviceAction, DeviceActionResult, DeviceError, DeviceTrait,
-    DeviceWrapperTrait, PendingAction, ProcessContext, Verdict,
+    ActionVerdict, Device, DeviceAction, DeviceActionResult, DeviceControllerTrait,
+    DeviceControllerWrapperTrait, DeviceError, PendingAction, ProcessContext, Verdict,
 };
 use crate::shutdown::Shutdown;
 
 use super::pending_action;
 use super::pending_query::PendingQueryTenant;
 
-use super::super::{actor};
+use super::super::actor;
 use super::attach::device_attach_controller;
 use super::PendingQuery;
 
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
-
 
 use thiserror::Error;
 use tokio::select;
@@ -238,7 +234,7 @@ impl Controller {
         let mut device_context = ProcessContext::default();
 
         // Let the device handle the frame
-        let verdict = device.handle_frame(&frame.data, &mut device_context)?;
+        let verdict = device.handle_frame(&frame.data, &None, &mut device_context)?;
         match verdict {
             Verdict::None => {}
             Verdict::Request(request) => {
@@ -419,13 +415,7 @@ impl Controller {
                 let mut devices_candidates: Vec<&mut Device> = self
                     .devices
                     .values_mut()
-                    .filter(|device| {
-                        if let Some(ref device_inner) = device.inner {
-                            device_inner.wrapper_can_handle_action(&**inner_action)
-                        } else {
-                            false
-                        }
-                    })
+                    .filter(|device| device.can_inner_controller_handle_action(&**inner_action))
                     .collect();
 
                 match devices_candidates.len() {
@@ -476,13 +466,7 @@ impl Controller {
     ) -> Result<ActionResultOrPending, ControllerError> {
         // Find device by DID or by action
         let device = match did {
-            Some(did) => {
-                let device = self.get_device_by_did(&did)?;
-                if !device.wrapper_can_handle_action(&action) {
-                    return Err(DeviceError::UnsupportedAction.into());
-                }
-                Ok(device)
-            }
+            Some(did) => Ok(self.get_device_by_did(&did)?),
             None => self.get_device_by_action(&action),
         }?;
 
