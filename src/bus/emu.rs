@@ -58,9 +58,11 @@ impl CanInterface {
                     return Some(caniot_response.into());
                 }
 
-                let device_next_telemetry = device.get_remaining_to_telemetry();
-                if device_next_telemetry <= next_telemetry.unwrap_or(device_next_telemetry) {
-                    next_telemetry = Some(device_next_telemetry);
+                let device_next_telemetry = device.get_time_to_next_device_process();
+                if let Some(device_next_telemetry) = device_next_telemetry {
+                    if device_next_telemetry <= next_telemetry.unwrap_or(device_next_telemetry) {
+                        next_telemetry = Some(device_next_telemetry);
+                    }
                 }
             }
 

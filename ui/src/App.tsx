@@ -7,12 +7,14 @@ import About from "./view/About";
 import DevicesView from "./view/DevicesView";
 import AppMenu from "./components/Menu";
 import HeatersView from "./view/HeatersView";
-import GarageDoors from "./view/GarageDoors";
+import GarageDoorsView from "./view/GarageDoorsView";
 import Alarms from "./view/Alarms";
 import Settings from "./view/Settings";
 import NoMatch from "./view/NoMatch";
 import Debug from "./view/Debug";
 import DemoView from "./view/DemoView";
+
+import "./App.css";
 
 const { Content, Sider } = Layout;
 
@@ -42,7 +44,7 @@ const App: React.FC = () => {
             <Route path="/about" element={<About />} />
             <Route path="/debug" element={<Debug />} />
             <Route path="/devices/heaters" element={<HeatersView />} />
-            <Route path="/devices/garage" element={<GarageDoors />} />
+            <Route path="/devices/garage" element={<GarageDoorsView />} />
             <Route path="/devices/alarms" element={<Alarms />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/demo" element={<DemoView />} />

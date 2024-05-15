@@ -48,3 +48,5 @@ ui_clean:
 
 ui_run:
 	make -C ui run
+
+ui_rebuild: ui_clean ui

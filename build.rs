@@ -5,6 +5,7 @@ const PROTO_FILES: &[&str] = &[
     "proto/ng_devices.proto",
     "proto/ng_internal.proto",
     "proto/ng_heaters.proto",
+    "proto/ng_garage.proto",
     "proto/common.proto",
 ];
 

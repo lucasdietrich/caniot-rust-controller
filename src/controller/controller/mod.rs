@@ -1,5 +1,5 @@
 pub mod api;
-pub mod attach;
+pub mod auto_attach;
 pub mod controller;
 pub mod pending_query;
 

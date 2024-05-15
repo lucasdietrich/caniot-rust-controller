@@ -28,6 +28,15 @@ pub trait Behavior: Send + Sync {
     fn on_write_attribute(&mut self, key: u16, value: u32) -> Option<caniot::ErrorCode> {
         None
     }
+
+    fn process(&mut self) -> Option<caniot::Endpoint> {
+        None
+    }
+
+    // time in milliseconds
+    fn get_remaining_to_event_ms(&self) -> Option<u64> {
+        None
+    }
 }
 
 impl Device {
@@ -173,7 +182,7 @@ impl Behavior for Class0Behavior {
         payload: Vec<u8>,
     ) -> Option<caniot::ErrorCode> {
         if endpoint == &caniot::Endpoint::BoardControl {
-            Some(caniot::ErrorCode::Ok)
+            Some(caniot::ErrorCode::Enimpl)
         } else {
             None
         }

@@ -10,6 +10,7 @@ mod config;
 mod controller;
 mod database;
 mod init;
+mod internal;
 mod logger;
 mod shared;
 mod shutdown;

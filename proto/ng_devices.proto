@@ -12,6 +12,7 @@ service CaniotDevicesService {
 
   // specifics
   rpc GetHeatersDevice(google.protobuf.Empty) returns (Device) {}
+  rpc GetGarageDevice(google.protobuf.Empty) returns (Device) {}
 }
 
 message DeviceStats {
@@ -57,7 +58,10 @@ message Device {
   google.protobuf.Timestamp lastSeen = 4;
   optional uint32 lastSeenFromNow = 5; // seconds
 
-  DeviceStats stats = 6;
+  bool controller_attached = 6;
+  optional string controller_name = 7;
+
+  DeviceStats stats = 8;
 
   oneof measures {
     Class0Telemetry class0 = 10;

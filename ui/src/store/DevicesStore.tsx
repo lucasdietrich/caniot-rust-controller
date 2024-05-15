@@ -56,6 +56,19 @@ class DevicesStore extends EventEmitter {
       callbackFunc(resp);
     });
   };
+
+  getGarageDevice = (callbackFunc: (resp: Device) => void) => {
+    this.client.getGarageDevice(new Empty(), null, (err, resp) => {
+      if (err !== null) {
+        HandleError(err);
+        return;
+      }
+
+      HandleSuccess("DevicesStore::GetGarageDevice succeeded");
+
+      callbackFunc(resp);
+    });
+  };
 }
 
 const devicesStore = new DevicesStore();

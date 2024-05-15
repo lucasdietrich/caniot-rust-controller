@@ -21,12 +21,12 @@ function HeatersView() {
 
   useEffect(() => {
     heatersStore.getStatus(new Empty(), (resp: Status) => {
-      setLoading(false);
       setHeatersStatus(resp);
-    });
 
-    devicesStore.getHeatersDevice((resp: Device) => {
-      setHeatersDevice(resp);
+      devicesStore.getHeatersDevice((resp: Device) => {
+        setHeatersDevice(resp);
+        setLoading(false);
+      });
     });
 
     const interval = setInterval(() => setTime(Date.now()), REFRESH_INTERVAL);
@@ -48,14 +48,17 @@ function HeatersView() {
     command.setHeaterList(HeaterModesList);
     heatersStore.setStatus(command, (resp) => {
       setHeatersStatus(resp);
-      setLoading(false);
+      devicesStore.getHeatersDevice((resp: Device) => {
+        setHeatersDevice(resp);
+        setLoading(false);
+      });
     });
   };
 
   return (
     <>
       <Row gutter={16}>
-        <Col span={16}>
+        <Col span={14}>
           <Card
             title={
               <Badge
@@ -95,7 +98,7 @@ function HeatersView() {
             ></HeaterModeSelector>
           </Card>
         </Col>
-        <Col span={8}>
+        <Col span={10}>
           <DeviceStatusCard title="Chauffage" resp={heatersDevice} />
         </Col>
       </Row>

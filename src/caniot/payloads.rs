@@ -119,6 +119,29 @@ pub enum BlcClassTelemetry {
     Class1(class1::Telemetry),
 }
 
+impl BlcClassTelemetry {
+    pub fn class_id(&self) -> u8 {
+        match self {
+            BlcClassTelemetry::Class0(_) => 0,
+            BlcClassTelemetry::Class1(_) => 1,
+        }
+    }
+
+    pub fn as_class0(&self) -> Option<&class0::Telemetry> {
+        match self {
+            BlcClassTelemetry::Class0(telemetry) => Some(telemetry),
+            _ => None,
+        }
+    }
+
+    pub fn as_class1(&self) -> Option<&class1::Telemetry> {
+        match self {
+            BlcClassTelemetry::Class1(telemetry) => Some(telemetry),
+            _ => None,
+        }
+    }
+}
+
 impl Into<Vec<u8>> for BlcClassTelemetry {
     fn into(self) -> Vec<u8> {
         match self {

@@ -3,8 +3,8 @@ use crate::{
         self, BlcClassTelemetry, HeatingControllerCommand, HeatingControllerTelemetry, HeatingMode,
     },
     controller::{
-        ActionResultTrait, ActionTrait, ActionVerdict, DeviceControllerTrait, ProcessContext,
-        Verdict,
+        ActionResultTrait, ActionTrait, ActionVerdict, DeviceControllerInfos,
+        DeviceControllerTrait, ProcessContext, Verdict,
     },
 };
 
@@ -33,6 +33,10 @@ impl ActionResultTrait for HeaterStatus {}
 
 impl DeviceControllerTrait for HeatersController {
     type Action = HeaterAction;
+
+    fn get_infos(&self) -> DeviceControllerInfos {
+        DeviceControllerInfos::new("Heaters Controller")
+    }
 
     fn handle_action(
         &mut self,

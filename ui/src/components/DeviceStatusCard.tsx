@@ -72,6 +72,9 @@ function DeviceStatusCard({ title, resp }: IProps) {
         <ListLabelledItem label="Date">
           {lastseen_fmt + " (actif il y a " + resp.getLastseenfromnow() + "s)"}
         </ListLabelledItem>
+        <ListLabelledItem label="Contrôleur">
+          {resp?.getControllerAttached() ? resp.getControllerName() : "N/A"}
+        </ListLabelledItem>
         <ListLabelledItem label="Temp carte">{tempIn} °C</ListLabelledItem>
         <ListLabelledItem label="Temp extérieure (sens 0)">{tempExt0} °C</ListLabelledItem>
         {hasTempExt1 && (
@@ -82,8 +85,8 @@ function DeviceStatusCard({ title, resp }: IProps) {
         )}
         {resp?.hasClass0() && (
           <>
-            <ListLabelledItem label={"Entrées (4)"}>ToImplement</ListLabelledItem>
-            <ListLabelledItem label={"Sorties (4)"}>ToImplement</ListLabelledItem>
+            <ListLabelledItem label={"Entrées (4)"}>To Implement</ListLabelledItem>
+            <ListLabelledItem label={"Sorties (4)"}>To Implement</ListLabelledItem>
           </>
         )}
         {resp?.hasClass1() && (

@@ -25,6 +25,11 @@ function DevicesTable({ devicesList }: IProps) {
       key: "last_seen",
     },
     {
+      title: "Contrôleur",
+      dataIndex: "controller",
+      key: "controller",
+    },
+    {
       title: "Temperature",
       dataIndex: "temp_in",
       key: "temp_in",
@@ -40,8 +45,10 @@ function DevicesTable({ devicesList }: IProps) {
     return {
       key: index,
       did: device.getDid()?.getCls() + " / " + device.getDid()?.getSid(),
-      last_seen: lastseen_fmt || "",
+      last_seen:
+        (lastseen_fmt || "").toString() + " ( il y a " + device.getLastseenfromnow() + "s )",
       temp_in: temp + " °C",
+      controller: device.getControllerAttached() ? device.getControllerName() : "N/A",
     };
   });
 

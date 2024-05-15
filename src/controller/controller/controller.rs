@@ -22,7 +22,7 @@ use super::pending_action;
 use super::pending_query::PendingQueryTenant;
 
 use super::super::actor;
-use super::attach::device_attach_controller;
+use super::auto_attach::device_attach_controller;
 use super::PendingQuery;
 
 use log::{info, warn};

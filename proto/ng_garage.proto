@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package ng.garage;
+
+import "google/protobuf/empty.proto";
+
+service GarageService {
+  rpc GetState(google.protobuf.Empty) returns (Status) {}
+  rpc SetState(CommandMessage) returns (Status) {}
+}
+
+enum Command {
+  NONE = 0;
+  LEFT = 1;
+  RIGHT = 2;
+  ALL = 3;
+}
+
+enum DoorState {
+  UNKNOWN = 0;
+  OPEN = 1;
+  CLOSED = 2;
+}
+
+message CommandMessage { Command command = 1; }
+
+message Status {
+  DoorState left_closed = 1;
+  optional uint32 left_progress = 2;
+  DoorState right_closed = 3;
+  optional uint32 right_progress = 4;
+  DoorState gate_closed = 5;
+}

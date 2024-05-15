@@ -2,7 +2,10 @@ use tonic::{Request, Response, Result, Status};
 
 use crate::{
     caniot,
-    controller::{attach::DEVICE_HEATERS_DID, DeviceInfos},
+    controller::{
+        auto_attach::{DEVICE_GARAGE_DID, DEVICE_HEATERS_DID},
+        DeviceInfos,
+    },
     grpcserver::{datetime_to_prost_timestamp, legacy::model},
     shared::SharedHandle,
 };
@@ -15,6 +18,19 @@ use super::model::caniot_devices_service_server::{
 #[derive(Debug)]
 pub struct NgDevices {
     pub shared: SharedHandle,
+}
+
+impl NgDevices {
+    async fn get_device_by_did(
+        &self,
+        did: caniot::DeviceId,
+    ) -> Result<Response<m::Device>, Status> {
+        if let Some(ref infos) = self.shared.controller_handle.get_device_infos(did).await {
+            Ok(Response::new(infos.into()))
+        } else {
+            Err(Status::not_found("Device not found"))
+        }
+    }
 }
 
 impl Into<m::DeviceId> for caniot::DeviceId {
@@ -87,6 +103,8 @@ impl Into<m::Device> for &DeviceInfos {
             did: Some(self.did.into()),
             last_seen: self.last_seen.as_ref().map(datetime_to_prost_timestamp),
             last_seen_from_now: self.last_seen_from_now,
+            controller_attached: self.controller_attached,
+            controller_name: self.controller_name.clone(),
             stats: Some(m::DeviceStats {
                 rx: self.stats.rx as u32,
                 tx: self.stats.tx as u32,
@@ -131,12 +149,16 @@ impl CaniotDevicesService for NgDevices {
         &self,
         _request: Request<()>,
     ) -> Result<Response<m::Device>, Status> {
-        let did = caniot::DeviceId::from_u8(DEVICE_HEATERS_DID).unwrap();
-        if let Some(ref infos) = self.shared.controller_handle.get_device_infos(did).await {
-            Ok(Response::new(infos.into()))
-        } else {
-            Err(Status::not_found("Device not found"))
-        }
+        self.get_device_by_did(caniot::DeviceId::from_u8(DEVICE_HEATERS_DID).unwrap())
+            .await
+    }
+
+    async fn get_garage_device(
+        &self,
+        _request: Request<()>,
+    ) -> Result<Response<m::Device>, Status> {
+        self.get_device_by_did(caniot::DeviceId::from_u8(DEVICE_GARAGE_DID).unwrap())
+            .await
     }
 }
 

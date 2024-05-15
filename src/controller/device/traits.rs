@@ -40,6 +40,21 @@ pub trait DeviceControllerTrait: Send + Debug {
     fn process(&mut self, _ctx: &mut ProcessContext) -> Result<Verdict, DeviceError> {
         Ok(Verdict::default())
     }
+
+    fn get_infos(&self) -> DeviceControllerInfos;
+}
+
+#[derive(Debug, Default)]
+pub struct DeviceControllerInfos {
+    pub name: Option<String>,
+}
+
+impl DeviceControllerInfos {
+    pub fn new(name: &str) -> Self {
+        Self {
+            name: Some(name.to_string()),
+        }
+    }
 }
 
 /// This trait is used to wrap a DeviceTrait into a DeviceWrapperTrait and make it object safe
@@ -69,6 +84,8 @@ pub trait DeviceControllerWrapperTrait: Send + Debug {
     }
 
     fn wrapper_process(&mut self, ctx: &mut ProcessContext) -> Result<Verdict, DeviceError>;
+
+    fn wrapper_get_infos(&self) -> DeviceControllerInfos;
 }
 
 /// Automatically implement DeviceWrapperTrait for any DeviceTrait
@@ -116,6 +133,10 @@ where
 
     fn wrapper_process(&mut self, ctx: &mut ProcessContext) -> Result<Verdict, DeviceError> {
         self.process(ctx)
+    }
+
+    fn wrapper_get_infos(&self) -> DeviceControllerInfos {
+        self.get_infos()
     }
 }
 
