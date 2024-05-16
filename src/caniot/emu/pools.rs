@@ -52,7 +52,7 @@ pub fn emu_pool2_realistic_add_devices_to_iface(iface: &mut CanInterface) {
     demo_controller.add_behavior(Box::new(super::demo::DemoController::new()));
     iface.add_device(demo_controller);
 
-    // Add garge device
+    // Add garage device
     let mut garage_controller = Device::new(
         DeviceId::new(0, 2).unwrap().to_u8(),
         Some(Duration::from_secs(30)),

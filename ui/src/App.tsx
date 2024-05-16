@@ -44,7 +44,7 @@ const App: React.FC = () => {
             <Route path="/about" element={<About />} />
             <Route path="/debug" element={<Debug />} />
             <Route path="/devices/heaters" element={<HeatersView />} />
-            <Route path="/devices/garage" element={<GarageDoorsView />} />
+            <Route path="/devices/garage" element={<GarageDoorsView refreshInterval={1000} />} />
             <Route path="/devices/alarms" element={<Alarms />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/demo" element={<DemoView />} />

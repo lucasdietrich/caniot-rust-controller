@@ -12,7 +12,7 @@ import devicesStore from "../store/DevicesStore";
 import { DeviceId } from "@caniot-controller/caniot-api-grpc-web/api/common_pb";
 
 interface IProps {
-  refreshInterval: number;
+  refreshInterval?: number;
 }
 
 function HeatersView({ refreshInterval = 5000 }: IProps) {
@@ -22,11 +22,10 @@ function HeatersView({ refreshInterval = 5000 }: IProps) {
   const [time, setTime] = useState(Date.now());
 
   useEffect(() => {
-    heatersStore.getStatus(new Empty(), (resp: Status) => {
-      setHeatersStatus(resp);
-
-      devicesStore.getHeatersDevice((resp: Device) => {
-        setHeatersDevice(resp);
+    devicesStore.getHeatersDevice((resp: Device) => {
+      setHeatersDevice(resp);
+      heatersStore.getStatus(new Empty(), (resp: Status) => {
+        setHeatersStatus(resp);
         setLoading(false);
       });
     });

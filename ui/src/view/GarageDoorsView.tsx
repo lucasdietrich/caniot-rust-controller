@@ -16,7 +16,7 @@ import devicesStore from "../store/DevicesStore";
 import { LoadingOutlined } from "@ant-design/icons";
 
 interface IProps {
-  refreshInterval: number;
+  refreshInterval?: number;
 }
 
 function GarageDoorsView({ refreshInterval = 5000 }: IProps) {
@@ -26,11 +26,10 @@ function GarageDoorsView({ refreshInterval = 5000 }: IProps) {
   const [time, setTime] = useState(Date.now());
 
   useEffect(() => {
-    garageStore.getState(new Empty(), (resp: Status) => {
-      setGarageState(resp);
-
-      devicesStore.getGarageDevice((resp: Device) => {
-        setGarageDevice(resp);
+    devicesStore.getGarageDevice((resp: Device) => {
+      setGarageDevice(resp);
+      garageStore.getState(new Empty(), (resp: Status) => {
+        setGarageState(resp);
         setLoading(false);
       });
     });
@@ -64,7 +63,11 @@ function GarageDoorsView({ refreshInterval = 5000 }: IProps) {
         <Card
           title={
             <Badge
-              status={garageState?.getGateClosed() == DoorState.UNKNOWN ? "error" : "success"}
+              status={
+                garageState === undefined || garageState?.getGateClosed() === DoorState.UNKNOWN
+                  ? "error"
+                  : "success"
+              }
               text={
                 <Space size="middle">
                   Portes de garage
