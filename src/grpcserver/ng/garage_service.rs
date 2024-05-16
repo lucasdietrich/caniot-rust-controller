@@ -1,3 +1,4 @@
+use garage::GarageDoorCommand;
 use num_traits::{FromPrimitive, ToPrimitive};
 use rocket::response::status;
 use tonic::{Request, Response, Result, Status};
@@ -42,7 +43,7 @@ impl NgGarage {
                 left_progress: status.left_door_status.progress().map(|p| p as u32),
                 right_closed: Into::<m::DoorState>::into(status.right_door_status).into(),
                 right_progress: status.right_door_status.progress().map(|p| p as u32),
-                gate_closed: status.gate_open.into(),
+                gate_closed: Into::<m::DoorState>::into(status.gate_open).into(),
             }
         } else {
             m::Status {
@@ -74,7 +75,21 @@ impl GarageService for NgGarage {
         &self,
         req: Request<m::CommandMessage>,
     ) -> Result<Response<m::Status>, Status> {
-        todo!();
+        let api = self.shared.controller_handle.clone();
+        let req = m::Command::try_from(req.into_inner().command).unwrap();
+        let command = match req {
+            m::Command::None => GarageDoorCommand::default(),
+            m::Command::Left => GarageDoorCommand::OPEN_LEFT,
+            m::Command::Right => GarageDoorCommand::OPEN_RIGHT,
+            m::Command::All => GarageDoorCommand::OPEN_BOTH,
+        };
+        let action = garage::GarageAction::SetStatus(command);
+        let result = api
+            .device_action_inner(None, action, None)
+            .await
+            .map_err(|e| Status::internal(format!("Error in set_state: {:?} {:?}", command, e)))?;
+
+        Ok(Response::new(self.garage_status_to_proto(&result)))
     }
 }
 

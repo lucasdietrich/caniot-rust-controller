@@ -11,9 +11,11 @@ import { Device } from "@caniot-controller/caniot-api-grpc-web/api/ng_devices_pb
 import devicesStore from "../store/DevicesStore";
 import { DeviceId } from "@caniot-controller/caniot-api-grpc-web/api/common_pb";
 
-const REFRESH_INTERVAL = 5000; // ms
+interface IProps {
+  refreshInterval: number;
+}
 
-function HeatersView() {
+function HeatersView({ refreshInterval = 5000 }: IProps) {
   const [heatersStatus, setHeatersStatus] = useState<Status | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [heatersDevice, setHeatersDevice] = useState<Device | undefined>(undefined);
@@ -29,7 +31,7 @@ function HeatersView() {
       });
     });
 
-    const interval = setInterval(() => setTime(Date.now()), REFRESH_INTERVAL);
+    const interval = setInterval(() => setTime(Date.now()), refreshInterval);
     return () => {
       clearInterval(interval);
     };

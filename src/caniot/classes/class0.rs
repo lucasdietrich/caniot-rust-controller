@@ -141,7 +141,7 @@ impl TryFrom<&[u8]> for Command {
                     ((payload[0] & 0b1100_0000) >> 6) | ((payload[1] & 0b0000_0001) << 2),
                 )
                 .unwrap(),
-                crl2: FromPrimitive::from_u8(payload[1] & 0b0000_1110).unwrap(),
+                crl2: FromPrimitive::from_u8((payload[1] & 0b0000_1110) >> 1).unwrap(),
             })
         } else {
             Err(ProtocolError::PayloadDecodeError)

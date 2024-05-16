@@ -1,9 +1,11 @@
 use std::time::Instant;
 
+use log::debug;
+
 use super::super::Behavior;
 use crate::caniot::{self as ct, class0, ResponseData, Temperature, Xps};
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 enum Door {
     #[default]
     Open,
@@ -17,6 +19,8 @@ impl Door {
     pub const CLOSING_DURATION_MS: u128 = 10_000;
 
     fn pulse_relay(&mut self) {
+        debug!("Pulsing relay {:?}", self);
+
         *self = match self {
             Door::Open => Door::Closing(Some(Instant::now())),
             Door::Closed => Door::Opening(Some(Instant::now())),
@@ -51,14 +55,17 @@ impl Door {
     }
 
     fn update_state(&mut self) {
+        debug!("Updating state {:?}", self);
         match self {
             Door::Opening(Some(start)) => {
                 if start.elapsed().as_millis() >= Self::OPENNING_DURATION_MS {
+                    debug!("Door opened");
                     *self = Door::Open;
                 }
             }
             Door::Closing(Some(start)) => {
                 if start.elapsed().as_millis() >= Self::CLOSING_DURATION_MS {
+                    debug!("Door closed");
                     *self = Door::Closed;
                 }
             }
@@ -100,7 +107,7 @@ impl Behavior for GarageController {
                 self.right_door.pulse_relay();
             }
 
-            None
+            Some(ct::ErrorCode::Ok)
         } else {
             None
         }

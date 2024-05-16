@@ -23,6 +23,23 @@ pub struct GarageDoorCommand {
     pub right_door_activate: bool,
 }
 
+impl GarageDoorCommand {
+    pub const OPEN_LEFT: GarageDoorCommand = GarageDoorCommand {
+        left_door_activate: true,
+        right_door_activate: false,
+    };
+
+    pub const OPEN_RIGHT: GarageDoorCommand = GarageDoorCommand {
+        left_door_activate: false,
+        right_door_activate: true,
+    };
+
+    pub const OPEN_BOTH: GarageDoorCommand = GarageDoorCommand {
+        left_door_activate: true,
+        right_door_activate: true,
+    };
+}
+
 #[allow(clippy::all)]
 impl Into<class0::Command> for &GarageDoorCommand {
     fn into(self) -> class0::Command {
