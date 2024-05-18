@@ -97,12 +97,12 @@ function GarageDoorsView({ refreshInterval = 5000 }: IProps) {
             </Col>
           </Row>
           <Row style={{ paddingTop: 20 }}>
-            <DeviceStatusCard resp={undefined} title="Garage Doors" />
+            <DeviceStatusCard device={undefined} title="Garage Doors" />
           </Row>
         </Card>
       </Col>
       <Col span={10}>
-        <DeviceStatusCard title="Contrôleur portes de garage" resp={garageDevice} />
+        <DeviceStatusCard title="Contrôleur portes de garage" device={garageDevice} />
       </Col>
     </Row>
   );

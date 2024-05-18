@@ -1,6 +1,13 @@
-import { DevicesList } from "@caniot-controller/caniot-api-grpc-web/api/ng_devices_pb";
+import { Device, DevicesList } from "@caniot-controller/caniot-api-grpc-web/api/ng_devices_pb";
 import { Timestamp } from "google-protobuf/google/protobuf/timestamp_pb";
-import { Table, TableProps, Button, Space, Tag } from "antd";
+import { Table, TableProps, Button, Space, Tag, Badge } from "antd";
+import devicesStore from "../store/DevicesStore";
+import { DeviceId } from "@caniot-controller/caniot-api-grpc-web/api/common_pb";
+import { useState } from "react";
+import DeviceStatusCard from "./DeviceStatusCard";
+import { LoadingOutlined } from "@ant-design/icons";
+
+const SECONDS_TO_CONSIDER_ONLINE = 60;
 
 interface IProps {
   devicesList: DevicesList | undefined;
@@ -19,6 +26,7 @@ interface DeviceRow {
     secondsFromNow: number;
   };
   temp_in?: number;
+  device?: Device;
 }
 
 const classColor: { [key: number]: string } = {
@@ -33,6 +41,9 @@ const classColor: { [key: number]: string } = {
 };
 
 function DevicesTable({ devicesList }: IProps) {
+  const [nestedDevices, setNestedDevices] = useState<{ [key: number]: Device }>({});
+  const [isLoading, setIsLoading] = useState<{ [key: number]: boolean }>({});
+
   if (devicesList === undefined) {
     return undefined;
   }
@@ -67,10 +78,17 @@ function DevicesTable({ devicesList }: IProps) {
       dataIndex: "last_seen",
       key: "last_seen",
       render: (last_seen) => (
-        <span>
-          {last_seen ? last_seen.timestamp.toDate().toLocaleString() : "never"} (
-          {last_seen ? last_seen.secondsFromNow : ""} ago)
-        </span>
+        <Badge
+          status={
+            last_seen && last_seen.secondsFromNow < SECONDS_TO_CONSIDER_ONLINE ? "success" : "error"
+          }
+          text={
+            <span>
+              {last_seen ? last_seen.timestamp.toDate().toLocaleString() : "never"} (
+              {last_seen ? last_seen.secondsFromNow : ""} ago)
+            </span>
+          }
+        />
       ),
       sorter: (a, b) => {
         if (a.last_seen && b.last_seen) {
@@ -95,13 +113,13 @@ function DevicesTable({ devicesList }: IProps) {
       key: "action",
       render: (_, record) => (
         <Space size="small">
-          <Button type="primary" size="small">
-            Reset
+          <Button size="small" type="dashed">
+            Ping
           </Button>
-          <Button type="primary" size="small">
-            Reset settings
+          <Button type="default" size="small">
+            Reboot
           </Button>
-          <Button type="primary" size="small">
+          <Button size="small" type="primary">
             Reset settings
           </Button>
         </Space>
@@ -125,10 +143,40 @@ function DevicesTable({ devicesList }: IProps) {
           }
         : undefined,
       temp_in: device.getClass1()?.getIntTemp(),
+      device: device,
     };
   });
 
-  return <Table columns={columns} dataSource={data} />;
+  // const onExpand = (_expanded: any, record: DeviceRow) => {
+  //   setIsLoading({ ...isLoading, [record.did]: true });
+  //   let did = new DeviceId();
+  //   did.setDid(record.did);
+  //   devicesStore.get(did, (resp) => {
+  //     setNestedDevices({ ...nestedDevices, [record.did]: resp });
+  //     setIsLoading({ [record.did]: false });
+  //     console.log(resp.getLastseenfromnow());
+  //   });
+  // };
+
+  const expandedRowRender = (record: DeviceRow) => {
+    if (record.device !== undefined) {
+      return <DeviceStatusCard device={record.device} />;
+    } else {
+      return <LoadingOutlined />;
+    }
+  };
+
+  return (
+    <Table
+      columns={columns}
+      dataSource={data}
+      expandable={{
+        expandedRowRender: expandedRowRender,
+        rowExpandable: (record) => true,
+        // onExpand: onExpand,
+      }}
+    />
+  );
 }
 
 export default DevicesTable;

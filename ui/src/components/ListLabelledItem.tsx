@@ -3,22 +3,16 @@ import React, { PropsWithChildren, ReactNode } from "react";
 
 interface IProps {
   label: string;
+  labelAlignTop?: boolean;
 }
 
-function ListLabelledItem({ label, children }: PropsWithChildren<IProps>) {
+function ListLabelledItem({ label, labelAlignTop = false, children }: PropsWithChildren<IProps>) {
   return (
-    <List.Item>
-      <Typography.Text
-        strong
-        style={{
-          width: "175px", // 175px / 40%
-          display: "block",
-          float: "left",
-        }}
-      >
-        {label}
-      </Typography.Text>{" "}
-      {children}
+    <List.Item style={{ display: "flex", alignItems: labelAlignTop ? "flex-start" : "center" }}>
+      <div style={{ width: 175, flexShrink: 0 }}>
+        <Typography.Text strong>{label}</Typography.Text>{" "}
+      </div>
+      <div style={{ flexGrow: 1 }}>{children}</div>
     </List.Item>
   );
 }

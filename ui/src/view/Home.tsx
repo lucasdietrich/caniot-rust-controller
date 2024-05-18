@@ -44,7 +44,7 @@ function Home() {
           <HelloCard user_name="Tom" />
         </Col>
         <Col span={12}>
-          <DeviceStatusCard title="Demo" resp={demoDevice} />
+          <DeviceStatusCard title="Demo" device={demoDevice} />
         </Col>
       </Row>
     </>

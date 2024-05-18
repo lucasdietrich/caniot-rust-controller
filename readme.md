@@ -65,6 +65,22 @@ Run with
 - Logger
 - Database
 - Offline in a dedicated thread the reception of can frame in order to precisely timestamp them.
+- Events/alarms and logger
+- Notification by email
+- Firmware infos/update, CPU usage, memory usage, system time, uptime, etc...
+- Multiple controllers per device
+- CANIOT features support
+- Prometheus metrics (exporter), form:
+- Device update
+- Device diagnostics
+
+```
+device_temperature{medium="CAN",mac="16",device="GarageDoorController",sensor="EMBEDDED",room="",collector="pycaniotcontroller"} 19.00
+device_temperature{medium="CAN",mac="24",device="AlarmController",sensor="EMBEDDED",room="",collector="pycaniotcontroller"} 17.50
+device_temperature{medium="CAN",mac="24",device="AlarmController",sensor="EXTERNAL",room="",collector="pycaniotcontroller"} 13.60
+device_temperature{medium="CAN",mac="1",device="HeatersController",sensor="EMBEDDED",room="",collector="pycaniotcontroller"} 22.50
+device_temperature{medium="CAN",mac="1",device="HeatersController",sensor="EXTERNAL",room="",collector="pycaniotcontroller"} 13.90
+```
 
 ## TODO (UI)
 

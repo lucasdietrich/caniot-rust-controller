@@ -100,7 +100,7 @@ function HeatersView({ refreshInterval = 5000 }: IProps) {
           </Card>
         </Col>
         <Col span={10}>
-          <DeviceStatusCard title="Chauffage" resp={heatersDevice} />
+          <DeviceStatusCard title="Chauffage" device={heatersDevice} />
         </Col>
       </Row>
     </>

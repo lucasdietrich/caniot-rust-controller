@@ -15,7 +15,7 @@ class DevicesStore extends EventEmitter {
 
   constructor() {
     super();
-    this.client = new CaniotDevicesServiceClient("http://localhost:50051");
+    this.client = new CaniotDevicesServiceClient("http://localhost:50051"); // http://192.168.10.53:50051
   }
 
   getList = (callbackFunc: (resp: DevicesList) => void) => {

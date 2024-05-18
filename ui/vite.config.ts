@@ -8,4 +8,8 @@ export default defineConfig({
     // This is require in order to have grpc-web-client-gen working
     preserveSymlinks: true,
   },
+  server: {
+    // host: "0.0.0.0",
+    // cors: true,
+  },
 });

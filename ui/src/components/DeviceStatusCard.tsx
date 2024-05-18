@@ -1,25 +1,38 @@
 import { Device } from "@caniot-controller/caniot-api-grpc-web/api/ng_devices_pb";
-import { Badge, Card, List, Space } from "antd";
+import { Badge, Card, List, Space, Table } from "antd";
 import React, { useEffect, useState } from "react";
 import ListLabelledItem from "./ListLabelledItem";
 import { Timestamp } from "google-protobuf/google/protobuf/timestamp_pb";
 
-interface IProps {
-  title: string;
-  resp: Device | undefined;
+interface IPropsCard {
+  title?: string;
+  device: Device | undefined;
 }
 
 const SECONDS_TO_CONSIDER_ONLINE = 60;
 
-function DeviceStatusCard({ title, resp }: IProps) {
-  if (resp === undefined) {
+function DeviceStatusCard({ title, device }: IPropsCard) {
+  if (device === undefined) {
     return undefined;
   }
 
+  const isOnline = device.getLastseenfromnow() < SECONDS_TO_CONSIDER_ONLINE;
+
+  return (
+    <Card title={title && <Badge status={isOnline ? "success" : "error"} text={title} />}>
+      <DeviceStatusCardContent device={device} />
+    </Card>
+  );
+}
+
+interface IPropsCardContent {
+  device: Device;
+}
+
+function DeviceStatusCardContent({ device: resp }: IPropsCardContent) {
   let lastseen: Timestamp | undefined = resp.getLastseen();
   let lastseen_fmt = lastseen?.toDate().toLocaleString();
 
-  // make sure getLastseen is less than 10 seconds
   const isOnline = resp.getLastseenfromnow() < SECONDS_TO_CONSIDER_ONLINE;
 
   let tempIn = "N/A",
@@ -55,7 +68,6 @@ function DeviceStatusCard({ title, resp }: IProps) {
     tempExt1 = c1?.hasExtTemp1() ? c1.getExtTemp1()?.toFixed(2) : "N/A";
     tempExt2 = c1?.hasExtTemp2() ? c1.getExtTemp2()?.toFixed(2) : "N/A";
 
-    // add a "Badge" for each input/output
     inputs = c1?.getIosList().map((io, index) => (
       <Space key={index} style={{ marginBottom: 8 }}>
         {" "}
@@ -66,58 +78,82 @@ function DeviceStatusCard({ title, resp }: IProps) {
     ios_count = c1?.getIosList().length || 0;
   }
 
+  let stats = resp.getStats();
+  const statsDataRoot: Map<string, number> = new Map<string, number>([
+    ["rx", stats?.getRx() || 0],
+    ["tx", stats?.getTx() || 0],
+    ["telemetry_tx", stats?.getTelemetryTx() || 0],
+    ["telemetry_rx", stats?.getTelemetryRx() || 0],
+    ["command_tx", stats?.getCommandTx() || 0],
+    ["err", stats?.getErrRx() || 0],
+    ["attribute_rx", stats?.getAttributeRx() || 0],
+    ["attribute_tx", stats?.getAttributeTx() || 0],
+  ]);
+
+  const statsData = Array.from(statsDataRoot).map(([metric, value]) => ({
+    key: metric,
+    metric,
+    value,
+  }));
+
+  const statsColumns = [
+    {
+      title: "Metric",
+      dataIndex: "metric",
+      key: "metric",
+    },
+    {
+      title: "Value",
+      dataIndex: "value",
+      key: "value",
+    },
+  ];
+
   return (
-    <Card title={<Badge status={isOnline ? "success" : "error"} text={title} />}>
-      <List>
-        <ListLabelledItem label="Date">
-          {lastseen_fmt + " (actif il y a " + resp.getLastseenfromnow() + "s)"}
-        </ListLabelledItem>
-        <ListLabelledItem label="Contrôleur">
-          {resp?.getControllerAttached() ? resp.getControllerName() : "N/A"}
-        </ListLabelledItem>
-        <ListLabelledItem label="Temp carte">{tempIn} °C</ListLabelledItem>
-        <ListLabelledItem label="Temp extérieure (sens 0)">{tempExt0} °C</ListLabelledItem>
-        {hasTempExt1 && (
-          <ListLabelledItem label="Temp extérieure (sens 1)">{tempExt1} °C</ListLabelledItem>
-        )}
-        {hasTempExt2 && (
-          <ListLabelledItem label="Temp extérieure (sens 1)">{tempExt2} °C</ListLabelledItem>
-        )}
-        {resp?.hasClass0() && (
-          <>
-            <ListLabelledItem label={"Entrées (4)"}>To Implement</ListLabelledItem>
-            <ListLabelledItem label={"Sorties (4)"}>To Implement</ListLabelledItem>
-          </>
-        )}
-        {resp?.hasClass1() && (
-          <>
-            <ListLabelledItem label={"Entrées/Sorties  (" + ios_count + ")"}>
-              {inputs}
-            </ListLabelledItem>
-          </>
-        )}
-        {/* <ListLabelledItem label="Statistiques">
-          <List></List>
-        </ListLabelledItem> */}
-        <ListLabelledItem label="rx">{resp.getStats()?.getRx()}</ListLabelledItem>
-        <ListLabelledItem label="tx">{resp.getStats()?.getTx()}</ListLabelledItem>
-        <ListLabelledItem label="telemetry_tx">
-          {resp.getStats()?.getTelemetryTx()}
-        </ListLabelledItem>
-        <ListLabelledItem label="telemetry_rx">
-          {resp.getStats()?.getTelemetryRx()}
-        </ListLabelledItem>
-        <ListLabelledItem label="command_tx">{resp.getStats()?.getCommandTx()}</ListLabelledItem>
-        <ListLabelledItem label="err">{resp.getStats()?.getErrRx()}</ListLabelledItem>
-        <ListLabelledItem label="attribute_rx">
-          {resp.getStats()?.getAttributeRx()}
-        </ListLabelledItem>
-        <ListLabelledItem label="attribute_tx">
-          {resp.getStats()?.getAttributeTx()}
-        </ListLabelledItem>
-      </List>
-    </Card>
+    <List size="small">
+      <ListLabelledItem label="Status">
+        <Badge
+          status={isOnline ? "success" : "error"}
+          text={lastseen_fmt + " (actif il y a " + resp.getLastseenfromnow() + "s)"}
+        />
+      </ListLabelledItem>
+      <ListLabelledItem label="Contrôleur">
+        {resp?.getControllerAttached() ? resp.getControllerName() : "N/A"}
+      </ListLabelledItem>
+      <ListLabelledItem label="Temp carte">{tempIn} °C</ListLabelledItem>
+      <ListLabelledItem label="Temp extérieure (sens 0)">{tempExt0} °C</ListLabelledItem>
+      {hasTempExt1 && (
+        <ListLabelledItem label="Temp extérieure (sens 1)">{tempExt1} °C</ListLabelledItem>
+      )}
+      {hasTempExt2 && (
+        <ListLabelledItem label="Temp extérieure (sens 1)">{tempExt2} °C</ListLabelledItem>
+      )}
+      {resp?.hasClass0() && (
+        <>
+          <ListLabelledItem label={"Entrées (4)"}>To Implement</ListLabelledItem>
+          <ListLabelledItem label={"Sorties (4)"}>To Implement</ListLabelledItem>
+        </>
+      )}
+      {resp?.hasClass1() && (
+        <>
+          <ListLabelledItem label={"Entrées/Sorties  (" + ios_count + ")"}>
+            {inputs}
+          </ListLabelledItem>
+        </>
+      )}
+      <ListLabelledItem label="Statistiques" labelAlignTop={true}>
+        <Table
+          dataSource={statsData}
+          columns={statsColumns}
+          showHeader={false}
+          pagination={false}
+          size="small"
+          style={{ maxWidth: 300 }}
+        />
+      </ListLabelledItem>
+    </List>
   );
 }
 
 export default DeviceStatusCard;
+export { DeviceStatusCardContent };

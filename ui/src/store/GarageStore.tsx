@@ -19,7 +19,7 @@ class GarageStore extends EventEmitter {
 
   constructor() {
     super();
-    this.client = new GarageServiceClient("http://localhost:50051");
+    this.client = new GarageServiceClient("http://localhost:50051"); // http://192.168.10.53:50051
   }
 
   getState = (req: Empty, callbackFunc: (resp: Status) => void) => {
