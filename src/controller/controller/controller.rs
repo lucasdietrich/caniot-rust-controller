@@ -11,7 +11,7 @@ use crate::bus::{CanInterface, CanInterfaceError};
 use crate::caniot::emu::emu_pool2_realistic_add_devices_to_iface;
 use crate::caniot::{self, BlcClassTelemetry, Frame, RequestData};
 use crate::caniot::{DeviceId, Request};
-use crate::controller::actor::ControllerMessage;
+use crate::controller::handle::ControllerMessage;
 use crate::controller::{
     ActionVerdict, Device, DeviceAction, DeviceActionResult, DeviceControllerTrait,
     DeviceControllerWrapperTrait, DeviceError, DeviceInfos, PendingAction, ProcessContext, Verdict,
@@ -21,7 +21,7 @@ use crate::shutdown::Shutdown;
 use super::pending_action;
 use super::pending_query::PendingQueryTenant;
 
-use super::super::actor;
+use super::super::handle;
 use super::auto_attach::device_attach_controller;
 use super::PendingQuery;
 
@@ -112,8 +112,8 @@ pub struct Controller {
     pub stats: ControllerStats,
     rt: Arc<Runtime>,
     shutdown: Shutdown,
-    receiver: mpsc::Receiver<actor::ControllerMessage>,
-    handle: actor::ControllerHandle,
+    receiver: mpsc::Receiver<handle::ControllerMessage>,
+    handle: handle::ControllerHandle,
 
     // State
     pending_queries: Vec<PendingQuery>,
@@ -142,13 +142,13 @@ impl Controller {
             rt,
             shutdown,
             receiver,
-            handle: actor::ControllerHandle::new(sender),
+            handle: handle::ControllerHandle::new(sender),
             pending_queries: Vec::new(),
             devices: HashMap::new(),
         })
     }
 
-    pub fn get_handle(&self) -> actor::ControllerHandle {
+    pub fn get_handle(&self) -> handle::ControllerHandle {
         self.handle.clone()
     }
 
@@ -400,13 +400,13 @@ impl Controller {
         Ok(())
     }
 
-    fn get_devices_stats(&self) -> Vec<actor::DeviceStatsEntry> {
+    fn get_devices_stats(&self) -> Vec<handle::DeviceStatsEntry> {
         self.devices
             .iter()
             .filter(|(_did, device)| device.last_seen.is_some())
             .sorted_by_key(|(_did, device)| device.last_seen.unwrap())
             .rev()
-            .map(|(_did, device)| actor::DeviceStatsEntry {
+            .map(|(_did, device)| handle::DeviceStatsEntry {
                 did: device.did,
                 last_seen: device.last_seen,
                 stats: device.stats,

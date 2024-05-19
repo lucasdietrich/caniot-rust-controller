@@ -73,6 +73,10 @@ Run with
 - Prometheus metrics (exporter), form:
 - Device update
 - Device diagnostics
+- Heaters: auto disable heaters on certain conditions (job days, morning, evening, temperature)
+- Add support for bluetooth devices
+- Add support for rooms associated sensors
+- read config using -c option
 
 ```
 device_temperature{medium="CAN",mac="16",device="GarageDoorController",sensor="EMBEDDED",room="",collector="pycaniotcontroller"} 19.00

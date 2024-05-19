@@ -50,3 +50,6 @@ ui_run:
 	make -C ui run
 
 ui_rebuild: ui_clean ui
+
+bitbake:
+	cargo-bitbake bitbake -R

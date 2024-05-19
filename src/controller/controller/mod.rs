@@ -1,4 +1,3 @@
-pub mod api;
 pub mod auto_attach;
 pub mod controller;
 pub mod pending_query;
