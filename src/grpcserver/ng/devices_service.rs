@@ -6,7 +6,7 @@ use crate::{
         auto_attach::{DEVICE_GARAGE_DID, DEVICE_HEATERS_DID},
         DeviceInfos,
     },
-    grpcserver::{datetime_to_prost_timestamp, legacy::model},
+    grpcserver::{datetime_to_prost_timestamp},
     shared::SharedHandle,
 };
 

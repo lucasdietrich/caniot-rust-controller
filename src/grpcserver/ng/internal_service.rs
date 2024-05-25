@@ -20,8 +20,6 @@ impl InternalService for NgInternal {
         &self,
         request: Request<HelloRequest>,
     ) -> Result<Response<HelloResponse>, Status> {
-        println!("Got a request: {:?}", request);
-
         let mut map = HashMap::new();
         map.insert("garage".to_string(), 1);
         map.insert("uuid".to_string(), 2);

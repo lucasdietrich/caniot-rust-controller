@@ -2,7 +2,8 @@
 
 NAME="caniot-rust-controller"
 TARGET="rpi"
-TARGET_ARCH="armv7-unknown-linux-gnueabihf"
+POKY_ENV="/opt/hypirl/1.0/environment-setup-cortexa7t2hf-neon-vfpv4-poky-linux-gnueabi"
+TARGET_ARCH="armv7-poky-linux-gnueabihf"
 
 # parse second argument as build type
 if [ "$2" == "release" ]; then
@@ -10,6 +11,8 @@ if [ "$2" == "release" ]; then
 else
     BUILD_TYPE="debug"
 fi
+
+source $POKY_ENV
 
 function build() {
     # if release add --release

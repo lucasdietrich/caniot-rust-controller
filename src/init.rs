@@ -4,6 +4,7 @@ use log::info;
 use tokio::sync::broadcast;
 use tokio::{self};
 
+
 use crate::{config, controller, logger, shared, webserver};
 
 #[cfg(feature = "grpc")]
@@ -18,6 +19,11 @@ fn get_tokio_rt() -> tokio::runtime::Runtime {
         .unwrap()
 }
 
+#[cfg(feature = "emu")]
+type IFaceType = crate::bus::emu::CanInterface;
+#[cfg(not(feature = "emu"))]
+type IFaceType = crate::bus::can::CanInterface;
+
 pub fn run_controller() {
     logger::init_logger();
 
@@ -28,7 +34,11 @@ pub fn run_controller() {
     let rt = Arc::new(rt);
     let (notify_shutdown, _) = broadcast::channel(1);
 
-    let controller = controller::init(&config, &rt, &notify_shutdown);
+    // let database = rt
+    //     .block_on(Database::new(&config.database.connection_string))
+    //     .unwrap();
+
+    let controller = controller::init::<IFaceType>(&config, &rt, &notify_shutdown);
 
     let shared = shared::new_context(
         rt.clone(),

@@ -3,10 +3,14 @@ use std::sync::Arc;
 use tokio::{runtime::Runtime, sync::broadcast::Sender};
 
 use super::Controller;
-use crate::{bus::CanInterface, config::AppConfig, shutdown::Shutdown};
+use crate::{bus::CanInterfaceTrait, config::AppConfig, shutdown::Shutdown};
 
-pub fn init(config: &AppConfig, rt: &Arc<Runtime>, notify_shutdown: &Sender<()>) -> Controller {
-    let can_iface = rt.block_on(async { CanInterface::new(&config.can).await.unwrap() });
+pub fn init<IF: CanInterfaceTrait>(
+    config: &AppConfig,
+    rt: &Arc<Runtime>,
+    notify_shutdown: &Sender<()>,
+) -> Controller<IF> {
+    let can_iface = rt.block_on(IF::new(&config.can)).unwrap();
 
     Controller::new(
         can_iface,

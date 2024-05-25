@@ -1,7 +1,4 @@
-use std::default;
-
 use chrono::{DateTime, Utc};
-use futures::io::Close;
 
 use crate::{
     caniot::Xps,
@@ -141,16 +138,6 @@ pub struct GarageController {
     left_door_triggered: Option<RequestedState>,
     right_door_triggered: Option<RequestedState>,
     status: Option<GarageDoorStatus>,
-}
-
-impl GarageController {
-    pub fn new() -> Self {
-        Self {
-            left_door_triggered: None,
-            right_door_triggered: None,
-            status: None,
-        }
-    }
 }
 
 impl DeviceControllerTrait for GarageController {

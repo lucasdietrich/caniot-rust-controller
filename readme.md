@@ -77,6 +77,7 @@ Run with
 - Add support for bluetooth devices
 - Add support for rooms associated sensors
 - read config using -c option
+- wrap all services (spawn) in a single Application structure
 
 ```
 device_temperature{medium="CAN",mac="16",device="GarageDoorController",sensor="EMBEDDED",room="",collector="pycaniotcontroller"} 19.00

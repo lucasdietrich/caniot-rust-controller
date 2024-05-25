@@ -11,7 +11,7 @@ pub const CANIOT_DEVICE_FILTER_MASK: u32 = 1 << 2; /* bit 2 is 1 to filter frame
 
 use embedded_can::{Frame as EmbeddedFrame, Id as EmbeddedId, StandardId};
 
-use socketcan::CanFrame;
+use socketcan::CanDataFrame;
 use thiserror::Error;
 
 use super::{DeviceId, ErrorCode, ProtocolError};
@@ -387,10 +387,10 @@ pub fn parse_error_payload(
     })
 }
 
-impl TryFrom<CanFrame> for Frame<ResponseData> {
+impl TryFrom<CanDataFrame> for Frame<ResponseData> {
     type Error = ConversionError;
 
-    fn try_from(frame: CanFrame) -> Result<Self, Self::Error> {
+    fn try_from(frame: CanDataFrame) -> Result<Self, Self::Error> {
         let id = Id::try_from(frame.id())?;
         let payload: Vec<u8> = frame.data().to_vec();
 
@@ -420,22 +420,22 @@ impl TryFrom<CanFrame> for Frame<ResponseData> {
     }
 }
 
-impl Into<CanFrame> for &Frame<RequestData> {
-    fn into(self) -> CanFrame {
-        CanFrame::new(self.get_can_id(), self.get_can_payload().as_ref()).unwrap()
-    }
-}
-
-impl Into<CanFrame> for Frame<RequestData> {
-    fn into(self) -> CanFrame {
+impl Into<CanDataFrame> for Frame<ResponseData> {
+    fn into(self) -> CanDataFrame {
         (&self).into()
     }
 }
 
-impl TryFrom<CanFrame> for Frame<RequestData> {
+impl Into<CanDataFrame> for &Frame<ResponseData> {
+    fn into(self) -> CanDataFrame {
+        CanDataFrame::new(self.get_can_id(), self.get_can_payload().as_ref()).unwrap()
+    }
+}
+
+impl TryFrom<CanDataFrame> for Frame<RequestData> {
     type Error = ConversionError;
 
-    fn try_from(value: CanFrame) -> Result<Self, Self::Error> {
+    fn try_from(value: CanDataFrame) -> Result<Self, Self::Error> {
         let id = Id::try_from(value.id())?;
         let payload: Vec<u8> = value.data().to_vec();
 
@@ -467,14 +467,14 @@ impl TryFrom<CanFrame> for Frame<RequestData> {
     }
 }
 
-impl Into<CanFrame> for &Frame<ResponseData> {
-    fn into(self) -> CanFrame {
-        CanFrame::new(self.get_can_id(), self.get_can_payload().as_ref()).unwrap()
+impl Into<CanDataFrame> for &Frame<RequestData> {
+    fn into(self) -> CanDataFrame {
+        CanDataFrame::new(self.get_can_id(), self.get_can_payload().as_ref()).unwrap()
     }
 }
 
-impl Into<CanFrame> for Frame<ResponseData> {
-    fn into(self) -> CanFrame {
+impl Into<CanDataFrame> for Frame<RequestData> {
+    fn into(self) -> CanDataFrame {
         (&self).into()
     }
 }

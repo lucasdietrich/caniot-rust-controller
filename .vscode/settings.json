@@ -5,6 +5,9 @@
     "files.associations": {
         "*.html.tera": "jinja-html"
     },
+    "rust-analyzer.cargo.features": [
+        "emu"
+    ],
     "rust-analyzer.showUnlinkedFileNotification": false,
     "editor.detectIndentation": false,
     "[html]": {

@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::hash::Hash;
+
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -7,14 +7,13 @@ use itertools::{partition, Itertools};
 use tokio::runtime::Runtime;
 use tokio::sync::oneshot::Sender;
 
-use crate::bus::{CanInterface, CanInterfaceError};
-use crate::caniot::emu::emu_pool2_realistic_add_devices_to_iface;
-use crate::caniot::{self, BlcClassTelemetry, Frame, RequestData};
+use crate::bus::{CanInterfaceError, CanInterfaceTrait};
+use crate::caniot::{self, Frame, RequestData};
 use crate::caniot::{DeviceId, Request};
 use crate::controller::handle::ControllerMessage;
 use crate::controller::{
-    ActionVerdict, Device, DeviceAction, DeviceActionResult, DeviceControllerTrait,
-    DeviceControllerWrapperTrait, DeviceError, DeviceInfos, PendingAction, ProcessContext, Verdict,
+    ActionVerdict, Device, DeviceAction, DeviceActionResult, DeviceError, DeviceInfos,
+    PendingAction, ProcessContext, Verdict,
 };
 use crate::shutdown::Shutdown;
 
@@ -103,9 +102,9 @@ enum ActionResultOrPending {
     Pending(DeviceAction, Frame<RequestData>),
 }
 
-pub struct Controller {
+pub struct Controller<IF: CanInterfaceTrait> {
     // CAN interface
-    pub iface: CanInterface,
+    pub iface: IF,
 
     // Service
     pub config: CaniotConfig,
@@ -120,20 +119,14 @@ pub struct Controller {
     devices: HashMap<DeviceId, Device>,
 }
 
-impl Controller {
+impl<IF: CanInterfaceTrait> Controller<IF> {
     pub(crate) fn new(
-        mut iface: CanInterface,
+        iface: IF,
         config: CaniotConfig,
         shutdown: Shutdown,
         rt: Arc<Runtime>,
     ) -> Result<Self, ControllerError> {
         let (sender, receiver) = mpsc::channel(CHANNEL_SIZE);
-
-        #[cfg(feature = "emu")]
-        {
-            // emu_pool1_add_devices_to_iface(&mut iface);
-            emu_pool2_realistic_add_devices_to_iface(&mut iface);
-        }
 
         Ok(Self {
             iface,
@@ -153,7 +146,7 @@ impl Controller {
     }
 
     pub async fn iface_send_caniot_frame(
-        iface: &mut CanInterface,
+        iface: &mut impl CanInterfaceTrait,
         stats: &mut ControllerStats,
         request: &caniot::Request,
     ) -> Result<(), ControllerError> {

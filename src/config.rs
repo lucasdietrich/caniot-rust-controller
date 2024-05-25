@@ -5,6 +5,7 @@ use toml;
 
 use crate::bus::CanConfig;
 use crate::controller::CaniotConfig;
+use crate::database::DatabaseConfig;
 use crate::webserver::WebserverConfig;
 
 #[cfg(feature = "grpc")]
@@ -15,6 +16,7 @@ pub struct AppConfig {
     pub can: CanConfig,
     pub caniot: CaniotConfig,
     pub web: WebserverConfig,
+    pub database: DatabaseConfig,
 
     #[cfg(feature = "grpc")]
     pub grpc: GrpcConfig,
