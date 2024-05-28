@@ -34,9 +34,9 @@ function GarageDoorsView({ refreshInterval = 5000 }: IProps) {
       });
     });
 
-    const interval = setInterval(() => setTime(Date.now()), refreshInterval);
+    const intervalRefresh = setInterval(() => setTime(Date.now()), refreshInterval);
     return () => {
-      clearInterval(interval);
+      clearInterval(intervalRefresh);
     };
   }, [time]);
 

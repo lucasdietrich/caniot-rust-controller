@@ -90,4 +90,9 @@ device_temperature{medium="CAN",mac="1",device="HeatersController",sensor="EXTER
 
 ## TODO (UI)
 
-- Solve the resolution problem of: `import { Timestamp } from "google-protobuf/google/protobuf/timestamp_pb";`
+- Implement `compactAlgorithm` theme with dark mode
+- ~~Solve the resolution problem of: `import { Timestamp } from "google-protobuf/google/protobuf/timestamp_pb";`~~
+- Split built ui in chunks for faster loading
+  - `rollupOptions`
+- Call front-end router
+- Correctly select the route (in the menu) when the URL is directly accessed

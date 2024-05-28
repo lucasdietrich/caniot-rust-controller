@@ -1,5 +1,5 @@
 import { Device } from "@caniot-controller/caniot-api-grpc-web/api/ng_devices_pb";
-import { Badge, Card, List, Space, Table } from "antd";
+import { Badge, Card, List, Progress, Space, Table } from "antd";
 import React, { useEffect, useState } from "react";
 import ListLabelledItem from "./ListLabelledItem";
 import { Timestamp } from "google-protobuf/google/protobuf/timestamp_pb";
@@ -7,11 +7,12 @@ import { Timestamp } from "google-protobuf/google/protobuf/timestamp_pb";
 interface IPropsCard {
   title?: string;
   device: Device | undefined;
+  progressToNextRefresh?: number;
 }
 
 const SECONDS_TO_CONSIDER_ONLINE = 60;
 
-function DeviceStatusCard({ title, device }: IPropsCard) {
+function DeviceStatusCard({ title, device, progressToNextRefresh }: IPropsCard) {
   if (device === undefined) {
     return undefined;
   }
@@ -19,7 +20,27 @@ function DeviceStatusCard({ title, device }: IPropsCard) {
   const isOnline = device.getLastseenfromnow() < SECONDS_TO_CONSIDER_ONLINE;
 
   return (
-    <Card title={title && <Badge status={isOnline ? "success" : "error"} text={title} />}>
+    <Card
+      title={
+        title && (
+          <>
+            <Badge status={isOnline ? "success" : "error"} text={title} />
+            {progressToNextRefresh && (
+              <Progress
+                type="circle"
+                percent={progressToNextRefresh}
+                size={20}
+                style={{
+                  position: "absolute",
+                  right: 20,
+                  top: 20,
+                }}
+              />
+            )}
+          </>
+        )
+      }
+    >
       <DeviceStatusCardContent device={device} />
     </Card>
   );

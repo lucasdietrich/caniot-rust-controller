@@ -9,15 +9,13 @@ mod caniot;
 mod config;
 mod controller;
 mod database;
+mod grpcserver;
 mod init;
 mod internal;
 mod logger;
 mod shared;
 mod shutdown;
 mod webserver;
-
-#[cfg(feature = "grpc")]
-mod grpcserver;
 
 fn main() {
     init::run_controller();

@@ -154,6 +154,7 @@ impl TryFrom<&[u8]> for Command {
         if payload.len() >= 7 {
             Ok(Command {
                 ios: [
+                    // TODO improve this
                     Xps::get_at(payload, Class1CommandFields::Pb0 as usize).unwrap(),
                     Xps::get_at(payload, Class1CommandFields::Poc0 as usize).unwrap(),
                     Xps::get_at(payload, Class1CommandFields::Poc1 as usize).unwrap(),

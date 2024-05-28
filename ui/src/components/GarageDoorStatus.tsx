@@ -20,7 +20,7 @@ function GarageDoorStatus({ closed, progress, onDoorClick = () => {} }: IProps) 
         onClick={handleImageClick}
         style={{ padding: 0, border: "none", background: "none" }}
       >
-        <img src="/door.png" height={230} alt="Garage Door" />
+        <img src="/static/door.png" height={230} alt="Garage Door" />
       </Button>
       {closed && <Progress percent={100} showInfo={false} status="success" />}
       {!closed && progress != 0 && <Progress percent={progress} showInfo={false} status="active" />}

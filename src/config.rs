@@ -8,7 +8,6 @@ use crate::controller::CaniotConfig;
 use crate::database::DatabaseConfig;
 use crate::webserver::WebserverConfig;
 
-#[cfg(feature = "grpc")]
 use crate::grpcserver::GrpcConfig;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
@@ -17,8 +16,6 @@ pub struct AppConfig {
     pub caniot: CaniotConfig,
     pub web: WebserverConfig,
     pub database: DatabaseConfig,
-
-    #[cfg(feature = "grpc")]
     pub grpc: GrpcConfig,
 }
 

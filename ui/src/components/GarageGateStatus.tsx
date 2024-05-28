@@ -8,7 +8,7 @@ interface IProps {
 function GarageGateStatus({ closed }: IProps) {
   return (
     <>
-      <img src="/gate.png" height={230} />
+      <img src="/static/gate.png" height={230} />
       <Progress percent={100} showInfo={false} status={closed ? "success" : "exception"} />
     </>
   );

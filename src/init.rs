@@ -4,16 +4,13 @@ use log::info;
 use tokio::sync::broadcast;
 use tokio::{self};
 
-
+use crate::database::Database;
 use crate::{config, controller, logger, shared, webserver};
 
-#[cfg(feature = "grpc")]
 use crate::grpcserver;
 
 fn get_tokio_rt() -> tokio::runtime::Runtime {
-    tokio::runtime::Builder::new_current_thread()
-        .worker_threads(1)
-        // .thread_name("my-custom-name")
+    tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
         .unwrap()
@@ -34,9 +31,9 @@ pub fn run_controller() {
     let rt = Arc::new(rt);
     let (notify_shutdown, _) = broadcast::channel(1);
 
-    // let database = rt
-    //     .block_on(Database::new(&config.database.connection_string))
-    //     .unwrap();
+    let database = rt
+        .block_on(Database::new(&config.database.connection_string))
+        .unwrap();
 
     let controller = controller::init::<IFaceType>(&config, &rt, &notify_shutdown);
 
@@ -64,12 +61,7 @@ pub fn run_controller() {
     let h_ctrl = rt.spawn(controller.run());
     let h_rocket = rt.spawn(webserver::rocket(shared.clone()).launch());
 
-    #[cfg(feature = "grpc")]
     let h_grpc = rt.spawn(grpcserver::grpc_server(shared.clone()));
 
-    #[cfg(feature = "grpc")]
     let _ = rt.block_on(async { tokio::join!(h_ctrl, h_rocket, h_grpc) });
-
-    #[cfg(not(feature = "grpc"))]
-    let _ = rt.block_on(async { tokio::join!(h_ctrl, h_rocket) });
 }

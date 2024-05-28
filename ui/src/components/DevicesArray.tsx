@@ -85,7 +85,7 @@ function DevicesTable({ devicesList }: IProps) {
           text={
             <span>
               {last_seen ? last_seen.timestamp.toDate().toLocaleString() : "never"} (
-              {last_seen ? last_seen.secondsFromNow : ""} ago)
+              {last_seen ? last_seen.secondsFromNow : ""}s ago)
             </span>
           }
         />
