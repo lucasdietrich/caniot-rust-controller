@@ -4,10 +4,11 @@ interface = "can0"
 [web]
 port = 8081
 listen = "0.0.0.0"
-static_path = "static"
-templates_path = "templates"
 
 [grpc]
 listen = "0.0.0.0:50051"
+
+[database]
+connection_string = "postgres://caniot:caniot@localhost/caniot"
 
 [caniot]

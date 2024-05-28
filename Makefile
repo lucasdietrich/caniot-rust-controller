@@ -20,19 +20,17 @@ clean:
 target:
 	./scripts/build.sh build debug
 
-deploy: deploy_config deploy_static
+deploy: deploy_config
 	./scripts/build.sh build debug
 	scp target/armv7-unknown-linux-gnueabihf/debug/caniot-rust-controller rpi:/home/root/rust-controller/caniot-rust-controller
+
+deploy_static:
+	ssh rpi "mkdir -p /home/root/rust-controller/ui/dist"
+	scp -rp ui/dist/* rpi:/home/root/rust-controller/ui/dist
 
 deploy_release: deploy_config deploy_static
 	./scripts/build.sh build release
 	scp target/armv7-unknown-linux-gnueabihf/release/caniot-rust-controller rpi:/home/root/rust-controller/caniot-rust-controller
-
-deploy_static:
-	ssh rpi "mkdir -p /home/root/rust-controller/static"
-	scp static/* rpi:/home/root/rust-controller/static
-	ssh rpi "mkdir -p /home/root/rust-controller/templates/tera"
-	scp templates/tera/* rpi:/home/root/rust-controller/templates/tera
 
 deploy_config:
 	ssh rpi "mkdir -p /home/root/rust-controller"

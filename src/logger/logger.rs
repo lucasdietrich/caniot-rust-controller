@@ -12,7 +12,7 @@ pub fn init_logger() {
 
     modules.insert("rocket", log::LevelFilter::Warn);
     modules.insert("caniot_rust_controller", log::LevelFilter::Debug);
-    modules.insert("hyper", log::LevelFilter::Warn);
+    modules.insert("hyper", log::LevelFilter::Info);
 
     let mut builder = env_logger::builder();
 

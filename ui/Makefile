@@ -3,15 +3,15 @@
 all: build
 
 dependencies:
-	yarn install
+	npm install
 
 build: dependencies
-	yarn build
+	npm run build
 
 clean:
 	rm -rf node_modules
 
-run:
+run: dependencies
 	npm run dev
 
 format:

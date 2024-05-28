@@ -21,3 +21,11 @@ export function HandleSuccess(message: string) {
   //   duration: 3,
   // });
 }
+
+// http://localhost:50051
+// http://192.168.10.53:50051
+export function getApiUrl(): string {
+  const port = import.meta.env.VITE_API_PORT;
+  const host = window.location.hostname;
+  return `http://${host}:${port}`;
+}

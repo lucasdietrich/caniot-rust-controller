@@ -1,6 +1,6 @@
 import { notification } from "antd";
 import EventEmitter from "events";
-import { HandleError, HandleSuccess } from "./helpers";
+import { HandleError, HandleSuccess, getApiUrl } from "./helpers";
 import {
   HelloRequest,
   HelloResponse,
@@ -13,7 +13,7 @@ class InternalStore extends EventEmitter {
 
   constructor() {
     super();
-    this.client = new InternalServiceClient("http://localhost:50051"); // http://192.168.10.53:50051
+    this.client = new InternalServiceClient(getApiUrl());
   }
 
   hello = (req: HelloRequest, callbackFunc: (resp: HelloResponse) => void) => {

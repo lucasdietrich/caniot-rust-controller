@@ -1,6 +1,6 @@
 import { notification } from "antd";
 import EventEmitter from "events";
-import { HandleError, HandleSuccess } from "./helpers";
+import { HandleError, HandleSuccess, getApiUrl } from "./helpers";
 
 import { Empty } from "google-protobuf/google/protobuf/empty_pb";
 // import google_protobuf_empty_pb from "google-protobuf/google/protobuf/empty_pb.js";
@@ -14,7 +14,7 @@ class HeatersStore extends EventEmitter {
 
   constructor() {
     super();
-    this.client = new HeatersServiceClient("http://localhost:50051"); // http://192.168.10.53:50051
+    this.client = new HeatersServiceClient(getApiUrl());
   }
 
   getStatus = (req: Empty, callbackFunc: (resp: Status) => void) => {
