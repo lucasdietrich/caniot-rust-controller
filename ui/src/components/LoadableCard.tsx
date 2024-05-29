@@ -15,7 +15,7 @@ function LoadableCard({
   status,
   loading,
   onRefresh,
-  progress: progressToNextRefresh,
+  progress,
   children,
 }: PropsWithChildren<ICardLoadableProps>) {
   let titleComponent = (
@@ -27,20 +27,17 @@ function LoadableCard({
 
   let extraComponent;
 
-  if (progressToNextRefresh !== undefined && onRefresh !== undefined) {
+  if (progress !== undefined && onRefresh !== undefined) {
     extraComponent = (
-      <Button
-        onClick={onRefresh}
-        icon={<Progress type="circle" percent={progressToNextRefresh} size={20} />}
-      />
+      <Button onClick={onRefresh} icon={<Progress type="circle" percent={progress} size={20} />} />
     );
   } else if (onRefresh !== undefined) {
     extraComponent = <Button onClick={onRefresh} icon={<ReloadOutlined />} />;
-  } else if (progressToNextRefresh !== undefined) {
+  } else if (progress !== undefined) {
     extraComponent = (
       <Progress
         type="circle"
-        percent={progressToNextRefresh}
+        percent={progress}
         size={20}
         style={{
           marginLeft: 10,
