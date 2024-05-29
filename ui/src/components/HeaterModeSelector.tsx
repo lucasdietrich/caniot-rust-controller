@@ -18,7 +18,7 @@ import { TbSnowflake } from "react-icons/tb";
 import heatersStore from "../store/HeatersStore";
 import useFormItemStatus from "antd/es/form/hooks/useFormItemStatus";
 
-interface IProps {
+interface IHeaterModeSelectorProps {
   label: string;
   heaterIndex: number;
   initialMode?: State;
@@ -30,7 +30,7 @@ function HeaterModeSelector({
   heaterIndex,
   initialMode = State.NONE,
   onModeChange = () => {},
-}: IProps) {
+}: IHeaterModeSelectorProps) {
   const [form] = Form.useForm();
 
   const disabled = initialMode === State.NONE;

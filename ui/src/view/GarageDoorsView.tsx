@@ -14,12 +14,13 @@ import garageStore from "../store/GarageStore";
 import { Empty } from "google-protobuf/google/protobuf/empty_pb";
 import devicesStore from "../store/DevicesStore";
 import { LoadingOutlined } from "@ant-design/icons";
+import LoadableCard from "../components/LoadableCard";
 
-interface IProps {
+interface IGarageDoorsViewProps {
   refreshInterval?: number;
 }
 
-function GarageDoorsView({ refreshInterval = 5000 }: IProps) {
+function GarageDoorsView({ refreshInterval = 5000 }: IGarageDoorsViewProps) {
   const [garageState, setGarageState] = useState<Status | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [garageDevice, setGarageDevice] = useState<Device | undefined>(undefined);
@@ -60,22 +61,14 @@ function GarageDoorsView({ refreshInterval = 5000 }: IProps) {
   return (
     <Row gutter={16}>
       <Col span={14}>
-        <Card
-          title={
-            <Badge
-              status={
-                garageState === undefined || garageState?.getGateClosed() === DoorState.UNKNOWN
-                  ? "error"
-                  : "success"
-              }
-              text={
-                <Space size="middle">
-                  Portes de garage
-                  <Spin spinning={loading} indicator={<LoadingOutlined spin />} />
-                </Space>
-              }
-            />
-          }
+        <LoadableCard
+          title="Portes de garage"
+          status={garageState !== undefined && garageState?.getGateClosed() !== DoorState.UNKNOWN}
+          loading={loading}
+          onRefresh={() => {
+            setLoading(true);
+            setTime(Date.now());
+          }}
         >
           <Row gutter={20}>
             <Col flex="300px">
@@ -99,7 +92,7 @@ function GarageDoorsView({ refreshInterval = 5000 }: IProps) {
           <Row style={{ paddingTop: 20 }}>
             <DeviceStatusCard device={undefined} title="Garage Doors" />
           </Row>
-        </Card>
+        </LoadableCard>
       </Col>
       <Col span={10}>
         <DeviceStatusCard title="Contrôleur portes de garage" device={garageDevice} />

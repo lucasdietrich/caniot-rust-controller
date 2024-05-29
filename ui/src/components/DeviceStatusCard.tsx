@@ -3,8 +3,9 @@ import { Badge, Card, List, Progress, Space, Table } from "antd";
 import React, { useEffect, useState } from "react";
 import ListLabelledItem from "./ListLabelledItem";
 import { Timestamp } from "google-protobuf/google/protobuf/timestamp_pb";
+import LoadableCard from "./LoadableCard";
 
-interface IPropsCard {
+interface IDeviceStatusCardProps {
   title?: string;
   device: Device | undefined;
   progressToNextRefresh?: number;
@@ -12,7 +13,7 @@ interface IPropsCard {
 
 const SECONDS_TO_CONSIDER_ONLINE = 60;
 
-function DeviceStatusCard({ title, device, progressToNextRefresh }: IPropsCard) {
+function DeviceStatusCard({ title, device, progressToNextRefresh }: IDeviceStatusCardProps) {
   if (device === undefined) {
     return undefined;
   }
@@ -20,37 +21,17 @@ function DeviceStatusCard({ title, device, progressToNextRefresh }: IPropsCard) 
   const isOnline = device.getLastseenfromnow() < SECONDS_TO_CONSIDER_ONLINE;
 
   return (
-    <Card
-      title={
-        title && (
-          <>
-            <Badge status={isOnline ? "success" : "error"} text={title} />
-            {progressToNextRefresh && (
-              <Progress
-                type="circle"
-                percent={progressToNextRefresh}
-                size={20}
-                style={{
-                  position: "absolute",
-                  right: 20,
-                  top: 20,
-                }}
-              />
-            )}
-          </>
-        )
-      }
-    >
+    <LoadableCard title={title} status={isOnline} loading={device === undefined}>
       <DeviceStatusCardContent device={device} />
-    </Card>
+    </LoadableCard>
   );
 }
 
-interface IPropsCardContent {
+interface IDeviceCardContentProps {
   device: Device;
 }
 
-function DeviceStatusCardContent({ device: resp }: IPropsCardContent) {
+function DeviceStatusCardContent({ device: resp }: IDeviceCardContentProps) {
   let lastseen: Timestamp | undefined = resp.getLastseen();
   let lastseen_fmt = lastseen?.toDate().toLocaleString();
 
