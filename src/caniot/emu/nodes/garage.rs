@@ -98,16 +98,19 @@ impl GarageController {
 impl Behavior for GarageController {
     fn on_command(&mut self, endpoint: &ct::Endpoint, payload: Vec<u8>) -> Option<ct::ErrorCode> {
         if endpoint == &ct::Endpoint::BoardControl {
-            let command = class0::Command::try_from(payload.as_slice()).unwrap();
-            if command.crl1 == Xps::PulseOn {
-                self.left_door.pulse_relay();
-            }
+            if let Ok(command) = class0::Command::try_from(payload.as_slice()) {
+                if command.crl1 == Xps::PulseOn {
+                    self.left_door.pulse_relay();
+                }
 
-            if command.crl2 == Xps::PulseOn {
-                self.right_door.pulse_relay();
-            }
+                if command.crl2 == Xps::PulseOn {
+                    self.right_door.pulse_relay();
+                }
 
-            Some(ct::ErrorCode::Ok)
+                Some(ct::ErrorCode::Ok)
+            } else {
+                Some(ct::ErrorCode::Eframe)
+            }
         } else {
             None
         }

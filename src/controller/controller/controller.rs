@@ -387,7 +387,11 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
             }
 
             self.handle_pending_queries_timeout().await;
-            self.process_devices().await.unwrap();
+
+            let result = self.process_devices().await;
+            if let Err(err) = result {
+                error!("Failed to process devices: {}", err);
+            }
         }
 
         Ok(())

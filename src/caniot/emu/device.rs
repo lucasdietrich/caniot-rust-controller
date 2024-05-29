@@ -19,7 +19,7 @@ pub struct Device {
 
 impl Device {
     pub fn new(id: u8, telemetry_interval: Option<Duration>) -> Self {
-        let did = DeviceId::from_u8(id).unwrap();
+        let did = DeviceId::from_u8(id);
 
         let mut default_behavior = DefaultBehavior::default();
         default_behavior.set_did(&did);

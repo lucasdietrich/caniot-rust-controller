@@ -3,12 +3,12 @@ use super::*;
 fn test_response_match_any_attribute_query() {
     // attribute
     let query = Request {
-        device_id: DeviceId::from_u8(1).unwrap(),
+        device_id: DeviceId::try_from_u8(1).unwrap(),
         data: RequestData::AttributeRead { key: 0x0100 },
     };
 
     let response = Response {
-        device_id: DeviceId::from_u8(1).unwrap(),
+        device_id: DeviceId::try_from_u8(1).unwrap(),
         data: ResponseData::Attribute {
             key: 0x0100,
             value: 0x12345678,
@@ -17,7 +17,7 @@ fn test_response_match_any_attribute_query() {
     assert!(is_response_to(&query, &response).is_valid_response());
 
     let response = Response {
-        device_id: DeviceId::from_u8(1).unwrap(),
+        device_id: DeviceId::try_from_u8(1).unwrap(),
         data: ResponseData::Error {
             source: ErrorSource::Attribute(Some(0x0100)),
             error: None,
@@ -26,7 +26,7 @@ fn test_response_match_any_attribute_query() {
     assert!(is_response_to(&query, &response).is_response_error());
 
     let response = Response {
-        device_id: DeviceId::from_u8(1).unwrap(),
+        device_id: DeviceId::try_from_u8(1).unwrap(),
         data: ResponseData::Error {
             source: ErrorSource::Attribute(None),
             error: None,
@@ -35,7 +35,7 @@ fn test_response_match_any_attribute_query() {
     assert!(is_response_to(&query, &response).is_response_error());
 
     let response = Response {
-        device_id: DeviceId::from_u8(1).unwrap(),
+        device_id: DeviceId::try_from_u8(1).unwrap(),
         data: ResponseData::Error {
             source: ErrorSource::Telemetry(Endpoint::BoardControl, None),
             error: None,
@@ -46,14 +46,14 @@ fn test_response_match_any_attribute_query() {
 
     // telemetry
     let query = Request {
-        device_id: DeviceId::from_u8(1).unwrap(),
+        device_id: DeviceId::try_from_u8(1).unwrap(),
         data: RequestData::Telemetry {
             endpoint: Endpoint::Application2,
         },
     };
 
     let response = Response {
-        device_id: DeviceId::from_u8(1).unwrap(),
+        device_id: DeviceId::try_from_u8(1).unwrap(),
         data: ResponseData::Telemetry {
             endpoint: Endpoint::Application2,
             payload: vec![],
@@ -62,7 +62,7 @@ fn test_response_match_any_attribute_query() {
     assert!(is_response_to(&query, &response).is_valid_response());
 
     let response = Response {
-        device_id: DeviceId::from_u8(1).unwrap(),
+        device_id: DeviceId::try_from_u8(1).unwrap(),
         data: ResponseData::Telemetry {
             endpoint: Endpoint::Application1,
             payload: vec![],
@@ -72,7 +72,7 @@ fn test_response_match_any_attribute_query() {
     assert!(!m.is_error() && !m.is_response());
 
     let response = Response {
-        device_id: DeviceId::from_u8(1).unwrap(),
+        device_id: DeviceId::try_from_u8(1).unwrap(),
         data: ResponseData::Error {
             source: ErrorSource::Telemetry(Endpoint::Application2, None),
             error: None,
@@ -81,7 +81,7 @@ fn test_response_match_any_attribute_query() {
     assert!(is_response_to(&query, &response).is_response_error());
 
     let response = Response {
-        device_id: DeviceId::from_u8(1).unwrap(),
+        device_id: DeviceId::try_from_u8(1).unwrap(),
         data: ResponseData::Error {
             source: ErrorSource::Telemetry(Endpoint::BoardControl, None),
             error: None,

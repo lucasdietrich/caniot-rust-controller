@@ -34,16 +34,16 @@ impl ControllerService for NgController {
         request: Request<model::Request>,
     ) -> Result<Response<model::Response>, Status> {
         let req = request.into_inner();
-        let did = req.did.unwrap();
-        let caniot_did = caniot::DeviceId::from_u8(did.did as u8).unwrap();
+        let did = req.did.expect("Missing device id");
+        let caniot_did = caniot::DeviceId::from_u8(did.did as u8);
 
-        let query = match req.query.unwrap() {
+        let query = match req.query.expect("Missing query") {
             model::request::Query::Telemetry(t) => {
-                let ep = caniot::Endpoint::try_from(t.endpoint).unwrap();
+                let ep = caniot::Endpoint::try_from(t.endpoint).expect("Invalid endpoint");
                 caniot::build_telemetry_request(caniot_did, ep)
             }
             model::request::Query::Command(a) => {
-                let ep = caniot::Endpoint::try_from(a.endpoint).unwrap();
+                let ep = caniot::Endpoint::try_from(a.endpoint).expect("Invalid endpoint");
                 caniot::build_command_request(caniot_did, ep, convert_payload(a.payload.as_slice()))
             }
             model::request::Query::Attribute(a) => match a.value {

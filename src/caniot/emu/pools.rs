@@ -33,7 +33,7 @@ pub fn emu_pool1_add_devices_to_iface(iface: &mut CanInterface) {
 pub fn emu_pool2_realistic_add_devices_to_iface(iface: &mut CanInterface) {
     // Add heaters controllers at
     let mut heaters_controller = Device::new(
-        DeviceId::new(1, 0).unwrap().to_u8(),
+        DeviceId::try_new(1, 0).unwrap().to_u8(),
         Some(Duration::from_secs(30)),
     );
     heaters_controller.request_telemetry(caniot::Endpoint::ApplicationDefault);
@@ -44,7 +44,7 @@ pub fn emu_pool2_realistic_add_devices_to_iface(iface: &mut CanInterface) {
 
     // Add demo device
     let mut demo_controller = Device::new(
-        DeviceId::new(0, 0).unwrap().to_u8(),
+        DeviceId::try_new(0, 0).unwrap().to_u8(),
         Some(Duration::from_secs(30)),
     );
     demo_controller.add_behavior(Box::new(Class0Behavior::default()));
@@ -54,7 +54,7 @@ pub fn emu_pool2_realistic_add_devices_to_iface(iface: &mut CanInterface) {
 
     // Add garage device
     let mut garage_controller = Device::new(
-        DeviceId::new(0, 2).unwrap().to_u8(),
+        DeviceId::try_new(0, 2).unwrap().to_u8(),
         Some(Duration::from_secs(30)),
     );
     garage_controller.add_behavior(Box::new(nodes::garage::GarageController::default()));

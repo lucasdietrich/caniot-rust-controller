@@ -32,7 +32,7 @@ impl DeviceId {
         sub_id: 0x7,
     };
 
-    pub fn new(class: u8, sub_id: u8) -> Result<Self, ProtocolError> {
+    pub fn try_new(class: u8, sub_id: u8) -> Result<Self, ProtocolError> {
         if class > 0x7 || sub_id > 0x7 {
             Err(ProtocolError::DeviceIdCreationError)
         } else {
@@ -40,8 +40,16 @@ impl DeviceId {
         }
     }
 
-    pub fn from_u8(did: u8) -> Result<Self, ProtocolError> {
+    pub unsafe fn new_unchecked(class: u8, sub_id: u8) -> Self {
+        DeviceId { class, sub_id }
+    }
+
+    pub fn try_from_u8(did: u8) -> Result<Self, ProtocolError> {
         Self::try_from(did)
+    }
+
+    pub fn from_u8(did: u8) -> Self {
+        Self::try_from_u8(did).expect("Invalid device id")
     }
 
     pub fn to_u8(&self) -> u8 {

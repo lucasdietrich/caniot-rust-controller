@@ -12,7 +12,9 @@ pub fn datetime_to_prost_timestamp(dt: &DateTime<Utc>) -> prost_types::Timestamp
 }
 
 pub fn systemtime_to_prost_timestamp(time: SystemTime) -> Timestamp {
-    let duration = time.duration_since(std::time::UNIX_EPOCH).unwrap();
+    let duration = time
+        .duration_since(std::time::UNIX_EPOCH)
+        .expect("Time went backwards");
 
     Timestamp {
         seconds: duration.as_secs() as i64,

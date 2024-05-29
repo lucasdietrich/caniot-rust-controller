@@ -6,7 +6,7 @@ use crate::{
         auto_attach::{DEVICE_GARAGE_DID, DEVICE_HEATERS_DID},
         DeviceInfos,
     },
-    grpcserver::{datetime_to_prost_timestamp},
+    grpcserver::datetime_to_prost_timestamp,
     shared::SharedHandle,
 };
 
@@ -53,7 +53,7 @@ impl Into<m::DeviceIdInfos> for caniot::DeviceId {
 
 impl Into<caniot::DeviceId> for m::DeviceId {
     fn into(self) -> caniot::DeviceId {
-        caniot::DeviceId::from_u8(self.did as u8).unwrap()
+        caniot::DeviceId::try_from_u8(self.did as u8).unwrap()
     }
 }
 
@@ -149,7 +149,7 @@ impl CaniotDevicesService for NgDevices {
         &self,
         _request: Request<()>,
     ) -> Result<Response<m::Device>, Status> {
-        self.get_device_by_did(caniot::DeviceId::from_u8(DEVICE_HEATERS_DID).unwrap())
+        self.get_device_by_did(caniot::DeviceId::from_u8(DEVICE_HEATERS_DID))
             .await
     }
 
@@ -157,7 +157,7 @@ impl CaniotDevicesService for NgDevices {
         &self,
         _request: Request<()>,
     ) -> Result<Response<m::Device>, Status> {
-        self.get_device_by_did(caniot::DeviceId::from_u8(DEVICE_GARAGE_DID).unwrap())
+        self.get_device_by_did(caniot::DeviceId::from_u8(DEVICE_GARAGE_DID))
             .await
     }
 }

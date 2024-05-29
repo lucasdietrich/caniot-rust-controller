@@ -79,6 +79,9 @@ Run with
 - read config using -c option
 - wrap all services (spawn) in a single Application structure
 - increase the number of threads in the thread pool
+- Allow to send comment to non-existing (yet) devices
+- Remove `unwrap`
+  - At least change them to `expect` with a meaningful message
 
 ```
 device_temperature{medium="CAN",mac="16",device="GarageDoorController",sensor="EMBEDDED",room="",collector="pycaniotcontroller"} 19.00
@@ -96,3 +99,4 @@ device_temperature{medium="CAN",mac="1",device="HeatersController",sensor="EXTER
   - `rollupOptions`
 - Call front-end router
 - Correctly select the route (in the menu) when the URL is directly accessed
+- Make the UI layout compatible with mobile devices

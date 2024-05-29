@@ -89,8 +89,11 @@ impl ControllerHandle {
     ) -> R {
         let (sender, receiver) = oneshot::channel();
         let message = build_message_closure(sender);
-        self.sender.send(message).await.unwrap();
-        receiver.await.expect("Sender dropped before response")
+        self.sender
+            .send(message)
+            .await
+            .expect("Failed to send IPC message to controller");
+        receiver.await.expect("IPC Sender dropped before response")
     }
 
     pub async fn get_stats(&self) -> (ControllerStats, Vec<DeviceStatsEntry>, CanStats) {
