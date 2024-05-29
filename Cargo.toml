@@ -1,5 +1,5 @@
 [package]
-name = "caniot-rust-controller"
+name = "caniot-controller"
 version = "0.2.0"
 edition = "2021"
 description = "CANIOT Rust Controller"

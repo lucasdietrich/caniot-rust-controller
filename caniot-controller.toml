@@ -2,7 +2,7 @@
 interface = "can0"
 
 [web]
-port = 8081
+port = 8080
 listen = "0.0.0.0"
 
 [grpc]
