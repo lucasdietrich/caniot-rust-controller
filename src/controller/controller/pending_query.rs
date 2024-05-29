@@ -1,7 +1,7 @@
 use std::time::{Duration, Instant};
 
 use super::{ControllerError, PendingAction};
-use crate::{caniot};
+use crate::caniot;
 use tokio::sync::oneshot;
 
 /// Initiator of a pending query, it represents the entity that is waiting for the query to be answered

@@ -1,7 +1,5 @@
-
-
 use crate::{
-    caniot::{RequestData},
+    caniot::RequestData,
     controller::{ActionResultTrait, ActionTrait},
 };
 

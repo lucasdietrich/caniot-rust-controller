@@ -17,15 +17,15 @@ use crate::controller::{
 };
 use crate::shutdown::Shutdown;
 
-use super::pending_action;
 use super::pending_query::PendingQueryTenant;
+use super::{pending_action, CaniotConfig};
 
 use super::super::handle;
 use super::auto_attach::device_attach_controller;
 use super::PendingQuery;
 
 use log::{info, warn};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use thiserror::Error;
 use tokio::select;
@@ -44,15 +44,6 @@ pub struct ControllerStats {
     pub tx: usize,
     pub err: usize,
     pub malformed: usize,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct CaniotConfig {}
-
-impl Default for CaniotConfig {
-    fn default() -> Self {
-        CaniotConfig {}
-    }
 }
 
 #[derive(Error, Debug)]
@@ -109,7 +100,6 @@ pub struct Controller<IF: CanInterfaceTrait> {
     // Service
     pub config: CaniotConfig,
     pub stats: ControllerStats,
-    rt: Arc<Runtime>,
     shutdown: Shutdown,
     receiver: mpsc::Receiver<handle::ControllerMessage>,
     handle: handle::ControllerHandle,
@@ -124,7 +114,6 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
         iface: IF,
         config: CaniotConfig,
         shutdown: Shutdown,
-        rt: Arc<Runtime>,
     ) -> Result<Self, ControllerError> {
         let (sender, receiver) = mpsc::channel(CHANNEL_SIZE);
 
@@ -132,7 +121,6 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
             iface,
             config,
             stats: ControllerStats::default(),
-            rt,
             shutdown,
             receiver,
             handle: handle::ControllerHandle::new(sender),

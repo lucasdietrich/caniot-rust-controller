@@ -1,0 +1,14 @@
+[can]
+interface = "can0"
+
+[web]
+port = 8080
+listen = "0.0.0.0"
+
+[grpc]
+listen = "[::]:50051"
+
+[database]
+connection_string = "postgres://caniot:caniot@localhost/caniot"
+
+[caniot]

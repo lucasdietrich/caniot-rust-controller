@@ -4,9 +4,9 @@ import ListLabelledItem from "../components/ListLabelledItem";
 
 interface ISettingsProps {
   darkMode: boolean;
-  debugMode: boolean;
+  debugMode?: boolean;
   setDarkMode: (darkMode: boolean) => void;
-  setDebugMode: (debugMode: boolean) => void;
+  setDebugMode?: (debugMode: boolean) => void;
 }
 
 function Settings({

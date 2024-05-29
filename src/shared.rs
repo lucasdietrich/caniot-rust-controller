@@ -1,11 +1,12 @@
 use std::sync::Arc;
 use tokio::runtime::Runtime;
-use tokio::sync::broadcast;
+use tokio::sync::{broadcast, RwLock};
 
 use serde::Serialize;
 
 use crate::config::AppConfig;
 use crate::controller::ControllerHandle;
+use crate::database::Database;
 
 pub type SharedHandle = Arc<Shared>;
 
@@ -18,6 +19,9 @@ pub struct Shared {
     /// The CAN controller handle
     pub controller_handle: Arc<ControllerHandle>,
 
+    /// The database handle
+    pub db: Arc<RwLock<Database>>,
+
     /// The application configuration
     pub config: AppConfig,
 
@@ -29,16 +33,20 @@ pub struct Shared {
 #[derive(Serialize, Debug, Clone, Copy)]
 pub struct ServerStats {}
 
-pub fn new_context(
-    rt: Arc<Runtime>,
-    controller_handle: Arc<ControllerHandle>,
-    config: &AppConfig,
-    notify_shutdown: broadcast::Sender<()>,
-) -> SharedHandle {
-    Arc::new(Shared {
-        rt,
-        controller_handle,
-        config: config.clone(),
-        notify_shutdown,
-    })
+impl Shared {
+    pub fn new(
+        rt_handle: &Arc<Runtime>,
+        controller_handle: Arc<ControllerHandle>,
+        db_handle: &Arc<RwLock<Database>>,
+        config: &AppConfig,
+        notify_shutdown: broadcast::Sender<()>,
+    ) -> Self {
+        Shared {
+            rt: rt_handle.clone(),
+            controller_handle: controller_handle,
+            db: db_handle.clone(),
+            config: config.clone(),
+            notify_shutdown,
+        }
+    }
 }

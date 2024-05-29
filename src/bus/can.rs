@@ -1,11 +1,9 @@
 use futures_util::{SinkExt, StreamExt};
 use log::error;
 
-
 use crate::caniot::{CANIOT_DEVICE_FILTER_ID, CANIOT_DEVICE_FILTER_MASK};
 use socketcan::tokio::CanSocket;
 use socketcan::{CanDataFrame, CanFilter, CanFrame, Socket, SocketOptions};
-
 
 use super::{CanConfig, CanInterfaceError, CanInterfaceTrait, CanStats};
 

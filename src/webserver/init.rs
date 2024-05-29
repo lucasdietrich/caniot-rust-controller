@@ -21,6 +21,7 @@ impl Default for WebserverConfig {
     }
 }
 
+// Serve UI files
 // Copyright Karl Woditsch
 #[get("/<path..>")]
 pub async fn files(path: PathBuf) -> Option<NamedFile> {

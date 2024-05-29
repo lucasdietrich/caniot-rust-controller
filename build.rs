@@ -9,6 +9,8 @@ const PROTO_FILES: &[&str] = &[
     "proto/common.proto",
 ];
 
+const DB_MIGRATION_DIR: &str = "migrations";
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     tonic_build::configure()
         .build_server(true)
@@ -19,6 +21,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     for proto in PROTO_FILES.iter() {
         println!("cargo:rerun-if-changed={}", proto);
     }
+
+    println!("cargo:rerun-if-changed={}", DB_MIGRATION_DIR);
 
     Ok(())
 }

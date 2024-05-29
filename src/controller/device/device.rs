@@ -14,7 +14,8 @@ use super::{
     actions::{DeviceAction, DeviceActionResult},
     context::ProcessContext,
     traits::ActionWrapperTrait,
-    verdict::{ActionVerdict, Verdict}, DeviceControllerWrapperTrait, DeviceError,
+    verdict::{ActionVerdict, Verdict},
+    DeviceControllerWrapperTrait, DeviceError,
 };
 
 #[derive(Serialize, Debug, Clone, Copy, Default)]

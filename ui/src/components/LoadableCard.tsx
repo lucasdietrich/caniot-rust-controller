@@ -29,10 +29,14 @@ function LoadableCard({
 
   if (progress !== undefined && onRefresh !== undefined) {
     extraComponent = (
-      <Button onClick={onRefresh} icon={<Progress type="circle" percent={progress} size={20} />} />
+      <Button
+        disabled={loading}
+        onClick={onRefresh}
+        icon={<Progress type="circle" percent={progress} size={20} />}
+      />
     );
   } else if (onRefresh !== undefined) {
-    extraComponent = <Button onClick={onRefresh} icon={<ReloadOutlined />} />;
+    extraComponent = <Button disabled={loading} onClick={onRefresh} icon={<ReloadOutlined />} />;
   } else if (progress !== undefined) {
     extraComponent = (
       <Progress
