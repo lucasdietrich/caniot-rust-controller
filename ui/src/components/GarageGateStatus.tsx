@@ -1,11 +1,11 @@
 import { Badge, Card, Progress } from "antd";
 import React from "react";
 
-interface IProps {
+interface IGarageGateStatusProps {
   closed: boolean;
 }
 
-function GarageGateStatus({ closed }: IProps) {
+function GarageGateStatus({ closed }: IGarageGateStatusProps) {
   return (
     <>
       <img src="/static/gate.png" height={230} />

@@ -6,13 +6,13 @@ import internalStore from "../store/InternalStore";
 import { Card, Divider, List, Typography, Button } from "antd";
 import { useEffect, useState } from "react";
 import { ReloadOutlined } from "@ant-design/icons";
-import Hello from "../components/Hello";
+import Hello from "../components/HelloComponent";
 
-interface IProps {
+interface IHelloCardProps {
   user_name: string;
 }
 
-function HelloCard({ user_name }: IProps) {
+function HelloCard({ user_name }: IHelloCardProps) {
   const [resp, setHelloResp] = useState<HelloResponse | undefined>(undefined);
   const [refreshData, setRefreshData] = useState<boolean>(false);
 

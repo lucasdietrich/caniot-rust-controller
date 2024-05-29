@@ -9,7 +9,7 @@ import { LoadingOutlined } from "@ant-design/icons";
 
 const SECONDS_TO_CONSIDER_ONLINE = 60;
 
-interface IProps {
+interface IDevicesTableProps {
   devicesList: DevicesList | undefined;
 }
 
@@ -40,7 +40,7 @@ const classColor: { [key: number]: string } = {
   7: "orange",
 };
 
-function DevicesTable({ devicesList }: IProps) {
+function DevicesTable({ devicesList }: IDevicesTableProps) {
   const [nestedDevices, setNestedDevices] = useState<{ [key: number]: Device }>({});
   const [isLoading, setIsLoading] = useState<{ [key: number]: boolean }>({});
 

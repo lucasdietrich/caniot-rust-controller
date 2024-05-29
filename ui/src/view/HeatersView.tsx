@@ -10,18 +10,20 @@ import DeviceStatusCard from "../components/DeviceStatusCard";
 import { Device } from "@caniot-controller/caniot-api-grpc-web/api/ng_devices_pb";
 import devicesStore from "../store/DevicesStore";
 import { DeviceId } from "@caniot-controller/caniot-api-grpc-web/api/common_pb";
+import LoadableCard from "../components/LoadableCard";
 
-interface IProps {
+interface IHeatersViewProps {
   refreshInterval?: number;
 }
 
-function HeatersView({ refreshInterval = 5000 }: IProps) {
+function HeatersView({ refreshInterval = 5000 }: IHeatersViewProps) {
   const [heatersStatus, setHeatersStatus] = useState<Status | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [heatersDevice, setHeatersDevice] = useState<Device | undefined>(undefined);
   const [time, setTime] = useState(Date.now());
 
   useEffect(() => {
+    setLoading(true);
     devicesStore.getHeatersDevice((resp: Device) => {
       setHeatersDevice(resp);
       heatersStore.getStatus(new Empty(), (resp: Status) => {
@@ -60,18 +62,14 @@ function HeatersView({ refreshInterval = 5000 }: IProps) {
     <>
       <Row gutter={16}>
         <Col span={14}>
-          <Card
-            title={
-              <Badge
-                status={heatersStatus?.getPowerStatus() ? "success" : "error"}
-                text={
-                  <Space size="middle">
-                    Chauffage
-                    <Spin spinning={loading} indicator={<LoadingOutlined spin />} />
-                  </Space>
-                }
-              />
-            }
+          <LoadableCard
+            title="Chauffage"
+            status={heatersStatus?.getPowerStatus()}
+            loading={loading}
+            onRefresh={() => {
+              setLoading(true);
+              setTime(Date.now());
+            }}
           >
             <HeaterModeSelector
               label="Chauffage 1"
@@ -97,7 +95,7 @@ function HeatersView({ refreshInterval = 5000 }: IProps) {
               initialMode={heatersStatus?.getHeaterList()[3]}
               onModeChange={onModeChange}
             ></HeaterModeSelector>
-          </Card>
+          </LoadableCard>
         </Col>
         <Col span={10}>
           <DeviceStatusCard title="Chauffage" device={heatersDevice} />

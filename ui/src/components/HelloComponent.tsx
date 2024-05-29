@@ -7,11 +7,11 @@ import { Divider, List, Typography } from "antd";
 import { PropsWithChildren, useEffect, useState } from "react";
 import ListLabelledItem from "./ListLabelledItem";
 
-interface IProps {
+interface IHelloPropsComponent {
   resp: HelloResponse | undefined;
 }
 
-function Hello({ resp, children }: PropsWithChildren<IProps>) {
+function Hello({ resp, children }: PropsWithChildren<IHelloPropsComponent>) {
   if (resp === undefined) {
     return undefined;
   }

@@ -2,13 +2,13 @@ import { LoadingOutlined } from "@ant-design/icons";
 import { Badge, Button, Card, Progress } from "antd";
 import React from "react";
 
-interface IProps {
+interface IGarageDoorStatusProps {
   closed: boolean;
   progress: number;
   onDoorClick?: () => void;
 }
 
-function GarageDoorStatus({ closed, progress, onDoorClick = () => {} }: IProps) {
+function GarageDoorStatus({ closed, progress, onDoorClick = () => {} }: IGarageDoorStatusProps) {
   const handleImageClick = () => {
     onDoorClick();
   };
