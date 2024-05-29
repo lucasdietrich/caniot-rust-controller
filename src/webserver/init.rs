@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use rocket::fs::{FileServer, NamedFile};
+use rocket::fs::NamedFile;
 use rocket::serde::{Deserialize, Serialize};
 use rocket::{log::LogLevel, Build, Config, Rocket};
 
@@ -21,6 +21,24 @@ impl Default for WebserverConfig {
     }
 }
 
+// Copyright Karl Woditsch
+#[get("/<path..>")]
+pub async fn files(path: PathBuf) -> Option<NamedFile> {
+    let www = "ui/dist";
+
+    let mut path = Path::new(www).join(path);
+    if path.is_dir() {
+        path.push("index.html");
+    }
+
+    match NamedFile::open(path).await {
+        Ok(named_file) => Some(named_file),
+        Err(_) => NamedFile::open(Path::new(www).join("index.html"))
+            .await
+            .ok(),
+    }
+}
+
 pub fn rocket(shared: SharedHandle) -> Rocket<Build> {
     let config = &shared.config.web;
 
@@ -35,7 +53,7 @@ pub fn rocket(shared: SharedHandle) -> Rocket<Build> {
 
     let rocket = rocket::custom(config)
         .manage(shared)
-        .mount("/", FileServer::from("ui/dist"));
+        .mount("/", routes![files]);
 
     rocket
 }
