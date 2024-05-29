@@ -20,7 +20,7 @@ clean:
 target:
 	./scripts/build.sh build debug
 
-deploy: deploy_config
+deploy: deploy_config deploy_static
 	./scripts/build.sh build debug
 	scp target/armv7-unknown-linux-gnueabihf/debug/caniot-rust-controller rpi:/home/root/rust-controller/caniot-rust-controller
 
