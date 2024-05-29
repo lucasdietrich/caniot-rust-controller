@@ -3,7 +3,7 @@
 all: build
 
 dependencies:
-	yarn install
+	npm install
 
 build: dependencies
 	./proto-gen-grpc-web.sh

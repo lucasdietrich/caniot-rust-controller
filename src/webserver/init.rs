@@ -21,7 +21,7 @@ impl Default for WebserverConfig {
     }
 }
 
-// Copyright Karl Woditsch
+// Copyright kirauks
 #[get("/<path..>")]
 pub async fn files(path: PathBuf) -> Option<NamedFile> {
     let www = "ui/dist";
