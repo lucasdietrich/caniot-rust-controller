@@ -1,13 +1,17 @@
 use std::sync::Arc;
 
-use tokio::{runtime::Runtime, sync::broadcast::Sender};
+use tokio::{
+    runtime::Runtime,
+    sync::{broadcast::Sender, RwLock},
+};
 
 use super::Controller;
-use crate::{bus::CanInterfaceTrait, config::AppConfig, shutdown::Shutdown};
+use crate::{bus::CanInterfaceTrait, config::AppConfig, database::Database, shutdown::Shutdown};
 
 pub fn init<IF: CanInterfaceTrait>(
-    config: &AppConfig,
     rt: &Arc<Runtime>,
+    config: &AppConfig,
+    db: &Arc<RwLock<Database>>,
     notify_shutdown: &Sender<()>,
 ) -> Controller<IF> {
     let can_iface = rt
@@ -18,7 +22,6 @@ pub fn init<IF: CanInterfaceTrait>(
         can_iface,
         config.caniot.clone(),
         Shutdown::new(notify_shutdown.subscribe()),
-        rt.clone(),
     )
     .expect("Failed to create controller")
 }

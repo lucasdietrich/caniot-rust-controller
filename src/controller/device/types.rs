@@ -2,8 +2,6 @@ use thiserror::Error;
 
 use crate::caniot;
 
-
-
 #[derive(Error, Debug)]
 pub enum DeviceError {
     #[error("Invalid frame")]

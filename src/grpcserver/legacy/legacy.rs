@@ -8,10 +8,7 @@ pub mod model {
     tonic::include_proto!("legacy");
 }
 
-use crate::{
-    controller::{GarageDoorCommand},
-    shared::SharedHandle,
-};
+use crate::{controller::GarageDoorCommand, shared::SharedHandle};
 
 #[derive(Debug)]
 pub struct LegacyCaniotController {

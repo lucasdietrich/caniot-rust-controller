@@ -1,6 +1,9 @@
+use log::info;
 use serde::{Deserialize, Serialize};
-use sqlx::postgres::{PgPoolOptions};
+use sqlx::postgres::PgPoolOptions;
 use sqlx::{ConnectOptions, PgPool};
+
+use super::Settings;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DatabaseConfig {
@@ -15,8 +18,9 @@ impl Default for DatabaseConfig {
     }
 }
 
+#[derive(Debug)]
 pub struct Database {
-    pool: PgPool,
+    pub pool: PgPool,
 }
 
 impl Database {
@@ -27,5 +31,17 @@ impl Database {
             .await?;
 
         Ok(Database { pool })
+    }
+
+    pub async fn initialize_tables(&self) -> Result<(), sqlx::Error> {
+        info!("Initializing database tables");
+
+        sqlx::migrate!("./migrations").run(&self.pool).await?;
+
+        Ok(())
+    }
+
+    pub fn get_settings(&self) -> Settings {
+        Settings::new(&self.pool)
     }
 }

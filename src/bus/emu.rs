@@ -5,7 +5,7 @@ use crate::caniot::{
     emu::{self, emu_pool2_realistic_add_devices_to_iface},
 };
 
-use socketcan::{CanDataFrame, CanFrame};
+use socketcan::CanDataFrame;
 use tokio::time::sleep;
 
 use super::{CanConfig, CanInterfaceError, CanInterfaceTrait, CanStats};
