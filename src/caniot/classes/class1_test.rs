@@ -1,4 +1,6 @@
-use crate::caniot::Temperature;
+use num::FromPrimitive;
+
+use crate::caniot::{Temperature, Xps};
 
 use super::class1;
 
@@ -36,5 +38,24 @@ fn telemetry() {
             let deser = deser.unwrap();
             assert_eq!(deser.temp_out[i], *temp);
         }
+    }
+}
+
+#[test]
+fn command() {
+    let mut cmd = class1::Command::default();
+    for i in 0..class1::CLASS1_IO_COUNT {
+        FromPrimitive::from_u8((i & 0x7) as u8).map(|x| cmd.ios[i] = x);
+    }
+
+    let ser: Vec<u8> = cmd.into();
+    assert_eq!(ser.len(), 7);
+
+    let deser = class1::Command::try_from(ser.as_slice());
+    assert_eq!(deser.is_ok(), true);
+
+    let deser = deser.unwrap();
+    for i in 0..class1::CLASS1_IO_COUNT {
+        assert_eq!(deser.ios[i], cmd.ios[i]);
     }
 }

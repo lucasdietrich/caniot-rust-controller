@@ -13,7 +13,7 @@ fn get_tokio_rt() -> tokio::runtime::Runtime {
     tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
-        .unwrap()
+        .expect("Failed to create Tokio runtime")
 }
 
 #[cfg(feature = "emu")]
@@ -33,7 +33,7 @@ pub fn run_controller() {
 
     let database = rt
         .block_on(Database::new(&config.database.connection_string))
-        .unwrap();
+        .expect("Failed to connect to database");
 
     let controller = controller::init::<IFaceType>(&config, &rt, &notify_shutdown);
 

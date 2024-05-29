@@ -1,10 +1,11 @@
 use serde::Serialize;
+use strum::{EnumIter, IntoEnumIterator};
 
 use crate::caniot::{ProtocolError, Temperature, Xps};
 
 use super::traits::{Class, ClassCommandTrait, ClassTelemetryTrait};
 
-const CLASS1_IO_COUNT: usize = 19;
+pub const CLASS1_IO_COUNT: usize = 19;
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Serialize)]
 pub struct Telemetry {
@@ -110,6 +111,7 @@ impl Into<Vec<u8>> for Telemetry {
 }
 
 #[repr(u8)]
+#[derive(EnumIter)]
 pub enum Class1CommandFields {
     Poc0,
     Poc1,
@@ -132,6 +134,7 @@ pub enum Class1CommandFields {
     Ee1,
 }
 
+#[derive(Default, Clone, Copy, PartialEq, Serialize)]
 pub struct Command {
     pub ios: [Xps; CLASS1_IO_COUNT],
 }
@@ -150,31 +153,15 @@ impl Into<Vec<u8>> for Command {
 impl TryFrom<&[u8]> for Command {
     type Error = ProtocolError;
 
+    // Convert a Class1 command serialized payload into a Command struct
     fn try_from(payload: &[u8]) -> Result<Self, ProtocolError> {
         if payload.len() >= 7 {
             Ok(Command {
-                ios: [
-                    // TODO improve this
-                    Xps::get_at(payload, Class1CommandFields::Pb0 as usize).unwrap(),
-                    Xps::get_at(payload, Class1CommandFields::Poc0 as usize).unwrap(),
-                    Xps::get_at(payload, Class1CommandFields::Poc1 as usize).unwrap(),
-                    Xps::get_at(payload, Class1CommandFields::Poc2 as usize).unwrap(),
-                    Xps::get_at(payload, Class1CommandFields::Poc3 as usize).unwrap(),
-                    Xps::get_at(payload, Class1CommandFields::Pd0 as usize).unwrap(),
-                    Xps::get_at(payload, Class1CommandFields::Pd1 as usize).unwrap(),
-                    Xps::get_at(payload, Class1CommandFields::Pd2 as usize).unwrap(),
-                    Xps::get_at(payload, Class1CommandFields::Pd3 as usize).unwrap(),
-                    Xps::get_at(payload, Class1CommandFields::Eio0 as usize).unwrap(),
-                    Xps::get_at(payload, Class1CommandFields::Eio1 as usize).unwrap(),
-                    Xps::get_at(payload, Class1CommandFields::Eio2 as usize).unwrap(),
-                    Xps::get_at(payload, Class1CommandFields::Eio3 as usize).unwrap(),
-                    Xps::get_at(payload, Class1CommandFields::Eio4 as usize).unwrap(),
-                    Xps::get_at(payload, Class1CommandFields::Eio5 as usize).unwrap(),
-                    Xps::get_at(payload, Class1CommandFields::Eio6 as usize).unwrap(),
-                    Xps::get_at(payload, Class1CommandFields::Eio7 as usize).unwrap(),
-                    Xps::get_at(payload, Class1CommandFields::Ee0 as usize).unwrap(),
-                    Xps::get_at(payload, Class1CommandFields::Ee1 as usize).unwrap(),
-                ],
+                ios: Class1CommandFields::iter()
+                    .map(|field| Xps::get_at(payload, field as usize).unwrap_or_default())
+                    .collect::<Vec<Xps>>()
+                    .try_into()
+                    .unwrap(),
             })
         } else {
             Err(ProtocolError::PayloadDecodeError)

@@ -47,22 +47,59 @@ fn get_xps() {
         assert_eq!(xps, expected);
     }
 
-    get_cmp(&[0b0000_0000], 1, Xps::None);
-    get_cmp(&[0b0000_0111], 0, Xps::PulseCancel);
-    get_cmp(&[0b0011_1000], 1, Xps::PulseCancel);
-    get_cmp(&[0b1100_0000, 0b0000_0001], 2, Xps::PulseCancel);
-    get_cmp(&[0b0000_0000, 0b0000_1110], 3, Xps::PulseCancel);
-    get_cmp(&[0b0000_0000, 0b0111_0000], 4, Xps::PulseCancel);
-    get_cmp(
-        &[0b0000_0000, 0b1000_0000, 0b0000_0011],
-        5,
-        Xps::PulseCancel,
-    );
-    get_cmp(
-        &[0b0000_0000, 0b0000_0000, 0b0001_1100],
-        6,
-        Xps::PulseCancel,
-    );
+    let pl = &[0b0000_0000];
+    get_cmp(pl, 0, Xps::None);
+    get_cmp(pl, 1, Xps::None);
+    get_cmp(pl, 2, Xps::None);
+
+    let pl = &[0b0000_0111];
+    get_cmp(pl, 0, Xps::PulseCancel);
+    get_cmp(pl, 1, Xps::None);
+    get_cmp(pl, 2, Xps::None);
+
+    let pl = &[0b0011_1000];
+    get_cmp(pl, 0, Xps::None);
+    get_cmp(pl, 1, Xps::PulseCancel);
+    get_cmp(pl, 2, Xps::None);
+
+    let pl = &[0b1100_0000, 0b0000_0001];
+    get_cmp(pl, 0, Xps::None);
+    get_cmp(pl, 1, Xps::None);
+    get_cmp(pl, 2, Xps::PulseCancel);
+    get_cmp(pl, 3, Xps::None);
+    get_cmp(pl, 4, Xps::None);
+
+    let pl = &[0b0000_0000, 0b0000_1110];
+    get_cmp(pl, 0, Xps::None);
+    get_cmp(pl, 1, Xps::None);
+    get_cmp(pl, 2, Xps::None);
+    get_cmp(pl, 3, Xps::PulseCancel);
+    get_cmp(pl, 4, Xps::None);
+
+    let pl = &[0b0000_0000, 0b0111_0000];
+    get_cmp(pl, 0, Xps::None);
+    get_cmp(pl, 1, Xps::None);
+    get_cmp(pl, 2, Xps::None);
+    get_cmp(pl, 3, Xps::None);
+    get_cmp(pl, 4, Xps::PulseCancel);
+
+    let pl = &[0b0000_0000, 0b1000_0000, 0b0000_0011];
+    get_cmp(pl, 0, Xps::None);
+    get_cmp(pl, 1, Xps::None);
+    get_cmp(pl, 2, Xps::None);
+    get_cmp(pl, 3, Xps::None);
+    get_cmp(pl, 4, Xps::None);
+    get_cmp(pl, 5, Xps::PulseCancel);
+
+    let pl = &[0b0000_0000, 0b0000_0000, 0b0001_1100];
+    get_cmp(pl, 0, Xps::None);
+    get_cmp(pl, 1, Xps::None);
+    get_cmp(pl, 2, Xps::None);
+    get_cmp(pl, 3, Xps::None);
+    get_cmp(pl, 4, Xps::None);
+    get_cmp(pl, 5, Xps::None);
+    get_cmp(pl, 6, Xps::PulseCancel);
+
     get_cmp(
         &[0b0000_0000, 0b0000_0000, 0b1110_0000],
         7,

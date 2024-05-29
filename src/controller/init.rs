@@ -10,7 +10,9 @@ pub fn init<IF: CanInterfaceTrait>(
     rt: &Arc<Runtime>,
     notify_shutdown: &Sender<()>,
 ) -> Controller<IF> {
-    let can_iface = rt.block_on(IF::new(&config.can)).unwrap();
+    let can_iface = rt
+        .block_on(IF::new(&config.can))
+        .expect("Failed to create CAN interface");
 
     Controller::new(
         can_iface,
@@ -18,5 +20,5 @@ pub fn init<IF: CanInterfaceTrait>(
         Shutdown::new(notify_shutdown.subscribe()),
         rt.clone(),
     )
-    .unwrap()
+    .expect("Failed to create controller")
 }

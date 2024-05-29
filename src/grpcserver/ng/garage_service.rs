@@ -1,6 +1,5 @@
 use garage::GarageDoorCommand;
 
-
 use tonic::{Request, Response, Result, Status};
 
 use crate::{controller::garage, shared::SharedHandle};
@@ -76,7 +75,7 @@ impl GarageService for NgGarage {
         req: Request<m::CommandMessage>,
     ) -> Result<Response<m::Status>, Status> {
         let api = self.shared.controller_handle.clone();
-        let req = m::Command::try_from(req.into_inner().command).unwrap();
+        let req = m::Command::try_from(req.into_inner().command).expect("Invalid Garage Command");
         let command = match req {
             m::Command::None => GarageDoorCommand::default(),
             m::Command::Left => GarageDoorCommand::OPEN_LEFT,

@@ -365,7 +365,9 @@ pub fn parse_error_payload(
     let len = payload.len();
     let error_code: Option<ErrorCode> = if len >= ERROR_CODE_LEN {
         ErrorCode::from_i32(i32::from_le_bytes(
-            payload[0..ERROR_CODE_LEN].try_into().unwrap(),
+            payload[0..ERROR_CODE_LEN]
+                .try_into()
+                .expect("Invalid error code"),
         ))
     } else {
         None
@@ -402,8 +404,12 @@ impl TryFrom<CanDataFrame> for Frame<ResponseData> {
                         payload,
                     },
                     Type::Attribute => ResponseData::Attribute {
-                        key: u16::from_le_bytes(payload[0..2].try_into().unwrap()),
-                        value: u32::from_le_bytes(payload[2..6].try_into().unwrap()),
+                        key: u16::from_le_bytes(
+                            payload[0..2].try_into().expect("Invalid attr key"),
+                        ),
+                        value: u32::from_le_bytes(
+                            payload[2..6].try_into().expect("Invalid attr value"),
+                        ),
                     },
                 }
             } else {
@@ -449,11 +455,13 @@ impl TryFrom<CanDataFrame> for Frame<RequestData> {
                     payload,
                 },
                 (Type::Attribute, Action::Read) => RequestData::AttributeRead {
-                    key: u16::from_le_bytes(payload[0..2].try_into().unwrap()),
+                    key: u16::from_le_bytes(payload[0..2].try_into().expect("Invalid attr key")),
                 },
                 (Type::Attribute, Action::Write) => RequestData::AttributeWrite {
-                    key: u16::from_le_bytes(payload[0..2].try_into().unwrap()),
-                    value: u32::from_le_bytes(payload[2..6].try_into().unwrap()),
+                    key: u16::from_le_bytes(payload[0..2].try_into().expect("Invalid attr key")),
+                    value: u32::from_le_bytes(
+                        payload[2..6].try_into().expect("Invalid attr value"),
+                    ),
                 },
             }
         } else {

@@ -127,7 +127,7 @@ impl TryFrom<Temperature> for f32 {
     }
 }
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, FromPrimitive)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, FromPrimitive, Serialize)]
 pub enum Xps {
     #[default]
     None = 0,
@@ -143,15 +143,15 @@ pub enum Xps {
 impl Xps {
     pub fn set_at(&self, data: &mut [u8], position: usize) -> Result<(), ProtocolError> {
         let len = data.len();
-        let msb_index = position * 3;
-        let msb_offset = msb_index & 0x7;
-        let msb_rem_size = 8 - msb_offset;
-        let byte_n = msb_index >> 3;
+        let lsb_index = position * 3;
+        let lsb_offset = lsb_index & 0x7;
+        let lsb_available_size = 8 - lsb_offset;
+        let byte_n = lsb_index >> 3;
         let xps = *self as u8;
-        data[byte_n] |= (xps << msb_offset) as u8;
+        data[byte_n] |= (xps << lsb_offset) as u8;
 
-        if msb_rem_size < 3 && (byte_n + 1) < len {
-            data[byte_n + 1] |= xps >> msb_rem_size;
+        if lsb_available_size < 3 && (byte_n + 1) < len {
+            data[byte_n + 1] |= xps >> lsb_available_size;
         }
 
         Ok(())
@@ -159,14 +159,16 @@ impl Xps {
 
     pub fn get_at(data: &[u8], position: usize) -> Result<Self, ProtocolError> {
         let len = data.len();
-        let msb_index = position * 3;
-        let msb_offset = msb_index & 0x7;
-        let msb_rem_size = 8 - msb_offset;
-        let byte_n = msb_index >> 3;
-        let mut xps = (data[byte_n] >> msb_offset) as u8;
+        let lsb_index = position * 3;
+        let lsb_offset = lsb_index & 0x7;
+        let lsb_available_size = 8 - lsb_offset;
+        let byte_n = lsb_index >> 3;
+        let mut xps = ((data[byte_n] >> lsb_offset) & 0x7) as u8;
 
-        if msb_rem_size < 3 && (byte_n + 1) < len {
-            xps |= data[byte_n + 1] << msb_rem_size;
+        if lsb_available_size < 3 && (byte_n + 1) < len {
+            let msb_remaining_size = 3 - lsb_available_size;
+            let mask = 0xFF >> (8 - msb_remaining_size);
+            xps |= (data[byte_n + 1] & mask) << lsb_available_size;
         }
 
         match Xps::from_u8(xps) {

@@ -47,7 +47,7 @@ pub fn rocket(shared: SharedHandle) -> Rocket<Build> {
         log_level: LogLevel::Normal, // LogLevel::Critical
         cli_colors: true,
         port: config.port,
-        address: config.listen.parse().unwrap(),
+        address: config.listen.parse().expect("Invalid address"),
         ..Default::default()
     };
 
