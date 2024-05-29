@@ -1,6 +1,6 @@
 #!/bin/bash
 
-NAME="caniot-rust-controller"
+NAME="caniot-controller"
 TARGET="rpi"
 TARGET_ARCH="armv7-unknown-linux-gnueabihf"
 

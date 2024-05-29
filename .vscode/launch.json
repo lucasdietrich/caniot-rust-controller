@@ -11,12 +11,12 @@
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=caniot-rust-controller",
-                    "--package=caniot-rust-controller",
+                    "--bin=caniot-controller",
+                    "--package=caniot-controller",
                     "--features=emu"
                 ],
                 "filter": {
-                    "name": "caniot-rust-controller",
+                    "name": "caniot-controller",
                     "kind": "bin"
                 }
             },
@@ -39,7 +39,7 @@
             "name": "cppgdb Target",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceRoot}/target/armv7-unknown-linux-gnueabihf/debug/caniot-rust-controller",
+            "program": "${workspaceRoot}/target/armv7-unknown-linux-gnueabihf/debug/caniot-controller",
             "args": [],
             "stopAtEntry": true,
             "cwd": "${workspaceFolder}",
@@ -70,11 +70,11 @@
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=caniot-rust-controller",
-                    "--package=caniot-rust-controller"
+                    "--bin=caniot-controller",
+                    "--package=caniot-controller"
                 ],
                 "filter": {
-                    "name": "caniot-rust-controller",
+                    "name": "caniot-controller",
                     "kind": "bin"
                 }
             },
@@ -86,7 +86,7 @@
             "type": "lldb",
             "request": "custom",
             "targetCreateCommands": [
-                "target create ${workspaceFolder}/target/armv7-unknown-linux-gnueabihf/debug/caniot-rust-controller"
+                "target create ${workspaceFolder}/target/armv7-unknown-linux-gnueabihf/debug/caniot-controller"
             ],
             "processCreateCommands": [
                 "gdb-remote 192.168.10.215:8989"

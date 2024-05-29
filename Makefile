@@ -22,7 +22,7 @@ target:
 
 deploy: deploy_config deploy_static
 	./scripts/build.sh build debug
-	scp target/armv7-unknown-linux-gnueabihf/debug/caniot-rust-controller rpi:/home/root/rust-controller/caniot-rust-controller
+	scp target/armv7-unknown-linux-gnueabihf/debug/caniot-controller rpi:/home/root/rust-controller/caniot-controller
 
 deploy_static:
 	ssh rpi "mkdir -p /home/root/rust-controller/ui/dist"
@@ -30,7 +30,7 @@ deploy_static:
 
 deploy_release: deploy_config deploy_static
 	./scripts/build.sh build release
-	scp target/armv7-unknown-linux-gnueabihf/release/caniot-rust-controller rpi:/home/root/rust-controller/caniot-rust-controller
+	scp target/armv7-unknown-linux-gnueabihf/release/caniot-controller rpi:/home/root/rust-controller/caniot-controller
 
 deploy_config:
 	ssh rpi "mkdir -p /home/root/rust-controller"

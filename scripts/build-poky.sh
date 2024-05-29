@@ -1,6 +1,6 @@
 #!/bin/bash
 
-NAME="caniot-rust-controller"
+NAME="caniot-controller"
 TARGET="rpi"
 POKY_ENV="/opt/hypirl/1.0/environment-setup-cortexa7t2hf-neon-vfpv4-poky-linux-gnueabi"
 TARGET_ARCH="armv7-poky-linux-gnueabihf"
