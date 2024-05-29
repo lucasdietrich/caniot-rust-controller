@@ -8,12 +8,12 @@ import LoadableCard from "./LoadableCard";
 interface IDeviceStatusCardProps {
   title?: string;
   device: Device | undefined;
-  progressToNextRefresh?: number;
+  progress?: number;
 }
 
 const SECONDS_TO_CONSIDER_ONLINE = 60;
 
-function DeviceStatusCard({ title, device, progressToNextRefresh }: IDeviceStatusCardProps) {
+function DeviceStatusCard({ title, device, progress }: IDeviceStatusCardProps) {
   if (device === undefined) {
     return undefined;
   }
