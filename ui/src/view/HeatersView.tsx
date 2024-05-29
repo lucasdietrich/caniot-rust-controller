@@ -64,7 +64,7 @@ function HeatersView({ refreshInterval = 5000 }: IHeatersViewProps) {
         <Col span={14}>
           <LoadableCard
             title="Chauffage"
-            status={heatersStatus?.getPowerStatus()}
+            status={heatersStatus !== undefined && heatersStatus?.getPowerStatus()}
             loading={loading}
             onRefresh={() => {
               setLoading(true);

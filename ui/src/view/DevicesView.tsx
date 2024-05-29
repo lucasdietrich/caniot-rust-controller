@@ -5,6 +5,7 @@ import { Empty } from "google-protobuf/google/protobuf/empty_pb";
 import { DevicesList } from "@caniot-controller/caniot-api-grpc-web/api/ng_devices_pb";
 import devicesStore from "../store/DevicesStore";
 import { LoadingOutlined, SyncOutlined } from "@ant-design/icons";
+import LoadableCard from "../components/LoadableCard";
 
 function DevicesView() {
   const [devicesList, setDevicesList] = useState<DevicesList | undefined>(undefined);
@@ -21,36 +22,23 @@ function DevicesView() {
 
   return (
     <Space direction="vertical" size="middle" style={{ display: "flex" }}>
-      <Card
+      <LoadableCard
         title={
-          <>
-            <span>
-              Devices
-              {devicesList?.getDevicesList().length
-                ? " (" + devicesList?.getDevicesList().length + ")"
-                : ""}
-              <Spin spinning={loading} indicator={<LoadingOutlined spin />} />
-            </span>
-
-            <Button
-              type="primary"
-              icon={<SyncOutlined />}
-              size="small"
-              style={{
-                position: "absolute",
-                right: 20,
-              }}
-              onClick={() => {
-                setLoading(true);
-                setRefreshData(!refreshData);
-              }}
-            />
-          </>
+          <span>
+            Devices
+            {devicesList?.getDevicesList().length
+              ? " (" + devicesList?.getDevicesList().length + ")"
+              : ""}
+          </span>
         }
-        size="small"
+        loading={loading}
+        onRefresh={() => {
+          setLoading(true);
+          setRefreshData(!refreshData);
+        }}
       >
         <DevicesTable devicesList={devicesList} />
-      </Card>
+      </LoadableCard>
     </Space>
   );
 }
