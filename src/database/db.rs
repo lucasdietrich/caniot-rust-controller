@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{ConnectOptions, PgPool};
 
-use super::Settings;
+use super::SettingsHandle;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DatabaseConfig {
@@ -41,7 +41,7 @@ impl Database {
         Ok(())
     }
 
-    pub fn get_settings(&self) -> Settings {
-        Settings::new(&self.pool)
+    pub fn get_settings_handle(&self) -> SettingsHandle {
+        SettingsHandle::new(&self.pool)
     }
 }

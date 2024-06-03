@@ -2,9 +2,9 @@ use sqlx::PgPool;
 
 use super::Database;
 
-pub struct Settings<'a>(&'a PgPool);
+pub struct SettingsHandle<'a>(&'a PgPool);
 
-impl<'a> Settings<'a> {
+impl<'a> SettingsHandle<'a> {
     pub fn new(pool: &'a PgPool) -> Self {
         Self(pool)
     }
