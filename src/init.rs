@@ -10,6 +10,16 @@ use crate::{bus, config, controller, logger, webserver};
 
 use crate::grpcserver;
 
+use clap::Parser;
+
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    /// Path to the configuration file
+    #[arg(short, long)]
+    config: Option<String>,
+}
+
 fn get_tokio_rt() -> tokio::runtime::Runtime {
     tokio::runtime::Builder::new_multi_thread()
         .enable_all()
@@ -20,8 +30,12 @@ fn get_tokio_rt() -> tokio::runtime::Runtime {
 pub fn run_controller() {
     logger::init_logger();
 
-    let config = config::load_config();
-    println!("AppConfig: {:#?}", config);
+    // Parse command line arguments
+    let args = Args::parse();
+
+    // Load configuration
+    let config_file = args.config.as_deref().map(|x| x.trim());
+    let config = config::load_config(config_file);
 
     let rt = get_tokio_rt();
     let rt = Arc::new(rt);
@@ -36,16 +50,7 @@ pub fn run_controller() {
 
     // read settings from database
     let settings_lg = rt.block_on(database_handle.read());
-    let settings = settings_lg.get_settings();
-    let iface_type = if let Some(iface_type) = rt.block_on(settings.get("iface_type")) {
-        iface_type
-    } else {
-        rt.block_on(settings.set("iface_type", "can"))
-            .expect("Failed to set iface_type");
-        "can".to_string()
-    };
-    info!("iface_type: {}", iface_type);
-    drop(settings_lg);
+    let settings = settings_lg.get_settings_handle();
 
     let controller =
         controller::init::<bus::IFaceType>(&rt, &config, &database_handle, &notify_shutdown);
