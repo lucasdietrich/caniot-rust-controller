@@ -3,7 +3,7 @@ use tonic::{Request, Response, Result, Status};
 use crate::{
     caniot,
     controller::{
-        auto_attach::{DEVICE_GARAGE_DID, DEVICE_HEATERS_DID},
+        auto_attach::{DEVICE_GARAGE_DID, DEVICE_HEATERS_DID, DEVICE_OUTDOOR_ALARM_DID},
         DeviceInfos,
     },
     grpcserver::datetime_to_prost_timestamp,
@@ -115,6 +115,7 @@ impl Into<m::Device> for &DeviceInfos {
                 attribute_rx: self.stats.attribute_rx as u32,
                 attribute_tx: self.stats.attribute_tx as u32,
             }),
+            board_temp: self.board_temperature,
             measures: self.measures.map(|m| m.into()),
             ..Default::default()
         }
@@ -158,6 +159,14 @@ impl CaniotDevicesService for NgDevices {
         _request: Request<()>,
     ) -> Result<Response<m::Device>, Status> {
         self.get_device_by_did(caniot::DeviceId::from_u8(DEVICE_GARAGE_DID))
+            .await
+    }
+
+    async fn get_outdoor_alarm_device(
+        &self,
+        _request: Request<()>,
+    ) -> Result<Response<m::Device>, Status> {
+        self.get_device_by_did(caniot::DeviceId::from_u8(DEVICE_OUTDOOR_ALARM_DID))
             .await
     }
 }

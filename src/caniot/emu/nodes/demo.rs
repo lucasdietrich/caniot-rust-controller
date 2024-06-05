@@ -5,9 +5,9 @@ pub struct DemoController {
     status: bool,
 }
 
-impl DemoController {
-    pub fn new() -> Self {
-        Self { status: true }
+impl Default for DemoController {
+    fn default() -> Self {
+        DemoController { status: true }
     }
 }
 

@@ -22,8 +22,8 @@ class GarageStore extends EventEmitter {
     this.client = new GarageServiceClient(getApiUrl());
   }
 
-  getState = (req: Empty, callbackFunc: (resp: Status) => void) => {
-    this.client.getState(req, null, (err, resp) => {
+  getState = (callbackFunc: (resp: Status) => void) => {
+    this.client.getState(new Empty(), null, (err, resp) => {
       if (err !== null) {
         HandleError(err);
         return;

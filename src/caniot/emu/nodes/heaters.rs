@@ -8,8 +8,8 @@ pub struct HeatersController {
     power_status: bool,
 }
 
-impl HeatersController {
-    pub fn new() -> Self {
+impl Default for HeatersController {
+    fn default() -> Self {
         Self {
             modes: [
                 HeatingMode::Stop,

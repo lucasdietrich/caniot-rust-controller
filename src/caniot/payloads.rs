@@ -140,6 +140,13 @@ impl BlcClassTelemetry {
             _ => None,
         }
     }
+
+    pub fn get_board_temperature(&self) -> Option<f32> {
+        match self {
+            BlcClassTelemetry::Class0(telemetry) => telemetry.temp_in.to_celsius(),
+            BlcClassTelemetry::Class1(telemetry) => telemetry.temp_in.to_celsius(),
+        }
+    }
 }
 
 impl Into<Vec<u8>> for BlcClassTelemetry {

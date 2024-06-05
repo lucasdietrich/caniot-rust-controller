@@ -9,8 +9,8 @@ use crate::{
     grpcserver::{
         legacy::get_legacy_caniot_controller,
         ng::{
-            get_ng_controller_server, get_ng_devices_server, get_ng_garage_server,
-            get_ng_heaters_server,
+            get_ng_alarms_server, get_ng_controller_server, get_ng_devices_server,
+            get_ng_garage_server, get_ng_heaters_server,
         },
     },
     shared::SharedHandle,
@@ -45,6 +45,7 @@ pub async fn grpc_server(shared: SharedHandle) -> Result<(), GrpcServerInitError
     let ng_internal = get_ng_internal_server(shared.clone());
     let ng_devices = get_ng_devices_server(shared.clone());
     let ng_heaters = get_ng_heaters_server(shared.clone());
+    let ng_alarms = get_ng_alarms_server(shared.clone());
     let ng_garage = get_ng_garage_server(shared.clone());
     let legacy_controller = get_legacy_caniot_controller(shared.clone());
 
@@ -63,6 +64,7 @@ pub async fn grpc_server(shared: SharedHandle) -> Result<(), GrpcServerInitError
         .add_service(tonic_web::enable(ng_devices))
         .add_service(tonic_web::enable(ng_heaters))
         .add_service(tonic_web::enable(ng_garage))
+        .add_service(tonic_web::enable(ng_alarms))
         .add_service(tonic_web::enable(legacy_controller))
         .serve_with_shutdown(addr, shutdown_future)
         .await?;

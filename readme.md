@@ -83,6 +83,18 @@ Run with
 - Remove `unwrap`
   - At least change them to `expect` with a meaningful message
 - Add stats for GRPC API and other services
+- transform `BlcClassTelemetry` to trait in order to have:
+  - problems: how to know which class to use? as it is not in the ResponseData -> add get_class() method to the controller
+    ```rust
+        fn handle_frame(
+            &mut self,
+            frame: &caniot::ResponseData,
+            _ctx: &mut ProcessContext,
+        ) -> Result<crate::controller::Verdict, DeviceError> {
+            let telemetry: class0::Telemetry = frame.as::<class0::Telemetry>()?;
+        }
+    ```
+- Handle events
 
 ```
 device_temperature{medium="CAN",mac="16",device="GarageDoorController",sensor="EMBEDDED",room="",collector="pycaniotcontroller"} 19.00

@@ -85,16 +85,6 @@ pub struct GarageController {
     gate_closed: bool, // IN2
 }
 
-impl GarageController {
-    pub fn new() -> Self {
-        Self {
-            left_door: Door::default(),
-            right_door: Door::default(),
-            gate_closed: true,
-        }
-    }
-}
-
 impl Behavior for GarageController {
     fn on_command(&mut self, endpoint: &ct::Endpoint, payload: Vec<u8>) -> Option<ct::ErrorCode> {
         if endpoint == &ct::Endpoint::BoardControl {

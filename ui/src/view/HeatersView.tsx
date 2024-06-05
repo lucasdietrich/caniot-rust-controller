@@ -26,7 +26,7 @@ function HeatersView({ refreshInterval = 5000 }: IHeatersViewProps) {
     setLoading(true);
     devicesStore.getHeatersDevice((resp: Device) => {
       setHeatersDevice(resp);
-      heatersStore.getStatus(new Empty(), (resp: Status) => {
+      heatersStore.getStatus((resp: Status) => {
         setHeatersStatus(resp);
         setLoading(false);
       });
@@ -63,7 +63,7 @@ function HeatersView({ refreshInterval = 5000 }: IHeatersViewProps) {
       <Row gutter={16}>
         <Col span={14}>
           <LoadableCard
-            title="Chauffage"
+            title="Chauffage (lucas)"
             status={heatersStatus !== undefined && heatersStatus?.getPowerStatus()}
             loading={loading}
             onRefresh={() => {

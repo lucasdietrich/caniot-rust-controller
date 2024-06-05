@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import ListLabelledItem from "./ListLabelledItem";
 import { Timestamp } from "google-protobuf/google/protobuf/timestamp_pb";
 import LoadableCard from "./LoadableCard";
+import LastSeenBadge from "./LastSeenBadge";
 
 interface IDeviceStatusCardProps {
   title?: string;
@@ -32,11 +33,6 @@ interface IDeviceCardContentProps {
 }
 
 function DeviceStatusCardContent({ device: resp }: IDeviceCardContentProps) {
-  let lastseen: Timestamp | undefined = resp.getLastseen();
-  let lastseen_fmt = lastseen?.toDate().toLocaleString();
-
-  const isOnline = resp.getLastseenfromnow() < SECONDS_TO_CONSIDER_ONLINE;
-
   let tempIn = "N/A",
     tempExt0 = "N/A",
     tempExt1 = "N/A",
@@ -46,6 +42,8 @@ function DeviceStatusCardContent({ device: resp }: IDeviceCardContentProps) {
     hasTempExt2 = false,
     inputs,
     ios_count = 0;
+
+  let tempBoard = resp.hasBoardTemp() ? resp.getBoardTemp().toFixed(2) : "N/A";
 
   if (resp.hasClass0()) {
     const c0 = resp.getClass0();
@@ -114,15 +112,16 @@ function DeviceStatusCardContent({ device: resp }: IDeviceCardContentProps) {
   return (
     <List size="small">
       <ListLabelledItem label="Status">
-        <Badge
-          status={isOnline ? "success" : "error"}
-          text={lastseen_fmt + " (actif il y a " + resp.getLastseenfromnow() + "s)"}
+        <LastSeenBadge
+          lastSeenDate={resp.getLastseen()?.toDate()}
+          lastSeenValue={resp.getLastseenfromnow()}
+          secondsToConsiderOnline={SECONDS_TO_CONSIDER_ONLINE}
         />
       </ListLabelledItem>
       <ListLabelledItem label="Contrôleur">
         {resp?.getControllerAttached() ? resp.getControllerName() : "N/A"}
       </ListLabelledItem>
-      <ListLabelledItem label="Temp carte">{tempIn} °C</ListLabelledItem>
+      <ListLabelledItem label="Temp carte">{tempBoard} °C</ListLabelledItem>
       <ListLabelledItem label="Temp extérieure (sens 0)">{tempExt0} °C</ListLabelledItem>
       {hasTempExt1 && (
         <ListLabelledItem label="Temp extérieure (sens 1)">{tempExt1} °C</ListLabelledItem>

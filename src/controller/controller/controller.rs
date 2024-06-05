@@ -202,6 +202,8 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
         frame: caniot::Response,
     ) -> Result<(), ControllerError> {
         self.stats.rx += 1;
+        // TODO if multiple actions are pending, only the first one will be answered
+        // For the other, the channel sender will be dropped and the response will be lost
         let mut answered_pending_action: Option<PendingAction> = None;
 
         // Find pending queries that can be answered by this frame
@@ -215,7 +217,26 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
             if let Some(pq_tenant) = pq.end_with_frame(frame.clone()) {
                 match pq_tenant {
                     PendingQueryTenant::Action(pending_action) => {
-                        answered_pending_action.replace(pending_action);
+                        if answered_pending_action.replace(pending_action).is_some() {
+                            // TODO
+                            panic!(
+                                "
+                                Multiple actions pending on the same frame, \
+                                only the first one will be answered, 
+                                the channel sender of the following pendings will be dropped
+                                causing:
+
+                                thread 'tokio-runtime-worker' panicked at src/controller/handle.rs:96:24:
+                                IPC Sender dropped before response: RecvError(())
+
+                                This can be easily reproduced by delaying the reponse of an emulated device
+                                and sending the same action multiple times.
+
+                                This can be solved by make 'answered_pending_action' a Vec<PendingAction>
+                                and store all pending actions that have been answered by the frame
+                                "
+                            );
+                        }
                     }
                     _ => {}
                 }

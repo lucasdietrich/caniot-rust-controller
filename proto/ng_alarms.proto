@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package ng.alarms;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+service AlarmsService {
+  rpc GetOutdoorAlarmState(google.protobuf.Empty) returns (OutdoorAlarmState) {}
+  rpc SendOutdoorAlarmCommand(OutdoorAlarmCommand) returns (OutdoorAlarmState) {
+  }
+}
+
+enum TwoStates {
+  NONE = 0;
+  ON = 1;
+  OFF = 2;
+  TOGGLE = 3;
+}
+
+message OutdoorAlarmLightsCommand {
+  TwoStates south_light = 1;
+  TwoStates east_light = 2;
+}
+
+message OutdoorAlarmCommand {
+  oneof inner {
+    OutdoorAlarmLightsCommand lights = 1;
+    TwoStates outdoor_alarm_enable = 3;
+  }
+}
+
+message OutdoorAlarmState {
+  bool enabled = 1;
+
+  uint32 triggered_count = 2;
+  uint32 siren_count = 3;
+
+  google.protobuf.Timestamp last_signal = 4;
+  google.protobuf.Timestamp last_siren = 5;
+  google.protobuf.Timestamp last_command = 6;
+
+  // device state
+  OutdoorAlarmDeviceState device = 7;
+}
+
+message OutdoorAlarmDeviceState {
+  bool south_light = 1;
+  bool east_light = 2;
+
+  bool south_detector = 3;
+  bool east_detector = 4;
+
+  bool siren_active = 5;
+  bool sabotage = 6;
+}

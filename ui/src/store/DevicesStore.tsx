@@ -69,6 +69,19 @@ class DevicesStore extends EventEmitter {
       callbackFunc(resp);
     });
   };
+
+  getOutdoorAlarmDevice = (callbackFunc: (resp: Device) => void) => {
+    this.client.getOutdoorAlarmDevice(new Empty(), null, (err, resp) => {
+      if (err !== null) {
+        HandleError(err);
+        return;
+      }
+
+      HandleSuccess("DevicesStore::GetOutdoorAlarmDevice succeeded");
+
+      callbackFunc(resp);
+    });
+  };
 }
 
 const devicesStore = new DevicesStore();

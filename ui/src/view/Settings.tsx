@@ -16,7 +16,7 @@ function Settings({
   setDebugMode = () => {},
 }: ISettingsProps) {
   return (
-    <Card title="Settings">
+    <Card title="Configuration">
       <List>
         <ListLabelledItem label="Debug">
           <Switch defaultChecked={debugMode} onChange={(checked) => setDebugMode(checked)} />
