@@ -3,6 +3,8 @@ use crate::caniot;
 pub trait Class<'a> {
     type Telemetry: ClassTelemetryTrait<'a>;
     type Command: ClassCommandTrait<'a>;
+
+    fn get_class_id() -> u8;
 }
 
 pub trait ClassTelemetryTrait<'a>: TryFrom<&'a [u8]> + Into<Vec<u8>> {

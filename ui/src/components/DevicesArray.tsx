@@ -6,6 +6,7 @@ import { DeviceId } from "@caniot-controller/caniot-api-grpc-web/api/common_pb";
 import { useState } from "react";
 import DeviceStatusCard from "./DeviceStatusCard";
 import { LoadingOutlined } from "@ant-design/icons";
+import LastSeenBadge from "./LastSeenBadge";
 
 const SECONDS_TO_CONSIDER_ONLINE = 60;
 
@@ -78,16 +79,10 @@ function DevicesTable({ devicesList }: IDevicesTableProps) {
       dataIndex: "last_seen",
       key: "last_seen",
       render: (last_seen) => (
-        <Badge
-          status={
-            last_seen && last_seen.secondsFromNow < SECONDS_TO_CONSIDER_ONLINE ? "success" : "error"
-          }
-          text={
-            <span>
-              {last_seen ? last_seen.timestamp.toDate().toLocaleString() : "never"} (
-              {last_seen ? last_seen.secondsFromNow : ""}s ago)
-            </span>
-          }
+        <LastSeenBadge
+          lastSeenDate={last_seen?.timestamp.toDate()}
+          lastSeenValue={last_seen.secondsFromNow}
+          secondsToConsiderOnline={SECONDS_TO_CONSIDER_ONLINE}
         />
       ),
       sorter: (a, b) => {
@@ -142,7 +137,7 @@ function DevicesTable({ devicesList }: IDevicesTableProps) {
             secondsFromNow: device.getLastseenfromnow(),
           }
         : undefined,
-      temp_in: device.getClass1()?.getIntTemp(),
+      temp_in: device.hasBoardTemp() ? device.getBoardTemp() : undefined,
       device: device,
     };
   });

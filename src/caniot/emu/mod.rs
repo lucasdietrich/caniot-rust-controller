@@ -1,5 +1,6 @@
 pub mod behavior;
 pub mod device;
+pub mod helpers;
 pub mod nodes;
 pub mod pools;
 

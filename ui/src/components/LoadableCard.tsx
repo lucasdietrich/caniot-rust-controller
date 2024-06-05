@@ -56,11 +56,12 @@ function LoadableCard({
   return (
     <Card
       title={
-        status === undefined ? (
+        title &&
+        (status === undefined ? (
           <span>{titleComponent}</span>
         ) : (
           <Badge status={status ? "success" : "error"} text={titleComponent} />
-        )
+        ))
       }
       extra={extraComponent}
     >

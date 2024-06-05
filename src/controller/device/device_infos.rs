@@ -14,6 +14,9 @@ pub struct DeviceInfos {
     pub controller_name: Option<String>,
     pub stats: DeviceStats,
     pub measures: Option<caniot::BlcClassTelemetry>,
+
+    // measures
+    pub board_temperature: Option<f32>,
 }
 
 impl Into<DeviceInfos> for &Device {
@@ -29,6 +32,7 @@ impl Into<DeviceInfos> for &Device {
             last_seen_from_now: self.last_seen_from_now(),
             stats: self.stats,
             measures: self.measures,
+            board_temperature: self.measures.and_then(|m| m.get_board_temperature()),
         }
     }
 }

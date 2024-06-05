@@ -8,7 +8,7 @@ import DevicesView from "./view/DevicesView";
 import AppMenu from "./components/Menu";
 import HeatersView from "./view/HeatersView";
 import GarageDoorsView from "./view/GarageDoorsView";
-import Alarms from "./view/Alarms";
+import AlarmsView from "./view/AlarmsView";
 import Settings from "./view/Settings";
 import NoMatch from "./view/NoMatch";
 import Debug from "./view/Debug";
@@ -52,7 +52,7 @@ const App: React.FC = () => {
               <Route path="/debug" element={<Debug />} />
               <Route path="/devices/heaters" element={<HeatersView />} />
               <Route path="/devices/garage" element={<GarageDoorsView refreshInterval={1000} />} />
-              <Route path="/devices/alarms" element={<Alarms />} />
+              <Route path="/devices/alarms" element={<AlarmsView />} />
               <Route
                 path="/settings"
                 element={<Settings darkMode={darkMode} setDarkMode={setDarkMode} />}

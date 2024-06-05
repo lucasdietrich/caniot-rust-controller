@@ -14,7 +14,7 @@ pub struct Telemetry {
     pub in3: bool,
     pub in4: bool,
     pub poc1: bool,
-    pub puc2: bool,
+    pub poc2: bool,
     pub prl1: bool,
     pub prl2: bool,
 
@@ -39,7 +39,7 @@ impl TryFrom<&[u8]> for Telemetry {
                 in3: payload[0] & 0b0100_0000 != 0,
                 in4: payload[0] & 0b1000_0000 != 0,
                 poc1: payload[1] & 0b0000_0001 != 0,
-                puc2: payload[1] & 0b0000_0010 != 0,
+                poc2: payload[1] & 0b0000_0010 != 0,
                 prl1: payload[1] & 0b0000_0100 != 0,
                 prl2: payload[1] & 0b0000_1000 != 0,
                 temp_in: Temperature::from_raw_u10(u16::from_le_bytes([
@@ -83,7 +83,7 @@ impl Into<Vec<u8>> for Telemetry {
         );
         payload.push(
             (self.poc1 as u8)
-                | (self.puc2 as u8) << 1
+                | (self.poc2 as u8) << 1
                 | (self.prl1 as u8) << 2
                 | (self.prl2 as u8) << 3,
         );
@@ -154,4 +154,8 @@ pub enum Class0 {}
 impl Class<'_> for Class0 {
     type Telemetry = Telemetry;
     type Command = Command;
+
+    fn get_class_id() -> u8 {
+        0
+    }
 }

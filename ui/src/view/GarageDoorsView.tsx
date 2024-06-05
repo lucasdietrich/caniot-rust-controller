@@ -29,7 +29,7 @@ function GarageDoorsView({ refreshInterval = 5000 }: IGarageDoorsViewProps) {
   useEffect(() => {
     devicesStore.getGarageDevice((resp: Device) => {
       setGarageDevice(resp);
-      garageStore.getState(new Empty(), (resp: Status) => {
+      garageStore.getState((resp: Status) => {
         setGarageState(resp);
         setLoading(false);
       });

@@ -39,7 +39,7 @@ pub fn emu_pool2_realistic_add_devices_to_iface(iface: &mut CanInterface) {
     heaters_controller.request_telemetry(caniot::Endpoint::ApplicationDefault);
     heaters_controller.set_telemetry_endpoint(caniot::Endpoint::BoardControl);
     heaters_controller.add_behavior(Box::new(Class1Behavior::default()));
-    heaters_controller.add_behavior(Box::new(HeatersController::new()));
+    heaters_controller.add_behavior(Box::new(HeatersController::default()));
     iface.add_device(heaters_controller);
 
     // Add demo device
@@ -49,7 +49,7 @@ pub fn emu_pool2_realistic_add_devices_to_iface(iface: &mut CanInterface) {
     );
     demo_controller.add_behavior(Box::new(Class0Behavior::default()));
     demo_controller.set_telemetry_endpoint(caniot::Endpoint::BoardControl);
-    demo_controller.add_behavior(Box::new(super::demo::DemoController::new()));
+    demo_controller.add_behavior(Box::new(super::demo::DemoController::default()));
     iface.add_device(demo_controller);
 
     // Add garage device
@@ -60,4 +60,15 @@ pub fn emu_pool2_realistic_add_devices_to_iface(iface: &mut CanInterface) {
     garage_controller.add_behavior(Box::new(nodes::garage::GarageController::default()));
     garage_controller.set_telemetry_endpoint(caniot::Endpoint::BoardControl);
     iface.add_device(garage_controller);
+
+    // Add outdoor alarm device
+    let mut outdoor_alarm_controller = Device::new(
+        DeviceId::try_new(0, 3).unwrap().to_u8(),
+        Some(Duration::from_secs(30)),
+    );
+    outdoor_alarm_controller.add_behavior(Box::new(
+        nodes::outdoor_alarm::OutdoorAlarmController::default(),
+    ));
+    outdoor_alarm_controller.set_telemetry_endpoint(caniot::Endpoint::BoardControl);
+    iface.add_device(outdoor_alarm_controller);
 }

@@ -13,6 +13,7 @@ service CaniotDevicesService {
   // specifics
   rpc GetHeatersDevice(google.protobuf.Empty) returns (Device) {}
   rpc GetGarageDevice(google.protobuf.Empty) returns (Device) {}
+  rpc GetOutdoorAlarmDevice(google.protobuf.Empty) returns (Device) {}
 }
 
 message DeviceStats {
@@ -67,6 +68,9 @@ message Device {
     Class0Telemetry class0 = 10;
     Class1Telemetry class1 = 11;
   };
+
+  // common to both classes
+  optional float board_temp = 20;
 }
 
 message DevicesList { repeated Device devices = 1; }

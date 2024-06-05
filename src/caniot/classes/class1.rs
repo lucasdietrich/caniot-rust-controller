@@ -174,4 +174,8 @@ pub enum Class1 {}
 impl Class<'_> for Class1 {
     type Telemetry = Telemetry;
     type Command = Command;
+
+    fn get_class_id() -> u8 {
+        1
+    }
 }

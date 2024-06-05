@@ -199,6 +199,7 @@ impl Device {
             let endpoints: Vec<caniot::Endpoint> = self
                 .behavior
                 .iter_mut()
+                .rev()
                 .filter_map(|b| b.process())
                 .collect();
 

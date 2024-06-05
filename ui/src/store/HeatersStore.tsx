@@ -17,8 +17,8 @@ class HeatersStore extends EventEmitter {
     this.client = new HeatersServiceClient(getApiUrl());
   }
 
-  getStatus = (req: Empty, callbackFunc: (resp: Status) => void) => {
-    this.client.getState(req, null, (err, resp) => {
+  getStatus = (callbackFunc: (resp: Status) => void) => {
+    this.client.getState(new Empty(), null, (err, resp) => {
       if (err !== null) {
         HandleError(err);
         return;

@@ -10,6 +10,8 @@ use super::{
 };
 
 pub trait DeviceControllerTrait: Send + Debug {
+    // TODO
+    // type Class: Class<'a>; ???
     type Action: ActionTrait;
 
     fn handle_frame(
@@ -26,6 +28,10 @@ pub trait DeviceControllerTrait: Send + Debug {
         _action: &Self::Action,
         _ctx: &mut ProcessContext,
     ) -> Result<ActionVerdict<Self::Action>, DeviceError> {
+        error!(
+            "handle_action not implemented for device controller \"{}\"",
+            self.get_infos().name.unwrap_or_default()
+        );
         Err(DeviceError::NotImplemented)
     }
 
@@ -34,6 +40,10 @@ pub trait DeviceControllerTrait: Send + Debug {
         &self,
         _delayed_action: &Self::Action,
     ) -> Result<<Self::Action as ActionTrait>::Result, DeviceError> {
+        error!(
+            "handle_action_result not implemented for device controller \"{}\"",
+            self.get_infos().name.unwrap_or_default()
+        );
         Err(DeviceError::NotImplemented)
     }
 
