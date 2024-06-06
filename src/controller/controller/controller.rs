@@ -16,7 +16,7 @@ use crate::controller::{
     PendingAction, ProcessContext, Verdict,
 };
 use crate::shutdown::Shutdown;
-use crate::utils::expirable::{ExpirableTTLResults, ExpirableTrait};
+use crate::utils::expirable::{ttl, ExpirableTrait};
 
 use super::pending_query::PendingQueryTenant;
 use super::{pending_action, CaniotConfig};
@@ -317,11 +317,10 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
 
     pub async fn run(mut self) -> Result<(), ()> {
         loop {
-            let sleep_time = ExpirableTTLResults::new(&[
+            let sleep_time = ttl(&[
                 self.pending_queries.iter().ttl(),
                 self.devices.values().ttl(),
             ])
-            .ttl()
             .unwrap_or(Duration::MAX);
 
             select! {
