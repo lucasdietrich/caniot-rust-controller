@@ -1,67 +1,15 @@
 use log::debug;
 
 use crate::{
-    caniot::{self, class0, traits::ClassCommandTrait, Xps},
+    caniot::{self, Xps},
     controller::{
+        alarms::{actions::SirenAction, types::OutdoorAlarmCommand},
         ActionResultTrait, ActionTrait, ActionVerdict, DeviceControllerInfos,
         DeviceControllerTrait, DeviceError, ProcessContext, Verdict,
     },
 };
 
-#[derive(Debug, Clone, Default)]
-pub enum AlarmEnable {
-    Disarmed,
-    #[default]
-    Armed,
-}
-
-#[derive(Debug, Clone, Default)]
-pub enum LightAction {
-    #[default]
-    None,
-    On,
-    Off,
-    Toggle,
-}
-
-impl Into<Xps> for &LightAction {
-    fn into(self) -> Xps {
-        match self {
-            LightAction::None => Xps::None,
-            LightAction::On => Xps::SetOn,
-            LightAction::Off => Xps::SetOff,
-            LightAction::Toggle => Xps::Toggle,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Default)]
-pub struct LightsActions {
-    pub south: LightAction,
-    pub east: LightAction,
-}
-
-impl LightsActions {
-    pub fn new(south: Option<LightAction>, east: Option<LightAction>) -> Self {
-        Self {
-            south: south.unwrap_or_default(),
-            east: east.unwrap_or_default(),
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum SirenAction {
-    ForceOff,
-}
-
-#[derive(Debug)]
-pub enum Action {
-    GetStatus,
-    SetAlarm(AlarmEnable),
-    SetLights(LightsActions),
-    SirenAction(SirenAction),
-}
+use super::actions::{Action, AlarmEnable};
 
 #[derive(Debug, Clone, Default)]
 pub struct AlarmContext {
@@ -86,36 +34,6 @@ pub struct DeviceState {
     pub sabotage: bool,       // false if sabotage detected
 }
 
-#[derive(Default)]
-pub struct OutdoorAlarmCommand(pub class0::Command);
-
-impl OutdoorAlarmCommand {
-    pub fn new(south: Xps, east: Xps, siren: Xps) -> Self {
-        OutdoorAlarmCommand(class0::Command {
-            coc1: south,
-            coc2: east,
-            crl1: siren,
-            crl2: Xps::None,
-        })
-    }
-
-    pub fn set_siren(&mut self, cmd: Xps) {
-        self.0.crl1 = cmd;
-    }
-
-    pub fn set_east_light(&mut self, cmd: Xps) {
-        self.0.coc1 = cmd;
-    }
-
-    pub fn set_south_light(&mut self, cmd: Xps) {
-        self.0.coc2 = cmd;
-    }
-
-    pub fn into_request(self) -> caniot::RequestData {
-        self.0.to_request()
-    }
-}
-
 #[derive(Debug, Clone, Default)]
 pub struct AlarmController {
     pub device: DeviceState,
@@ -131,10 +49,6 @@ pub struct AlarmControllerState {
 }
 
 impl ActionResultTrait for AlarmControllerState {}
-
-impl ActionTrait for Action {
-    type Result = AlarmControllerState;
-}
 
 impl AlarmController {
     /// Updates the device state with a new state provided as input.
