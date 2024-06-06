@@ -1,6 +1,9 @@
 use std::time::{Duration, Instant};
 
-use crate::caniot::{self, Attribute, DeviceId, Endpoint, ErrorCode};
+use crate::{
+    caniot::{self, Attribute, DeviceId, Endpoint, ErrorCode},
+    utils::expirable::{ExpirableTTLResults, ExpirableTrait},
+};
 
 use super::{Behavior, DefaultBehavior};
 
@@ -86,27 +89,12 @@ impl Device {
         }
     }
 
-    fn get_time_to_next_event(&self) -> Option<Duration> {
-        let mut next_event: Option<Duration> = None;
-        for behavior in self.behavior.iter() {
-            if let Some(next) = behavior.get_remaining_to_event_ms() {
-                let next = Duration::from_millis(next);
-                next_event = Some(next_event.map_or(next, |t| t.min(next)));
-            }
-        }
-        next_event
-    }
-
     pub fn get_time_to_next_device_process(&self) -> Option<Duration> {
-        let next_process = self.get_time_to_next_event();
-        let next_telemetry = self.get_time_to_next_periodic_telemetry();
-
-        match (next_process, next_telemetry) {
-            (Some(next_process), Some(next_telemetry)) => Some(next_process.min(next_telemetry)),
-            (Some(next_process), None) => Some(next_process),
-            (None, Some(next_telemetry)) => Some(next_telemetry),
-            (None, None) => None,
-        }
+        ExpirableTTLResults::new(&[
+            self.behavior.ttl().map(Duration::from_millis),
+            self.get_time_to_next_periodic_telemetry(),
+        ])
+        .ttl()
     }
 
     fn handle_telemetry(
@@ -195,7 +183,7 @@ impl Device {
                     }
                 }
             }
-        } else if self.get_time_to_next_event() == Some(Duration::from_secs(0)) {
+        } else if self.behavior.expired() {
             let endpoints: Vec<caniot::Endpoint> = self
                 .behavior
                 .iter_mut()

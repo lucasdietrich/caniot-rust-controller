@@ -16,6 +16,7 @@ use crate::controller::{
     PendingAction, ProcessContext, Verdict,
 };
 use crate::shutdown::Shutdown;
+use crate::utils::expirable::{ExpirableTTLResults, ExpirableTrait};
 
 use super::pending_query::PendingQueryTenant;
 use super::{pending_action, CaniotConfig};
@@ -271,53 +272,6 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
         Ok(())
     }
 
-    fn time_to_next_pq_timeout(&self) -> Duration {
-        // TODO improve this code
-        let now = std::time::Instant::now();
-
-        let neareast_timeout = self
-            .pending_queries
-            .iter()
-            .map(|pq| pq.get_timeout_instant())
-            .min();
-
-        if let Some(neareast_timeout) = neareast_timeout {
-            if neareast_timeout > now {
-                neareast_timeout - now
-            } else {
-                Duration::from_millis(0)
-            }
-        } else {
-            Duration::MAX
-        }
-    }
-
-    fn time_to_next_device_process(&self) -> Duration {
-        let now = std::time::Instant::now();
-
-        let nearest_process = self
-            .devices
-            .iter()
-            .filter_map(|(_did, device)| {
-                if let Some(next_process) = device.next_process_time() {
-                    Some(next_process)
-                } else {
-                    None
-                }
-            })
-            .min();
-
-        if let Some(nearest_process) = nearest_process {
-            if nearest_process > now {
-                nearest_process - now
-            } else {
-                Duration::from_millis(0)
-            }
-        } else {
-            Duration::MAX
-        }
-    }
-
     async fn handle_pending_queries_timeout(&mut self) {
         let now = std::time::Instant::now();
 
@@ -363,9 +317,12 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
 
     pub async fn run(mut self) -> Result<(), ()> {
         loop {
-            let time_to_next_pq_timeout = self.time_to_next_pq_timeout();
-            let time_to_next_device_process = self.time_to_next_device_process();
-            let sleep_time = time_to_next_pq_timeout.min(time_to_next_device_process);
+            let sleep_time = ExpirableTTLResults::new(&[
+                self.pending_queries.iter().ttl(),
+                self.devices.values().ttl(),
+            ])
+            .ttl()
+            .unwrap_or(Duration::MAX);
 
             select! {
                 Some(message) = self.receiver.recv() => {

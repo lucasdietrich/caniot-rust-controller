@@ -1,7 +1,7 @@
 use std::time::{Duration, Instant};
 
 use super::{ControllerError, PendingAction};
-use crate::caniot;
+use crate::{caniot, utils::expirable::ExpirableTrait};
 use tokio::sync::oneshot;
 
 /// Initiator of a pending query, it represents the entity that is waiting for the query to be answered
@@ -97,5 +97,17 @@ impl PendingQuery {
     /// Check whether the query has timed out
     pub fn has_timed_out(&self, now: &Instant) -> bool {
         now.duration_since(self.sent_at) >= Duration::from_millis(self.timeout_ms as u64)
+    }
+}
+
+impl ExpirableTrait<Duration> for PendingQuery {
+    fn ttl(&self) -> Option<Duration> {
+        let now = Instant::now();
+        let timeout_instant = self.get_timeout_instant();
+        if now < timeout_instant {
+            Some(timeout_instant - now)
+        } else {
+            None
+        }
     }
 }

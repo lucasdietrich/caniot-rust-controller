@@ -1,6 +1,6 @@
 use std::time::{Duration, Instant};
 
-use crate::caniot::Xps;
+use crate::{caniot::Xps, utils::expirable::ExpirableTrait};
 
 #[derive(Debug)]
 pub struct EmuXps {
@@ -105,5 +105,11 @@ impl EmuXps {
                 self.pulse_time = None;
             }
         }
+    }
+}
+
+impl ExpirableTrait<Duration> for EmuXps {
+    fn ttl(&self) -> Option<Duration> {
+        self.time_to_pulse_expire()
     }
 }

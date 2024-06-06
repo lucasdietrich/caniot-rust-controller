@@ -15,6 +15,7 @@ mod internal;
 mod logger;
 mod shared;
 mod shutdown;
+mod utils;
 mod webserver;
 
 fn main() {
