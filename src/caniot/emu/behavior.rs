@@ -1,4 +1,7 @@
-use crate::caniot::{self, traits::Class, Temperature};
+use crate::{
+    caniot::{self, traits::Class, Temperature},
+    utils::expirable::ExpirableTrait,
+};
 
 use super::Device;
 
@@ -36,6 +39,12 @@ pub trait Behavior: Send + Sync {
     // time in milliseconds
     fn get_remaining_to_event_ms(&self) -> Option<u64> {
         None
+    }
+}
+
+impl ExpirableTrait<u64> for Box<dyn Behavior> {
+    fn ttl(&self) -> Option<u64> {
+        self.get_remaining_to_event_ms()
     }
 }
 

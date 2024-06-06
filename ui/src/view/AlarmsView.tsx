@@ -6,8 +6,6 @@ import devicesStore from "../store/DevicesStore";
 import LoadableCard from "../components/LoadableCard";
 import ListGridItem from "../components/ListGridItem";
 import TwoStatesSelector, { TwoStateCommand } from "../components/TwoStatesSelector";
-import ListLabelledItem from "../components/ListLabelledItem";
-import LastSeenSecondsCounter from "../components/LastSeenSecondsCounter";
 import {
   OutdoorAlarmCommand,
   OutdoorAlarmLightsCommand,
@@ -75,7 +73,7 @@ function AlarmsView({ refreshInterval = 5000 }: IAlarmsViewProps) {
       ts = gTwoStates.TOGGLE;
     }
 
-    let lightsCommand = new OutdoorAlarmLightsCommand();
+    let lightsCommand: OutdoorAlarmLightsCommand = new OutdoorAlarmLightsCommand();
     if (light === Light.South) {
       lightsCommand.setSouthLight(ts);
     } else if (light === Light.East) {

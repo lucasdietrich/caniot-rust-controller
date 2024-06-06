@@ -8,6 +8,7 @@ use crate::{
         utils::blc_parse_telemetry_as_class, BlcClassTelemetry, DeviceId, Endpoint, ResponseData,
     },
     controller::ActionTrait,
+    utils::expirable::ExpirableTrait,
 };
 
 use super::{
@@ -194,5 +195,11 @@ impl Device {
         } else {
             Ok(Verdict::default())
         }
+    }
+}
+
+impl ExpirableTrait<Duration> for Device {
+    fn ttl(&self) -> Option<Duration> {
+        self.time_to_next_process()
     }
 }

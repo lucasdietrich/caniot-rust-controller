@@ -3,7 +3,10 @@ use std::time::Instant;
 use log::debug;
 
 use super::super::Behavior;
-use crate::caniot::{self as ct, class0, ResponseData, Temperature, Xps};
+use crate::{
+    caniot::{self as ct, class0, ResponseData, Temperature, Xps},
+    utils::expirable::ExpirableTrait,
+};
 
 #[derive(Default, Debug)]
 enum Door {
@@ -78,6 +81,12 @@ impl Door {
     }
 }
 
+impl ExpirableTrait<u64> for Door {
+    fn ttl(&self) -> Option<u64> {
+        self.get_time_to_complete_ms()
+    }
+}
+
 #[derive(Default)]
 pub struct GarageController {
     left_door: Door,   // RL1, IN3
@@ -129,15 +138,7 @@ impl Behavior for GarageController {
     }
 
     fn get_remaining_to_event_ms(&self) -> Option<u64> {
-        let left_time = self.left_door.get_time_to_complete_ms();
-        let right_time = self.right_door.get_time_to_complete_ms();
-
-        match (left_time, right_time) {
-            (Some(left), Some(right)) => Some(left.min(right)),
-            (Some(left), None) => Some(left),
-            (None, Some(right)) => Some(right),
-            _ => None,
-        }
+        [&self.left_door, &self.right_door].iter().ttl()
     }
 
     fn process(&mut self) -> Option<ct::Endpoint> {

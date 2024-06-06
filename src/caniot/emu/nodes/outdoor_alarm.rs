@@ -1,7 +1,10 @@
 use std::{thread, time::Duration};
 
 use super::super::Behavior;
-use crate::caniot::{self as ct, class0, emu::helpers::EmuXps, Temperature};
+use crate::{
+    caniot::{self as ct, class0, emu::helpers::EmuXps, Temperature},
+    utils::expirable::{ExpirableTTLResults, ExpirableTrait},
+};
 
 #[derive(Default)]
 pub struct OutdoorAlarmController {
@@ -65,16 +68,10 @@ impl Behavior for OutdoorAlarmController {
     }
 
     fn get_remaining_to_event_ms(&self) -> Option<u64> {
-        let durations = [
-            self.lights[0].time_to_pulse_expire(),
-            self.lights[1].time_to_pulse_expire(),
-            self.siren.time_to_pulse_expire(),
-        ];
-
-        durations
+        [&self.lights[0], &self.lights[1], &self.siren]
             .iter()
-            .filter_map(|&d| d.map(|duration| duration.as_millis() as u64))
-            .min()
+            .ttl()
+            .map(|duration| duration.as_millis() as u64)
     }
 
     fn process(&mut self) -> Option<ct::Endpoint> {
