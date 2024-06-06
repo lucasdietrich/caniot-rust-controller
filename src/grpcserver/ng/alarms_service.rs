@@ -3,14 +3,13 @@ use tonic::{Request, Response, Result, Status};
 
 use crate::{
     caniot::HeatingMode,
-    controller::{outdoor_alarm, Action, AlarmEnable, LightAction, LightsActions},
+    controller::{outdoor_alarm, Action, AlarmEnable, LightAction, LightsActions, SirenAction},
     shared::SharedHandle,
 };
 
 use super::model_alarms::{
     self as m,
     alarms_service_server::{AlarmsService, AlarmsServiceServer},
-    TwoStates,
 };
 
 #[derive(Debug)]
@@ -94,15 +93,20 @@ impl AlarmsService for NgAlarms {
             m::outdoor_alarm_command::Inner::OutdoorAlarmEnable(ts) => {
                 let ts = m::TwoStates::try_from(ts).unwrap_or_default();
                 match ts {
-                    TwoStates::None => None,
-                    TwoStates::On => Some(Action::SetAlarm(AlarmEnable::Armed)),
-                    TwoStates::Off => Some(Action::SetAlarm(AlarmEnable::Disarmed)),
-                    TwoStates::Toggle => {
+                    m::TwoStates::None => None,
+                    m::TwoStates::On => Some(Action::SetAlarm(AlarmEnable::Armed)),
+                    m::TwoStates::Off => Some(Action::SetAlarm(AlarmEnable::Disarmed)),
+                    m::TwoStates::Toggle => {
                         return Err(Status::invalid_argument("Invalid alarm state"))
                     }
                 }
             }
-            _ => todo!(),
+            m::outdoor_alarm_command::Inner::OutdoorAlarmSirenDirectAction(sa) => {
+                let sa = m::SirenAction::try_from(sa).unwrap_or_default();
+                match sa {
+                    m::SirenAction::ForceOff => Some(Action::SirenAction(SirenAction::ForceOff)),
+                }
+            }
         };
 
         if let Some(action) = action {

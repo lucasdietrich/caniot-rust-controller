@@ -50,11 +50,17 @@ impl LightsActions {
     }
 }
 
+#[derive(Debug, Clone)]
+pub enum SirenAction {
+    ForceOff,
+}
+
 #[derive(Debug)]
 pub enum Action {
     GetStatus,
     SetAlarm(AlarmEnable),
     SetLights(LightsActions),
+    SirenAction(SirenAction),
 }
 
 #[derive(Debug, Clone, Default)]
@@ -78,6 +84,36 @@ pub struct DeviceState {
     pub detectors: [bool; 2], // east, south (true if presence detected)
     pub lights: [bool; 2],    // east, south (true if lights are on)
     pub sabotage: bool,       // false if sabotage detected
+}
+
+#[derive(Default)]
+pub struct OutdoorAlarmCommand(pub class0::Command);
+
+impl OutdoorAlarmCommand {
+    pub fn new(south: Xps, east: Xps, siren: Xps) -> Self {
+        OutdoorAlarmCommand(class0::Command {
+            coc1: south,
+            coc2: east,
+            crl1: siren,
+            crl2: Xps::None,
+        })
+    }
+
+    pub fn set_siren(&mut self, cmd: Xps) {
+        self.0.crl1 = cmd;
+    }
+
+    pub fn set_east_light(&mut self, cmd: Xps) {
+        self.0.coc1 = cmd;
+    }
+
+    pub fn set_south_light(&mut self, cmd: Xps) {
+        self.0.coc2 = cmd;
+    }
+
+    pub fn into_request(self) -> caniot::RequestData {
+        self.0.to_request()
+    }
 }
 
 #[derive(Debug, Clone, Default)]
@@ -146,14 +182,22 @@ impl DeviceControllerTrait for AlarmController {
                 self.alarm.set_enable(state);
             }
             Action::SetLights(action) => {
-                let command = class0::Command {
-                    coc1: (&action.east).into(),
-                    coc2: (&action.south).into(),
-                    ..Default::default()
-                };
-                return Ok(ActionVerdict::ActionPendingOn(command.to_request()));
+                let mut command = OutdoorAlarmCommand::default();
+                command.set_east_light((&action.east).into());
+                command.set_south_light((&action.south).into());
+
+                return Ok(ActionVerdict::ActionPendingOn(command.into_request()));
             }
-            _ => return Err(DeviceError::NotImplemented),
+            Action::SirenAction(action) => {
+                let mut command = OutdoorAlarmCommand::default();
+                match action {
+                    SirenAction::ForceOff => {
+                        command.set_siren(Xps::Reset);
+                    }
+                }
+
+                return Ok(ActionVerdict::ActionPendingOn(command.into_request()));
+            }
         }
 
         let status = self.get_state();
