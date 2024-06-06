@@ -6,12 +6,29 @@ use crate::{
     utils::expirable::ExpirableTrait,
 };
 
+const LIGHTS_PULSE_DURATION: Duration = Duration::from_secs(20);
+const SIREN_PULSE_DURATION: Duration = Duration::from_secs(10);
+
 #[derive(Default)]
 pub struct OutdoorAlarmController {
     lights: [EmuXps; 2],         // oc1, oc2
     siren: EmuXps,               // rl1
     presence_sensors: [bool; 2], // in1, in2
     sabotage: bool,              // in4
+}
+
+impl OutdoorAlarmController {
+    pub fn new() -> Self {
+        Self {
+            lights: [
+                EmuXps::new(false, false, Some(LIGHTS_PULSE_DURATION)),
+                EmuXps::new(false, false, Some(LIGHTS_PULSE_DURATION)),
+            ],
+            siren: EmuXps::new(false, false, Some(SIREN_PULSE_DURATION)),
+            presence_sensors: [false, false],
+            sabotage: false,
+        }
+    }
 }
 
 impl Behavior for OutdoorAlarmController {

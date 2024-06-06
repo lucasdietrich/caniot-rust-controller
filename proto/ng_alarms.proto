@@ -23,10 +23,15 @@ message OutdoorAlarmLightsCommand {
   TwoStates east_light = 2;
 }
 
+enum SirenAction {
+  FORCE_OFF = 0;
+}
+
 message OutdoorAlarmCommand {
   oneof inner {
     OutdoorAlarmLightsCommand lights = 1;
     TwoStates outdoor_alarm_enable = 3;
+    SirenAction outdoor_alarm_siren_direct_action = 4;
   }
 }
 

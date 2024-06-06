@@ -10,6 +10,7 @@ import {
   OutdoorAlarmCommand,
   OutdoorAlarmLightsCommand,
   OutdoorAlarmState,
+  SirenAction,
   TwoStates as gTwoStates,
 } from "@caniot-controller/caniot-api-grpc-web/api/ng_alarms_pb";
 import alarmsStore from "../store/AlarmsStore";
@@ -24,6 +25,7 @@ function AlarmsView({ refreshInterval = 5000 }: IAlarmsViewProps) {
   const [outdoorAlarmState, setOutdoorAlarmState] = useState<OutdoorAlarmState | undefined>(
     undefined
   );
+  const [sirenForceOffRequested, setSirenForceOffRequested] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [time, setTime] = useState(Date.now());
 
@@ -33,7 +35,6 @@ function AlarmsView({ refreshInterval = 5000 }: IAlarmsViewProps) {
       setOutdoorAlarmDevice(resp);
       alarmsStore.getOutdoorAlarmState((resp: OutdoorAlarmState) => {
         setOutdoorAlarmState(resp);
-        console.log("Outdoor alarm state", resp.toObject());
         setLoading(false);
       });
     });
@@ -51,7 +52,6 @@ function AlarmsView({ refreshInterval = 5000 }: IAlarmsViewProps) {
   }
 
   const sendAlarmCommand = (command: OutdoorAlarmCommand) => {
-    setLoading(true);
     alarmsStore.sendOutdoorAlarmCommand(command, (resp) => {
       setOutdoorAlarmState(resp);
       devicesStore.getOutdoorAlarmDevice((resp: Device) => {
@@ -102,11 +102,24 @@ function AlarmsView({ refreshInterval = 5000 }: IAlarmsViewProps) {
     sendAlarmCommand(command);
   };
 
+  const handleSirenAction = (saCmd: SirenAction) => {
+    setLoading(true);
+    setSirenForceOffRequested(saCmd === SirenAction.FORCE_OFF);
+
+    console.log("Siren action: " + saCmd);
+
+    let command = new OutdoorAlarmCommand();
+    command.setOutdoorAlarmSirenDirectAction(saCmd);
+
+    sendAlarmCommand(command);
+  };
+
   const onSouthLightChange = (ts: TwoStateCommand) => handleLightAction(Light.South, ts);
   const onEastLightChange = (ts: TwoStateCommand) => handleLightAction(Light.East, ts);
   const onAllLightChange = (ts: TwoStateCommand) => handleLightAction(Light.All, ts);
 
   const onAlarmChange = (ts: TwoStateCommand) => handleAlarmAction(ts);
+  const onSirenForceOff = () => handleSirenAction(SirenAction.FORCE_OFF);
 
   const outdoorAlarmEnabled = outdoorAlarmState?.getEnabled();
   const outdoorSirenActive = outdoorAlarmState?.getDevice()?.getSirenActive();
@@ -180,7 +193,12 @@ function AlarmsView({ refreshInterval = 5000 }: IAlarmsViewProps) {
 
               <ListGridItem label="Sirène extérieure" description="Sirène extérieure active">
                 {outdoorSirenActive ? (
-                  <Button type="default" loading danger onClick={() => {}}>
+                  <Button
+                    type="default"
+                    loading={outdoorSirenActive && sirenForceOffRequested}
+                    danger
+                    onClick={onSirenForceOff}
+                  >
                     Désactiver
                   </Button>
                 ) : (
@@ -206,6 +224,10 @@ function AlarmsView({ refreshInterval = 5000 }: IAlarmsViewProps) {
                 />
               </ListGridItem>
             </List>
+
+            <List.Item>
+              <span style={{ fontWeight: "bold" }}>Alarme programmée</span>
+            </List.Item>
           </LoadableCard>
         </Col>
         <Col span={10}>
