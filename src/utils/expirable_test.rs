@@ -1,4 +1,6 @@
-use super::expirable::{ExpirableTTLResults, ExpirableTrait};
+use crate::utils::expirable::ttl;
+
+use super::expirable::ExpirableTrait;
 
 #[derive(Debug, Default)]
 struct Expirable {
@@ -74,25 +76,10 @@ fn test_iter_expirable() {
 }
 
 #[test]
-fn test_expirable_result() {
-    let inner = &[Some(1), Some(2), None];
-    let result = ExpirableTTLResults::new(inner);
-
-    assert_eq!(result.expirable(), true);
-    assert_eq!(result.expired(), false);
-    assert_eq!(result.ttl(), Some(1));
-
-    let inner = &[Some(2), None];
-    let result = ExpirableTTLResults::new(inner);
-
-    assert_eq!(result.expirable(), true);
-    assert_eq!(result.expired(), false);
-    assert_eq!(result.ttl(), Some(2));
-
-    let inner = &[None, None];
-    let result = ExpirableTTLResults::<u64>::new(inner);
-
-    assert_eq!(result.expirable(), false);
-    assert_eq!(result.expired(), false);
-    assert_eq!(result.ttl(), None);
+fn test_result_ttl() {
+    assert_eq!(ttl(&[Some(1), Some(2), None]), Some(1));
+    assert_eq!(ttl(&[Some(2), Some(1)]), Some(1));
+    assert_eq!(ttl(&[Some(2), None]), Some(2));
+    assert_eq!(ttl(&[None, Some(2)]), Some(2));
+    assert_eq!(ttl::<Option<u64>>(&[None, None]), None);
 }

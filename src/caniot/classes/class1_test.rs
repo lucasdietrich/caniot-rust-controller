@@ -1,6 +1,6 @@
 use num::FromPrimitive;
 
-use crate::caniot::{Temperature, Xps};
+use crate::caniot::Temperature;
 
 use super::class1;
 
