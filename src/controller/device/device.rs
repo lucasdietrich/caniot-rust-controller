@@ -122,6 +122,7 @@ impl Device {
     ) -> Result<ActionVerdict<DeviceAction>, DeviceError> {
         match action {
             DeviceAction::Reset => Err(DeviceError::NotImplemented), // BlcCommand::HARDWARE_RESET
+            DeviceAction::InhibitControl => Err(DeviceError::NotImplemented), // BlcCommand::INHIBIT_CONTROL
 
             DeviceAction::Inner(inner_action) => {
                 if let Some(inner_device) = self.controller.as_mut() {

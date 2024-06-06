@@ -1,7 +1,11 @@
 use super::{ActionResultTrait, ActionTrait, ActionWrapperTrait};
 
 pub enum DeviceAction {
+    // Reset device
     Reset,
+    // Inhibit device from performing control actions (e.g. siren, lights
+    InhibitControl,
+    // Action to pass to the underlying device
     Inner(Box<dyn ActionWrapperTrait>),
 }
 

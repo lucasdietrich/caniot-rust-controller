@@ -95,6 +95,8 @@ Run with
         }
     ```
 - Handle events
+- Implement device reset action
+- Implement inhibit mode for devices
 
 ```
 device_temperature{medium="CAN",mac="16",device="GarageDoorController",sensor="EMBEDDED",room="",collector="pycaniotcontroller"} 19.00
