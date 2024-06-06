@@ -3,7 +3,7 @@ use std::{thread, time::Duration};
 use super::super::Behavior;
 use crate::{
     caniot::{self as ct, class0, emu::helpers::EmuXps, Temperature},
-    utils::expirable::{ExpirableTTLResults, ExpirableTrait},
+    utils::expirable::ExpirableTrait,
 };
 
 #[derive(Default)]

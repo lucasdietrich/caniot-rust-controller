@@ -97,35 +97,9 @@ where
     }
 }
 
-// Time to Result
-pub struct ExpirableTTLResults<'a, T>(&'a [Option<T>])
+pub fn ttl<T>(results: &[Option<T>]) -> Option<T>
 where
-    T: Eq + Ord + Default;
-
-impl<'a, T> ExpirableTTLResults<'a, T>
-where
-    T: Eq + Ord + Default,
-{
-    pub fn new(results: &'a [Option<T>]) -> Self {
-        Self(results)
-    }
-}
-
-impl<T> ExpirableTrait<T> for ExpirableTTLResults<'_, T>
-where
-    // Note that Copy trait is required
     T: Eq + Ord + Default + Copy,
 {
-    fn ttl(&self) -> Option<T> {
-        self.0.iter().filter_map(|t| *t).min()
-    }
-}
-
-impl<'a, T> From<&'a [Option<T>]> for ExpirableTTLResults<'a, T>
-where
-    T: Eq + Ord + Default,
-{
-    fn from(results: &'a [Option<T>]) -> Self {
-        Self::new(results)
-    }
+    results.iter().filter_map(|t| *t).min()
 }

@@ -2,7 +2,7 @@ use std::time::{Duration, Instant};
 
 use crate::{
     caniot::{self, Attribute, DeviceId, Endpoint, ErrorCode},
-    utils::expirable::{ExpirableTTLResults, ExpirableTrait},
+    utils::expirable::{ttl, ExpirableTrait},
 };
 
 use super::{Behavior, DefaultBehavior};
@@ -90,11 +90,10 @@ impl Device {
     }
 
     pub fn get_time_to_next_device_process(&self) -> Option<Duration> {
-        ExpirableTTLResults::new(&[
+        ttl(&[
             self.behavior.ttl().map(Duration::from_millis),
             self.get_time_to_next_periodic_telemetry(),
         ])
-        .ttl()
     }
 
     fn handle_telemetry(
