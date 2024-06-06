@@ -1,9 +1,9 @@
-use num_traits::{FromPrimitive, ToPrimitive};
 use tonic::{Request, Response, Result, Status};
 
 use crate::{
-    caniot::HeatingMode,
-    controller::{outdoor_alarm, Action, AlarmEnable, LightAction, LightsActions, SirenAction},
+    controller::{
+        Action, AlarmControllerState, AlarmEnable, LightAction, LightsActions, SirenAction,
+    },
     shared::SharedHandle,
 };
 
@@ -29,10 +29,7 @@ impl Into<LightAction> for m::TwoStates {
 }
 
 impl NgAlarms {
-    fn alarms_state_to_proto(
-        &self,
-        state: &outdoor_alarm::AlarmControllerState,
-    ) -> m::OutdoorAlarmState {
+    fn alarms_state_to_proto(&self, state: &AlarmControllerState) -> m::OutdoorAlarmState {
         m::OutdoorAlarmState {
             device: Some(m::OutdoorAlarmDeviceState {
                 east_light: state.device.lights[0],
