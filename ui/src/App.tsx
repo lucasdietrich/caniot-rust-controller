@@ -53,6 +53,13 @@ const App: React.FC = () => {
     });
   };
 
+  const onSettingsReset = () => {
+    internalStore.resetSettings((resp) => {
+      setSettings(resp);
+      setDarkMode(resp.getDarkMode());
+    });
+  };
+
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
@@ -92,6 +99,7 @@ const App: React.FC = () => {
                     settings={settings}
                     setDarkMode={onDarkModeChange}
                     setDebugMode={onDebugModeChange}
+                    setSettingsReset={onSettingsReset}
                   />
                 }
               />

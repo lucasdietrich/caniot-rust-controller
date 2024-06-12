@@ -7,7 +7,7 @@ const TYPE_BOOL: &str = "bool";
 const TYPE_INT: &str = "int";
 const TYPE_DATETIME: &str = "datetime";
 
-pub trait SettingTrait: FromStr + PartialEq + Clone
+pub trait SettingTrait: FromStr + PartialEq + Clone + Default
 where
     Self: Sized,
 {

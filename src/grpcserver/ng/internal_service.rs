@@ -21,10 +21,10 @@ impl InternalService for NgInternal {
         let db_lock = self.shared.db.read().await;
         let settings = db_lock.get_settings_store();
 
+        debug!("Reading settings");
+
         let dark_mode = settings.read("dark_mode").await.unwrap_or(true);
         let debug_mode = settings.read("debug_mode").await.unwrap_or(false);
-
-        println!("dark_mode: {}, debug_mode: {}", dark_mode, debug_mode);
 
         Ok(Response::new(m::Settings {
             dark_mode: dark_mode,
@@ -40,6 +40,8 @@ impl InternalService for NgInternal {
         let db_lock = self.shared.db.read().await;
         let settings = db_lock.get_settings_store();
 
+        debug!("Writing settings");
+
         let mut success = true;
 
         if let Some(dark_mode) = partial_settings.dark_mode {
@@ -54,6 +56,23 @@ impl InternalService for NgInternal {
             self.get_settings(Request::new(())).await
         } else {
             Err(Status::internal("Failed to set settings"))
+        }
+    }
+
+    async fn reset_settings(&self, _request: Request<()>) -> Result<Response<m::Settings>, Status> {
+        let db_lock = self.shared.db.read().await;
+        let settings = db_lock.get_settings_store();
+
+        debug!("Resetting settings");
+
+        let mut success = true;
+        success &= settings.set("dark_mode", &true).await.is_ok();
+        success &= settings.set("debug_mode", &false).await.is_ok();
+
+        if success {
+            self.get_settings(Request::new(())).await
+        } else {
+            Err(Status::internal("Failed to reset settings"))
         }
     }
 
