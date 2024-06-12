@@ -49,7 +49,6 @@ const App: React.FC = () => {
     newSettings.setDebugMode(checked);
     internalStore.setSettings(newSettings, (resp) => {
       setSettings(resp);
-      setDarkMode(resp.getDarkMode());
     });
   };
 
@@ -72,7 +71,7 @@ const App: React.FC = () => {
     >
       <Layout>
         <Sider width={200} style={{ background: colorBgContainer }}>
-          <AppMenu />
+          <AppMenu settings={settings} />
         </Sider>
         <Layout style={{ padding: "24px 24px 24px" }}>
           <Content
@@ -88,7 +87,7 @@ const App: React.FC = () => {
               <Route path="/" element={<Home />} />
               <Route path="/devices" element={<DevicesView />} />
               <Route path="/about" element={<About />} />
-              <Route path="/debug" element={<Debug />} />
+              {settings?.getDebugMode() && <Route path="/debug" element={<Debug />} />}
               <Route path="/devices/heaters" element={<HeatersView />} />
               <Route path="/devices/garage" element={<GarageDoorsView refreshInterval={1000} />} />
               <Route path="/devices/alarms" element={<AlarmsView />} />

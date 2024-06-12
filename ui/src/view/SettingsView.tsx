@@ -1,4 +1,4 @@
-import { Button, Card, Col, Divider, List, Row, Switch } from "antd";
+import { Button, Card, Col, Divider, List, Row, Slider, Switch } from "antd";
 import React, { useEffect, useState } from "react";
 import ListLabelledItem from "../components/ListLabelledItem";
 import {
@@ -42,16 +42,46 @@ function SettingsView({
 
   return (
     <Row gutter={24}>
-      <Col span={12}>
+      <Col span={16}>
         {" "}
         <LoadableCard title="Settings" loading={loading}>
           <List>
+            <List.Item>
+              <span style={{ fontWeight: "bold" }}>Général</span>
+            </List.Item>
             <ListGridItem label="Debug" description="Active le mode de debug">
               <Switch checked={settings?.getDebugMode()} onChange={onDebugModeChange} />
             </ListGridItem>
             <ListGridItem label="Mode nuit" description="Active le dark mode">
               <Switch checked={settings?.getDarkMode()} onChange={onDarkModeChange} />
             </ListGridItem>
+            <ListGridItem
+              label="Actif si"
+              description="Temps jusqu'auquel un capteur est considéré actif"
+            >
+              <Slider
+                defaultValue={60}
+                style={{
+                  width: "80%",
+                }}
+                tooltip={{
+                  formatter: (value) => `${value} s`,
+                }}
+                step={10}
+                max={300}
+                min={10}
+                marks={{
+                  30: "30s",
+                  60: "1m",
+                  120: "2m",
+                  300: "5m",
+                }}
+              />
+            </ListGridItem>
+
+            <List.Item>
+              <span style={{ fontWeight: "bold" }}>Actions</span>
+            </List.Item>
             <ListGridItem
               label="Réinitialiser "
               description="Réinitialiser les paramètres aux valeurs usine"
