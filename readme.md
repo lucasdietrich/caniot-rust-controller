@@ -97,6 +97,7 @@ Run with
 - Handle events
 - Implement device reset action
 - Implement inhibit mode for devices
+- Add cache for Settings to avoid reading the database at each request and avoid writing the database if the value is the same
 
 ```
 device_temperature{medium="CAN",mac="16",device="GarageDoorController",sensor="EMBEDDED",room="",collector="pycaniotcontroller"} 19.00

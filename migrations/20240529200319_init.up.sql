@@ -4,7 +4,7 @@ DROP TABLE IF EXISTS "settings";
 CREATE TABLE "settings" (
     "key" VARCHAR(64) NOT NULL,
     "val" VARCHAR(256) DEFAULT NULL,
-    "type" INTEGER NOT NULL DEFAULT 0,
+    "type" VARCHAR(16) NOT NULL DEFAULT 'string',
     "update" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY ("key")
 );

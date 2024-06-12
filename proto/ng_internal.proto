@@ -2,10 +2,24 @@ syntax = "proto3";
 
 package ng;
 
+import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 
 service InternalService {
   rpc Hello(HelloRequest) returns (HelloResponse) {}
+
+  rpc GetSettings(google.protobuf.Empty) returns (Settings) {}
+  rpc SetSettings(PartialSettings) returns (Settings) {}
+}
+
+message PartialSettings {
+  optional bool dark_mode = 1;
+  optional bool debug_mode = 2;
+}
+
+message Settings {
+  bool dark_mode = 1;
+  bool debug_mode = 2;
 }
 
 message HelloRequest { string name = 1; }

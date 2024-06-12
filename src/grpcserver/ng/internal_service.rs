@@ -1,10 +1,11 @@
 use std::{collections::HashMap, time::SystemTime};
 
+use log::debug;
 use tonic::{Request, Response, Status};
 
 use super::model::{
+    self as m,
     internal_service_server::{InternalService, InternalServiceServer},
-    *,
 };
 
 use crate::{grpcserver::systemtime_to_prost_timestamp, shared::SharedHandle};
@@ -16,16 +17,56 @@ pub struct NgInternal {
 
 #[tonic::async_trait]
 impl InternalService for NgInternal {
+    async fn get_settings(&self, _request: Request<()>) -> Result<Response<m::Settings>, Status> {
+        let db_lock = self.shared.db.read().await;
+        let settings = db_lock.get_settings_store();
+
+        let dark_mode = settings.read("dark_mode").await.unwrap_or(true);
+        let debug_mode = settings.read("debug_mode").await.unwrap_or(false);
+
+        println!("dark_mode: {}, debug_mode: {}", dark_mode, debug_mode);
+
+        Ok(Response::new(m::Settings {
+            dark_mode: dark_mode,
+            debug_mode: debug_mode,
+        }))
+    }
+
+    async fn set_settings(
+        &self,
+        ref request: Request<m::PartialSettings>,
+    ) -> Result<Response<m::Settings>, Status> {
+        let partial_settings = request.into_inner();
+        let db_lock = self.shared.db.read().await;
+        let settings = db_lock.get_settings_store();
+
+        let mut success = true;
+
+        if let Some(dark_mode) = partial_settings.dark_mode {
+            success &= settings.set("dark_mode", &dark_mode).await.is_ok();
+        }
+
+        if let Some(debug_mode) = partial_settings.debug_mode {
+            success &= settings.set("debug_mode", &debug_mode).await.is_ok();
+        }
+
+        if success {
+            self.get_settings(Request::new(())).await
+        } else {
+            Err(Status::internal("Failed to set settings"))
+        }
+    }
+
     async fn hello(
         &self,
-        request: Request<HelloRequest>,
-    ) -> Result<Response<HelloResponse>, Status> {
+        request: Request<m::HelloRequest>,
+    ) -> Result<Response<m::HelloResponse>, Status> {
         let mut map = HashMap::new();
         map.insert("garage".to_string(), 1);
         map.insert("uuid".to_string(), 2);
         map.insert("second".to_string(), 3);
 
-        let response = HelloResponse {
+        let response = m::HelloResponse {
             message: format!("Hello {}!", request.into_inner().name),
             timestamp: Some(systemtime_to_prost_timestamp(SystemTime::now())),
             map,
@@ -40,19 +81,6 @@ impl InternalService for NgInternal {
 
         Ok(Response::new(response))
     }
-
-    // async fn request_telemetry(
-    //     &self,
-    //     request: Request<TelemetryRequest>,
-    // ) -> Result<Response<TelemetryResponse>, Status> {
-    //     println!("Got a request: {:?}", request);
-
-    //     let response = TelemetryResponse {
-    //         message: format!("Hello!"),
-    //     };
-
-    //     Ok(Response::new(response))
-    // }
 }
 
 pub fn get_ng_internal_server(shared: SharedHandle) -> InternalServiceServer<NgInternal> {

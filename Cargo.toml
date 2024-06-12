@@ -12,6 +12,7 @@ default = []
 
 # feature for emulated can interface and devices
 emu = []
+experimental = []
 
 [dependencies]
 tokio = { version = "1", features = ["net"] }
