@@ -10,6 +10,7 @@ service InternalService {
 
   rpc GetSettings(google.protobuf.Empty) returns (Settings) {}
   rpc SetSettings(PartialSettings) returns (Settings) {}
+  rpc ResetSettings(google.protobuf.Empty) returns (Settings) {}
 }
 
 message PartialSettings {

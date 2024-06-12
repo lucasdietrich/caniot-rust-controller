@@ -57,6 +57,19 @@ class InternalStore extends EventEmitter {
       callbackFunc(resp);
     });
   };
+
+  resetSettings = (callbackFunc: (resp: Settings) => void) => {
+    this.client.resetSettings(new Empty(), null, (err, resp) => {
+      if (err !== null) {
+        HandleError(err);
+        return;
+      }
+
+      HandleSuccess("InternalStore::ResetSettings succeeded");
+
+      callbackFunc(resp);
+    });
+  };
 }
 
 const internalStore = new InternalStore();

@@ -1,4 +1,4 @@
-import { Card, Col, Divider, List, Row, Switch } from "antd";
+import { Button, Card, Col, Divider, List, Row, Switch } from "antd";
 import React, { useEffect, useState } from "react";
 import ListLabelledItem from "../components/ListLabelledItem";
 import {
@@ -15,12 +15,14 @@ interface ISettingsProps {
 
   setDarkMode?: (darkMode: boolean) => void;
   setDebugMode?: (debugMode: boolean) => void;
+  setSettingsReset?: () => void;
 }
 
 function SettingsView({
   settings,
   setDarkMode = () => {},
   setDebugMode = () => {},
+  setSettingsReset = () => {},
 }: ISettingsProps) {
   const loading = settings === undefined;
 
@@ -47,8 +49,16 @@ function SettingsView({
             <ListGridItem label="Debug" description="Active le mode de debug">
               <Switch checked={settings?.getDebugMode()} onChange={onDebugModeChange} />
             </ListGridItem>
-            <ListGridItem label="Dark mode" description="Active le dark mode">
+            <ListGridItem label="Mode nuit" description="Active le dark mode">
               <Switch checked={settings?.getDarkMode()} onChange={onDarkModeChange} />
+            </ListGridItem>
+            <ListGridItem
+              label="Réinitialiser "
+              description="Réinitialiser les paramètres aux valeurs usine"
+            >
+              <Button type="primary" danger onClick={setSettingsReset} disabled={loading}>
+                Réinitialiser les paramètres
+              </Button>
             </ListGridItem>
           </List>
         </LoadableCard>

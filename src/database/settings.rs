@@ -54,6 +54,19 @@ impl<'a> SettingsStore<'a> {
         Ok(())
     }
 
+    pub async fn set_default<T: SettingTrait>(&self, key: &str) -> Result<(), SettingsError> {
+        sqlx::query(
+            "INSERT INTO settings (key, val, type) VALUES ($1, $2, $3) ON CONFLICT (key) DO NOTHING"
+        )
+        .bind(key)
+        .bind(T::default().as_string())
+        .bind(T::type_name())
+        .execute(self.0)
+        .await?;
+
+        Ok(())
+    }
+
     pub async fn delete(&self, key: &str) -> Result<(), SettingsError> {
         sqlx::query("DELETE FROM settings WHERE key = $1")
             .bind(key)
