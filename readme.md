@@ -111,10 +111,11 @@ device_temperature{medium="CAN",mac="1",device="HeatersController",sensor="EXTER
 ## TODO (UI)
 
 - Implement `compactAlgorithm` theme with dark mode
+  - built 2MB un peu gros,
 - ~~Solve the resolution problem of: `import { Timestamp } from "google-protobuf/google/protobuf/timestamp_pb";`~~
 - Split built ui in chunks for faster loading
   - `rollupOptions`
 - Call front-end router
 - Correctly select the route (in the menu) when the URL is directly accessed
 - Make the UI layout compatible with mobile devices
-- 2MB un peu gros,
+- Introduce a 'Settings' class to abstract the settings management
