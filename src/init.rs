@@ -50,7 +50,8 @@ pub fn run_controller() {
 
     // read settings from database
     let settings_lg = rt.block_on(database_handle.read());
-    let settings = settings_lg.get_settings_handle();
+    let settings = settings_lg.get_settings_store();
+    drop(settings_lg);
 
     let controller =
         controller::init::<bus::IFaceType>(&rt, &config, &database_handle, &notify_shutdown);

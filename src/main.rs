@@ -13,6 +13,7 @@ mod grpcserver;
 mod init;
 mod internal;
 mod logger;
+mod settings;
 mod shared;
 mod shutdown;
 mod utils;
