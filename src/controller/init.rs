@@ -11,7 +11,7 @@ use crate::{bus::CanInterfaceTrait, config::AppConfig, database::Database, shutd
 pub fn init<IF: CanInterfaceTrait>(
     rt: &Arc<Runtime>,
     config: &AppConfig,
-    db: &Arc<RwLock<Database>>,
+    _db: &Arc<RwLock<Database>>,
     notify_shutdown: &Sender<()>,
 ) -> Controller<IF> {
     let can_iface = rt

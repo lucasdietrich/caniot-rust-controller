@@ -1,6 +1,7 @@
 use super::super::Behavior;
-use crate::caniot::{
-    self as ct, HeatingControllerCommand, HeatingControllerTelemetry, HeatingMode,
+use crate::{
+    caniot::{self as ct, AsPayload, HeatingMode},
+    controller::heaters::types::{HeatingControllerCommand, HeatingControllerTelemetry},
 };
 
 pub struct HeatersController {
@@ -25,7 +26,7 @@ impl Default for HeatersController {
 impl Behavior for HeatersController {
     fn on_command(&mut self, endpoint: &ct::Endpoint, payload: Vec<u8>) -> Option<ct::ErrorCode> {
         if endpoint == &ct::Endpoint::ApplicationDefault {
-            let command = HeatingControllerCommand::try_from(payload.as_slice()).unwrap();
+            let command = HeatingControllerCommand::try_from_raw(&payload).unwrap();
 
             for (i, mode) in command.modes.iter().enumerate() {
                 if mode != &HeatingMode::None {

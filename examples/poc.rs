@@ -1,0 +1,5 @@
+fn main() {
+    let _pl = &[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
+
+    // let telem = class0::Telemetry::try_from(pl).unwrap();
+}

@@ -1,239 +1,220 @@
-use num::FromPrimitive;
 use serde::Serialize;
 
-use super::{class0, class1, HeatingMode, ProtocolError, TS, TSP};
+use super::{ProtocolError, SysCtrl};
 
-trait TelemetryTrait<'a>: TryFrom<&'a [u8]> + Into<Vec<u8>> {}
+// Sealed trait to ensure that only the allowed types are used as payload types
+// TODO suppress warning
+trait PayloadType {}
 
-trait CommandTrait<'a>: Into<Vec<u8>> + TryFrom<&'a [u8]> {}
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+pub enum CommandPL {}
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+pub enum ClassCommandPL {}
 
-#[derive(Debug, Clone, Copy, PartialEq, Default)]
-pub struct SystemCommand {
-    pub hardware_reset: bool,
-    pub _software_reset: bool, // deprecated
-    pub _watchdog_reset: bool, // deprecated
-    pub watchdog_enable: TS,
-    pub factory_reset: bool,
-    pub inhibit: TSP,
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+pub enum TelemetryPL {}
+
+impl PayloadType for CommandPL {}
+impl PayloadType for ClassCommandPL {}
+impl PayloadType for TelemetryPL {}
+
+#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
+pub struct Payload<K: PayloadType> {
+    data: Vec<u8>,
+    marker: std::marker::PhantomData<K>,
 }
 
-impl SystemCommand {
-    pub const HARDWARE_RESET: SystemCommand = SystemCommand {
-        hardware_reset: true,
-        _software_reset: false,
-        _watchdog_reset: false,
-        watchdog_enable: TS::None,
-        factory_reset: false,
-        inhibit: TSP::None,
+impl<K> Payload<K>
+where
+    K: PayloadType,
+{
+    const MAX_SIZE: usize = 8;
+
+    pub const EMPTY: Self = Self {
+        data: Vec::new(),
+        marker: std::marker::PhantomData,
     };
-}
 
-impl Into<u8> for SystemCommand {
-    fn into(self) -> u8 {
-        let mut payload = 0_u8;
-
-        payload |= self.hardware_reset as u8;
-        payload |= (self._software_reset as u8) << 1;
-        payload |= (self._watchdog_reset as u8) << 2;
-        payload |= (self.watchdog_enable as u8) << 3;
-        payload |= (self.factory_reset as u8) << 5;
-        payload |= (self.inhibit as u8) << 6;
-
-        payload
+    pub fn new_empty() -> Self {
+        Self::EMPTY
     }
-}
 
-impl From<u8> for SystemCommand {
-    fn from(value: u8) -> Self {
-        SystemCommand {
-            hardware_reset: value & 0b0000_0001 != 0,
-            _software_reset: value & 0b0000_0010 != 0,
-            _watchdog_reset: value & 0b0000_0100 != 0,
-            watchdog_enable: FromPrimitive::from_u8((value & 0b0000_1100) >> 2).unwrap(),
-            factory_reset: value & 0b0001_0000 != 0,
-            inhibit: FromPrimitive::from_u8((value & 0b1100_0000) >> 6).unwrap(),
-        }
+    pub fn new_unchecked(data: impl AsRef<[u8]>) -> Self {
+        Self::new(data).expect("Failed to create payload")
     }
-}
 
-pub enum BlcClassCommand {
-    Class0(class0::Command),
-    Class1(class1::Command),
-}
-
-impl Into<[u8; 7]> for BlcClassCommand {
-    fn into(self) -> [u8; 7] {
-        let mut vec: Vec<_> = match self {
-            BlcClassCommand::Class0(class0_command) => class0_command.into(),
-            BlcClassCommand::Class1(class1_command) => class1_command.into(),
-        };
-
-        if vec.len() > 7 {
-            panic!("Class command size error");
-        } else if vec.len() < 7 {
-            // fill
-            vec.resize(7, 0);
-        }
-
-        vec.try_into().unwrap()
-    }
-}
-
-pub struct BlcCommand {
-    pub class_payload: Option<BlcClassCommand>,
-    pub sys: SystemCommand,
-}
-
-impl BlcCommand {
-    pub const HARDWARE_RESET: BlcCommand = BlcCommand {
-        class_payload: None,
-        sys: SystemCommand::HARDWARE_RESET,
-    };
-}
-
-impl Into<[u8; 8]> for BlcCommand {
-    fn into(self) -> [u8; 8] {
-        let class_command: [u8; 7] = if let Some(class_command) = self.class_payload {
-            class_command.into()
-        } else {
-            [0; 7]
-        };
-
-        let command: [u8; 8] = [
-            class_command[0],
-            class_command[1],
-            class_command[2],
-            class_command[3],
-            class_command[4],
-            class_command[5],
-            class_command[6],
-            self.sys.into(),
-        ];
-        command
-    }
-}
-
-#[derive(Debug, Clone, Copy, Serialize)]
-pub enum BlcClassTelemetry {
-    Class0(class0::Telemetry),
-    Class1(class1::Telemetry),
-}
-
-impl BlcClassTelemetry {
-    pub fn class_id(&self) -> u8 {
-        match self {
-            BlcClassTelemetry::Class0(_) => 0,
-            BlcClassTelemetry::Class1(_) => 1,
+    pub fn new_truncated(data: impl AsRef<[u8]>) -> Self {
+        let data = data.as_ref();
+        let mut truncated_data = Vec::with_capacity(Self::MAX_SIZE);
+        truncated_data.extend_from_slice(&data[..Self::MAX_SIZE]);
+        Self {
+            data: truncated_data,
+            marker: std::marker::PhantomData,
         }
     }
 
-    pub fn as_class0(&self) -> Option<&class0::Telemetry> {
-        match self {
-            BlcClassTelemetry::Class0(telemetry) => Some(telemetry),
-            _ => None,
+    pub fn new(data: impl AsRef<[u8]>) -> Result<Self, ProtocolError> {
+        let data = data.as_ref();
+        if data.len() > Self::MAX_SIZE {
+            return Err(ProtocolError::BufferSizeError);
         }
+
+        Ok(Self {
+            data: data.to_vec(),
+            marker: std::marker::PhantomData,
+        })
     }
 
-    pub fn as_class1(&self) -> Option<&class1::Telemetry> {
-        match self {
-            BlcClassTelemetry::Class1(telemetry) => Some(telemetry),
-            _ => None,
+    fn new_from_vec(data: Vec<u8>) -> Result<Self, ProtocolError> {
+        if data.len() > Self::MAX_SIZE {
+            return Err(ProtocolError::BufferSizeError);
         }
+
+        Ok(Self {
+            data,
+            marker: std::marker::PhantomData,
+        })
     }
 
-    pub fn get_board_temperature(&self) -> Option<f32> {
-        match self {
-            BlcClassTelemetry::Class0(telemetry) => telemetry.temp_in.to_celsius(),
-            BlcClassTelemetry::Class1(telemetry) => telemetry.temp_in.to_celsius(),
-        }
+    pub fn data(&self) -> &[u8] {
+        &self.data
+    }
+
+    pub fn len(&self) -> usize {
+        self.data.len()
+    }
+
+    pub fn into_raw_vec(self) -> Vec<u8> {
+        self.data
     }
 }
 
-impl Into<Vec<u8>> for BlcClassTelemetry {
-    fn into(self) -> Vec<u8> {
-        match self {
-            BlcClassTelemetry::Class0(class0_telemetry) => class0_telemetry.into(),
-            BlcClassTelemetry::Class1(class1_telemetry) => class1_telemetry.into(),
-        }
+pub trait AsPayload<K: PayloadType>:
+    for<'s> TryFrom<&'s Payload<K>, Error = ProtocolError> + Into<Payload<K>> + Clone
+{
+    fn to_payload(&self) -> Payload<K> {
+        // Try to remove the clone here and auto implement Into<Payload<K>> for &T where T: AsPayload
+        self.clone().into()
+    }
+
+    // TODO implement
+    // fn as_ref(&self) -> &[u8] {
+    //     self.to_payload().as_ref()
+    // }
+
+    fn to_raw_vec(&self) -> Vec<u8> {
+        self.to_payload().into_raw_vec()
+    }
+
+    fn try_from_raw(data: &[u8]) -> Result<Self, ProtocolError> {
+        Payload::<K>::try_from(data).and_then(|payload| Self::try_from(&payload))
     }
 }
 
-#[derive(Debug, Default, Clone, Copy, PartialEq)]
-pub struct HeatingControllerCommand {
-    pub modes: [HeatingMode; 4],
+// Implement the AsPayload trait for all types that implement TryFrom and Into trait with the Payload type
+impl<K, T> AsPayload<K> for T
+where
+    T: for<'s> TryFrom<&'s Payload<K>, Error = ProtocolError> + Into<Payload<K>> + Clone,
+    K: PayloadType,
+{
 }
 
-impl<'a> CommandTrait<'a> for HeatingControllerCommand {}
-
-impl TryFrom<&[u8]> for HeatingControllerCommand {
+impl<K> TryFrom<&[u8]> for Payload<K>
+where
+    K: PayloadType,
+{
     type Error = ProtocolError;
 
-    fn try_from(payload: &[u8]) -> Result<Self, ProtocolError> {
-        if payload.len() >= 2 {
-            Ok(HeatingControllerCommand {
-                modes: [
-                    HeatingMode::from_u8(payload[0] & 0xf).unwrap(),
-                    HeatingMode::from_u8((payload[0] & 0xf0) >> 4).unwrap(),
-                    HeatingMode::from_u8(payload[1] & 0xf).unwrap(),
-                    HeatingMode::from_u8((payload[1] & 0xf0) >> 4).unwrap(),
-                ],
-            })
-        } else {
-            Err(ProtocolError::PayloadDecodeError)
-        }
+    // Implement the AsPayload trait for all types that implement the From trait
+    //
+    // # Example
+    // ```rust
+    // fn main() {
+    //     let buf = &[0, 1, 2, 3];
+    //     let payload = Payload::<TelemetryPL>::try_from(buf).unwrap();
+    // }
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+        Payload::<K>::new(value)
     }
 }
 
-impl Into<Vec<u8>> for HeatingControllerCommand {
-    fn into(self) -> Vec<u8> {
-        let mut payload = Vec::with_capacity(3);
-
-        payload.push(self.modes[0] as u8 | (self.modes[1] as u8) << 4);
-        payload.push(self.modes[2] as u8 | (self.modes[3] as u8) << 4);
-
-        payload
-    }
-}
-
-#[derive(Debug, Default, Clone, Copy, PartialEq)]
-pub struct HeatingControllerTelemetry {
-    pub modes: [HeatingMode; 4],
-    pub power_status: bool,
-}
-
-impl<'a> TelemetryTrait<'a> for HeatingControllerTelemetry {}
-impl TryFrom<&[u8]> for HeatingControllerTelemetry {
+impl<K> TryFrom<Vec<u8>> for Payload<K>
+where
+    K: PayloadType,
+{
     type Error = ProtocolError;
 
-    fn try_from(payload: &[u8]) -> Result<Self, ProtocolError> {
-        if payload.len() >= 3 {
-            Ok(HeatingControllerTelemetry {
-                modes: [
-                    HeatingMode::from_u8(payload[0] & 0xf)
-                        .ok_or(ProtocolError::PayloadDecodeError)?,
-                    HeatingMode::from_u8((payload[0] & 0xf0) >> 4)
-                        .ok_or(ProtocolError::PayloadDecodeError)?,
-                    HeatingMode::from_u8(payload[1] & 0xf)
-                        .ok_or(ProtocolError::PayloadDecodeError)?,
-                    HeatingMode::from_u8((payload[1] & 0xf0) >> 4)
-                        .ok_or(ProtocolError::PayloadDecodeError)?,
-                ],
-                power_status: payload[2] & 0b0000_0001 != 0,
-            })
-        } else {
-            Err(ProtocolError::PayloadDecodeError)
-        }
+    // Implement the AsPayload trait for all types that implement the From trait
+    //
+    // # Example
+    // ```rust
+    // fn main() {
+    //     let vec = vec![0, 1, 2, 3];
+    //     let payload = Payload::<TelemetryPL>::try_from(vec).unwrap();
+    // }
+    fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+        Payload::<K>::new_from_vec(value)
     }
 }
 
-impl Into<Vec<u8>> for HeatingControllerTelemetry {
+impl<K> Into<Vec<u8>> for Payload<K>
+where
+    K: PayloadType,
+{
     fn into(self) -> Vec<u8> {
-        let mut payload = Vec::with_capacity(3);
+        self.into_raw_vec()
+    }
+}
 
-        payload.push(self.modes[0] as u8 | (self.modes[1] as u8) << 4);
-        payload.push(self.modes[2] as u8 | (self.modes[3] as u8) << 4);
-        payload.push(self.power_status as u8);
+impl<K> AsRef<[u8]> for Payload<K>
+where
+    K: PayloadType,
+{
+    fn as_ref(&self) -> &[u8] {
+        &self.data
+    }
+}
 
-        payload
+impl Payload<TelemetryPL> {}
+
+impl Payload<ClassCommandPL> {
+    pub fn get_system_control(&self) -> Result<SysCtrl, ProtocolError> {
+        if self.len() >= 8 {
+            Ok(SysCtrl::from(self.data[0]))
+        } else {
+            Err(ProtocolError::ClassCommandSizeError)
+        }
+    }
+
+    pub fn get_class_payload(&self) -> &[u8] {
+        &self.data[..7]
+    }
+
+    pub fn from(class_payload: &[u8], sys_ctrl: Option<SysCtrl>) -> Result<Self, ProtocolError> {
+        let pl_len = class_payload.len();
+        if pl_len > 7 {
+            return Err(ProtocolError::ClassCommandSizeError);
+        }
+
+        let sys: u8 = sys_ctrl.unwrap_or_default().into();
+
+        let mut data = Vec::with_capacity(8);
+        data.extend_from_slice(&class_payload);
+        data.extend_from_slice(&[0_u8; 7][..7 - pl_len]);
+        data.extend_from_slice(&[sys]);
+
+        Ok(Self {
+            data,
+            marker: std::marker::PhantomData,
+        })
+    }
+}
+
+impl From<Payload<ClassCommandPL>> for Payload<CommandPL> {
+    fn from(value: Payload<ClassCommandPL>) -> Self {
+        Self {
+            data: value.data,
+            marker: std::marker::PhantomData,
+        }
     }
 }

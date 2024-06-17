@@ -14,7 +14,7 @@ use embedded_can::{Frame as EmbeddedFrame, Id as EmbeddedId, StandardId};
 use socketcan::CanDataFrame;
 use thiserror::Error;
 
-use super::{DeviceId, ErrorCode, ProtocolError};
+use super::{CommandPL, DeviceId, ErrorCode, Payload, ProtocolError, TelemetryPL};
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, FromPrimitive)]
 pub enum Type {
@@ -205,7 +205,7 @@ pub enum RequestData {
     },
     Command {
         endpoint: Endpoint,
-        payload: Vec<u8>,
+        payload: Payload<CommandPL>,
     },
     AttributeRead {
         key: u16,
@@ -220,7 +220,7 @@ impl RequestData {
     fn get_can_payload(&self) -> Vec<u8> {
         match self {
             RequestData::Telemetry { .. } => vec![],
-            RequestData::Command { payload, .. } => payload.clone(),
+            RequestData::Command { payload, .. } => payload.as_ref().to_vec(),
             RequestData::AttributeRead { key } => key.to_le_bytes().to_vec(),
             RequestData::AttributeWrite { key, value } => {
                 let mut data = key.to_le_bytes().to_vec();
@@ -285,7 +285,7 @@ impl Response {
 impl ResponseData {
     fn to_data(&self) -> Vec<u8> {
         match self {
-            ResponseData::Telemetry { payload, .. } => payload.clone(),
+            ResponseData::Telemetry { payload, .. } => payload.as_ref().to_vec(),
             ResponseData::Attribute { key, value } => {
                 let mut data = key.to_le_bytes().to_vec();
                 data.extend_from_slice(&value.to_le_bytes());
@@ -316,7 +316,7 @@ pub enum ErrorSource {
 pub enum ResponseData {
     Telemetry {
         endpoint: Endpoint,
-        payload: Vec<u8>,
+        payload: Payload<TelemetryPL>,
     },
     Attribute {
         key: u16,
@@ -394,14 +394,14 @@ impl TryFrom<CanDataFrame> for Frame<ResponseData> {
 
     fn try_from(frame: CanDataFrame) -> Result<Self, Self::Error> {
         let id = Id::try_from(frame.id())?;
-        let payload: Vec<u8> = frame.data().to_vec();
+        let payload = frame.data();
 
         let data = if id.direction == Direction::Response {
             if id.action == Action::Read {
                 match id.msg_type {
                     Type::Telemetry => ResponseData::Telemetry {
                         endpoint: id.endpoint,
-                        payload,
+                        payload: Payload::new_unchecked(payload),
                     },
                     Type::Attribute => ResponseData::Attribute {
                         key: u16::from_le_bytes(
@@ -443,7 +443,7 @@ impl TryFrom<CanDataFrame> for Frame<RequestData> {
 
     fn try_from(value: CanDataFrame) -> Result<Self, Self::Error> {
         let id = Id::try_from(value.id())?;
-        let payload: Vec<u8> = value.data().to_vec();
+        let payload = value.data();
 
         let data = if id.direction == Direction::Query {
             match (id.msg_type, id.action) {
@@ -452,7 +452,7 @@ impl TryFrom<CanDataFrame> for Frame<RequestData> {
                 },
                 (Type::Telemetry, Action::Write) => RequestData::Command {
                     endpoint: id.endpoint,
-                    payload,
+                    payload: Payload::new_unchecked(payload),
                 },
                 (Type::Attribute, Action::Read) => RequestData::AttributeRead {
                     key: u16::from_le_bytes(payload[0..2].try_into().expect("Invalid attr key")),
@@ -487,8 +487,9 @@ impl Into<CanDataFrame> for Frame<RequestData> {
     }
 }
 
-fn format_payload(payload: &Vec<u8>) -> String {
+fn format_payload(payload: impl AsRef<[u8]>) -> String {
     payload
+        .as_ref()
         .iter()
         .map(|x| format!("{:02x}", x))
         .collect::<Vec<String>>()

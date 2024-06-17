@@ -4,8 +4,10 @@ use thiserror::Error;
 pub enum ProtocolError {
     #[error("Invalid device id")]
     DeviceIdCreationError,
-    #[error("Payload format error")]
+    #[error("Payload decode error")]
     PayloadDecodeError,
+    #[error("Payload encode error")]
+    PayloadEncodeError,
     #[error("Command format error")]
     CommandEncodeError,
     #[error("Unknown attribute key")]

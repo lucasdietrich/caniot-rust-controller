@@ -1,7 +1,7 @@
 use log::info;
 use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgPoolOptions;
-use sqlx::{ConnectOptions, PgPool};
+use sqlx::PgPool;
 
 use super::SettingsStore;
 

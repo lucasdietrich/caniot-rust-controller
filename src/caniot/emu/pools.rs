@@ -70,4 +70,16 @@ pub fn emu_pool2_realistic_add_devices_to_iface(iface: &mut CanInterface) {
         .add_behavior(Box::new(nodes::outdoor_alarm::OutdoorAlarmController::new()));
     outdoor_alarm_controller.set_telemetry_endpoint(caniot::Endpoint::BoardControl);
     iface.add_device(outdoor_alarm_controller);
+
+    // Add random unsupported devices
+    let devices_did = &[
+        DeviceId::from_u8(50),
+        DeviceId::from_u8(51),
+        DeviceId::from_u8(52),
+    ];
+    devices_did.iter().for_each(|did| {
+        let mut dev = Device::new(did.to_u8(), Some(Duration::from_secs(30)));
+        dev.add_behavior(Box::new(super::RandomBehavior::default()));
+        iface.add_device(dev);
+    });
 }

@@ -1,5 +1,5 @@
 use crate::{
-    caniot::{self, traits::Class, Temperature},
+    caniot::{self, class0::Class0, class1::Class1, AsPayload, Temperature},
     utils::expirable::ExpirableTrait,
 };
 
@@ -9,26 +9,26 @@ use super::Device;
 // errorcode not implemented yet
 pub trait Behavior: Send + Sync {
     // Initialize the behavior context
-    fn set_did(&mut self, did: &caniot::DeviceId) {}
+    fn set_did(&mut self, _did: &caniot::DeviceId) {}
 
     // Handlers
-    fn on_telemetry(&mut self, endpoint: &caniot::Endpoint) -> Option<Vec<u8>> {
+    fn on_telemetry(&mut self, _endpoint: &caniot::Endpoint) -> Option<Vec<u8>> {
         None
     }
 
     fn on_command(
         &mut self,
-        endpoint: &caniot::Endpoint,
-        payload: Vec<u8>,
+        _endpoint: &caniot::Endpoint,
+        _payload: Vec<u8>,
     ) -> Option<caniot::ErrorCode> {
         None
     }
 
-    fn on_read_attribute(&mut self, key: u16) -> Option<u32> {
+    fn on_read_attribute(&mut self, _key: u16) -> Option<u32> {
         None
     }
 
-    fn on_write_attribute(&mut self, key: u16, value: u32) -> Option<caniot::ErrorCode> {
+    fn on_write_attribute(&mut self, _key: u16, _value: u32) -> Option<caniot::ErrorCode> {
         None
     }
 
@@ -153,7 +153,7 @@ pub struct Class0Behavior {
 
 impl Behavior for Class0Behavior {
     fn set_did(&mut self, did: &caniot::DeviceId) {
-        if did.class != 0 {
+        if !did.is::<Class0>() {
             panic!("Class0Behavior is only for class 0 devices");
         }
     }
@@ -179,7 +179,7 @@ impl Behavior for Class0Behavior {
                 Temperature::INVALID,
             ];
 
-            Some(caniot::BlcClassTelemetry::Class0(telemetry).into())
+            Some(telemetry.to_raw_vec())
         } else {
             None
         }
@@ -188,7 +188,7 @@ impl Behavior for Class0Behavior {
     fn on_command(
         &mut self,
         endpoint: &caniot::Endpoint,
-        payload: Vec<u8>,
+        _payload: Vec<u8>,
     ) -> Option<caniot::ErrorCode> {
         if endpoint == &caniot::Endpoint::BoardControl {
             Some(caniot::ErrorCode::Enimpl)
@@ -203,7 +203,7 @@ pub struct Class1Behavior {}
 
 impl Behavior for Class1Behavior {
     fn set_did(&mut self, did: &caniot::DeviceId) {
-        if did.class != 1 {
+        if !did.is::<Class1>() {
             panic!("Class1Behavior is only for class 1 devices");
         }
     }
@@ -212,7 +212,7 @@ impl Behavior for Class1Behavior {
         if endpoint == &caniot::Endpoint::BoardControl {
             let mut telemetry = caniot::class1::Telemetry::default();
 
-            for (i, io) in telemetry.ios.iter_mut().enumerate() {
+            for io in telemetry.ios.iter_mut() {
                 *io = rand::random();
             }
 
@@ -223,7 +223,7 @@ impl Behavior for Class1Behavior {
                 Temperature::INVALID,
             ];
 
-            Some(caniot::BlcClassTelemetry::Class1(telemetry).into())
+            Some(telemetry.to_raw_vec())
         } else {
             None
         }
@@ -232,7 +232,7 @@ impl Behavior for Class1Behavior {
     fn on_command(
         &mut self,
         endpoint: &caniot::Endpoint,
-        payload: Vec<u8>,
+        _payload: Vec<u8>,
     ) -> Option<caniot::ErrorCode> {
         if endpoint == &caniot::Endpoint::BoardControl {
             Some(caniot::ErrorCode::Ok)

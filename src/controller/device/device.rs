@@ -115,14 +115,20 @@ impl Device {
         }
     }
 
+    fn handle_action_reset(&mut self) -> Result<ActionVerdict<DeviceAction>, DeviceError> {
+        // let blc_req = BlcCommand::HARDWARE_RESET.into_request();
+        // let verdict = ActionVerdict::ActionPendingOn(blc_req);
+        Err(DeviceError::NotImplemented)
+    }
+
     pub fn handle_action(
         &mut self,
         action: &DeviceAction,
         ctx: &mut ProcessContext,
     ) -> Result<ActionVerdict<DeviceAction>, DeviceError> {
         match action {
-            DeviceAction::Reset => Err(DeviceError::NotImplemented), // BlcCommand::HARDWARE_RESET
-            DeviceAction::InhibitControl => Err(DeviceError::NotImplemented), // BlcCommand::INHIBIT_CONTROL
+            DeviceAction::Reset => self.handle_action_reset(),
+            DeviceAction::InhibitControl => Err(DeviceError::NotImplemented),
 
             DeviceAction::Inner(inner_action) => {
                 if let Some(inner_device) = self.controller.as_mut() {

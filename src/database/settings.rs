@@ -1,10 +1,7 @@
-use chrono::{DateTime, Utc};
-use sqlx::{postgres::PgRow, PgPool, Row};
+use sqlx::{PgPool, Row};
 
 use crate::settings::SettingTrait;
 use thiserror::Error;
-
-use super::Database;
 
 pub struct SettingsStore<'a>(&'a PgPool);
 
@@ -56,7 +53,7 @@ impl<'a> SettingsStore<'a> {
 
     pub async fn set_default<T: SettingTrait>(&self, key: &str) -> Result<(), SettingsError> {
         sqlx::query(
-            "INSERT INTO settings (key, val, type) VALUES ($1, $2, $3) ON CONFLICT (key) DO NOTHING"
+            "INSERT INTO settings (key, val, type) VALUES ($1, $2, $3) ON CONFLICT (key) DO UPDATE SET val = $2, type = $3"
         )
         .bind(key)
         .bind(T::default().as_string())

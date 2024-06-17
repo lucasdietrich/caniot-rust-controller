@@ -3,7 +3,7 @@ use std::fmt::Debug;
 
 use serde::Serialize;
 
-use super::ProtocolError;
+use super::{traits::Class, ProtocolError};
 
 #[derive(Serialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct DeviceId {
@@ -40,6 +40,10 @@ impl DeviceId {
         }
     }
 
+    pub fn class_try_new_sid<C: Class>(sub_id: u8) -> Result<Self, ProtocolError> {
+        Self::try_new(C::get_class_id(), sub_id)
+    }
+
     pub unsafe fn new_unchecked(class: u8, sub_id: u8) -> Self {
         DeviceId { class, sub_id }
     }
@@ -54,6 +58,10 @@ impl DeviceId {
 
     pub fn to_u8(&self) -> u8 {
         (self.sub_id << 3) | self.class
+    }
+
+    pub fn is<C: Class>(&self) -> bool {
+        self.class == C::get_class_id()
     }
 }
 
