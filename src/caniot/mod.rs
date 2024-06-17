@@ -1,4 +1,5 @@
 pub mod attributes;
+pub mod board;
 pub mod classes;
 pub mod datatypes;
 pub mod did;
@@ -6,9 +7,11 @@ pub mod error;
 pub mod helper;
 pub mod payloads;
 pub mod protocol;
+pub mod sys_control;
 pub mod types;
 
 pub use attributes::*;
+
 pub use classes::*;
 pub use datatypes::*;
 pub use did::*;
@@ -16,6 +19,7 @@ pub use error::*;
 pub use helper::*;
 pub use payloads::*;
 pub use protocol::*;
+pub use sys_control::*;
 pub use types::*;
 
 #[cfg(test)]

@@ -1,7 +1,7 @@
 use std::time::{Duration, Instant};
 
 use crate::{
-    caniot::{self, Attribute, DeviceId, Endpoint, ErrorCode},
+    caniot::{self, Attribute, DeviceId, Endpoint, ErrorCode, Payload},
     utils::expirable::{ttl, ExpirableTrait},
 };
 
@@ -158,10 +158,10 @@ impl Device {
                     }
                 }
                 caniot::RequestData::Command { endpoint, payload } => {
-                    match self.handle_command(endpoint, payload) {
+                    match self.handle_command(endpoint, payload.as_ref()) {
                         Ok(response) => Some(caniot::ResponseData::Telemetry {
                             endpoint: *endpoint,
-                            payload: response,
+                            payload: Payload::new_unchecked(&response),
                         }),
                         Err(error) => Some(caniot::ResponseData::Error {
                             source: caniot::ErrorSource::Telemetry(*endpoint, None),
@@ -173,7 +173,7 @@ impl Device {
                     match self.handle_telemetry(endpoint) {
                         Ok(payload) => Some(caniot::ResponseData::Telemetry {
                             endpoint: *endpoint,
-                            payload,
+                            payload: Payload::new_unchecked(&payload),
                         }),
                         Err(error) => Some(caniot::ResponseData::Error {
                             source: caniot::ErrorSource::Telemetry(*endpoint, None),
@@ -196,7 +196,10 @@ impl Device {
             None
         } else if let Some(endpoint) = self.telemetries_requested.pop() {
             match self.handle_telemetry(&endpoint) {
-                Ok(payload) => Some(caniot::ResponseData::Telemetry { endpoint, payload }),
+                Ok(payload) => Some(caniot::ResponseData::Telemetry {
+                    endpoint,
+                    payload: Payload::new_unchecked(&payload),
+                }),
                 Err(error) => Some(caniot::ResponseData::Error {
                     source: caniot::ErrorSource::Telemetry(endpoint, None),
                     error: Some(error),
@@ -205,7 +208,10 @@ impl Device {
         } else if self.get_time_to_next_periodic_telemetry() == Some(Duration::from_secs(0)) {
             let endpoint = self.telemetry_endpoint;
             match self.handle_telemetry(&endpoint) {
-                Ok(payload) => Some(caniot::ResponseData::Telemetry { endpoint, payload }),
+                Ok(payload) => Some(caniot::ResponseData::Telemetry {
+                    endpoint,
+                    payload: Payload::new_unchecked(&payload),
+                }),
                 Err(error) => Some(caniot::ResponseData::Error {
                     source: caniot::ErrorSource::Telemetry(endpoint, None),
                     error: Some(error),

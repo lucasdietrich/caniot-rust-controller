@@ -1,5 +1,5 @@
 use super::traits::{Class, ClassCommandTrait, ClassTelemetryTrait};
-use crate::caniot::{ProtocolError, Temperature, Xps};
+use crate::caniot::{ClassCommandPL, Payload, ProtocolError, TelemetryPL, Temperature, Xps};
 use num::FromPrimitive;
 use serde::Serialize;
 
@@ -22,12 +22,17 @@ pub struct Telemetry {
     pub temp_out: [Temperature; 3],
 }
 
-impl ClassTelemetryTrait<'_> for Telemetry {}
+impl ClassTelemetryTrait for Telemetry {
+    fn get_board_temperature(&self) -> Option<f32> {
+        self.temp_in.to_celsius()
+    }
+}
 
-impl TryFrom<&[u8]> for Telemetry {
+impl TryFrom<&Payload<TelemetryPL>> for Telemetry {
     type Error = ProtocolError;
 
-    fn try_from(payload: &[u8]) -> Result<Self, ProtocolError> {
+    fn try_from(payload: &Payload<TelemetryPL>) -> Result<Self, ProtocolError> {
+        let payload = payload.as_ref();
         if payload.len() >= 7 {
             Ok(Telemetry {
                 oc1: payload[0] & 0b0000_0001 != 0,
@@ -67,8 +72,8 @@ impl TryFrom<&[u8]> for Telemetry {
     }
 }
 
-impl Into<Vec<u8>> for Telemetry {
-    fn into(self) -> Vec<u8> {
+impl Into<Payload<TelemetryPL>> for Telemetry {
+    fn into(self) -> Payload<TelemetryPL> {
         let mut payload = Vec::with_capacity(7);
 
         payload.push(
@@ -101,7 +106,7 @@ impl Into<Vec<u8>> for Telemetry {
         payload.push(temp_out[1][0] >> 4 | (temp_out[1][1] << 4) | (temp_out[2][0] << 6));
         payload.push(temp_out[2][0] >> 2 | (temp_out[2][1] << 6));
 
-        payload
+        Payload::<TelemetryPL>::new(payload).unwrap()
     }
 }
 
@@ -113,10 +118,10 @@ pub struct Command {
     pub crl2: Xps,
 }
 
-impl<'a> ClassCommandTrait<'a> for Command {}
+impl ClassCommandTrait for Command {}
 
-impl Into<Vec<u8>> for Command {
-    fn into(self) -> Vec<u8> {
+impl Into<Payload<ClassCommandPL>> for Command {
+    fn into(self) -> Payload<ClassCommandPL> {
         let mut payload = vec![0; 7];
 
         payload[0] = self.coc1 as u8;
@@ -125,14 +130,15 @@ impl Into<Vec<u8>> for Command {
         payload[1] = ((self.crl1 as u8) & 0b100) >> 2;
         payload[1] |= (self.crl2 as u8) << 1;
 
-        payload
+        Payload::<ClassCommandPL>::new(payload).unwrap()
     }
 }
 
-impl TryFrom<&[u8]> for Command {
+impl TryFrom<&Payload<ClassCommandPL>> for Command {
     type Error = ProtocolError;
 
-    fn try_from(payload: &[u8]) -> Result<Self, ProtocolError> {
+    fn try_from(payload: &Payload<ClassCommandPL>) -> Result<Self, ProtocolError> {
+        let payload = payload.as_ref();
         if payload.len() >= 2 {
             Ok(Command {
                 coc1: FromPrimitive::from_u8(payload[0] & 0b0000_0111).unwrap(),
@@ -149,9 +155,9 @@ impl TryFrom<&[u8]> for Command {
     }
 }
 
-pub enum Class0 {}
+pub struct Class0;
 
-impl Class<'_> for Class0 {
+impl Class for Class0 {
     type Telemetry = Telemetry;
     type Command = Command;
 

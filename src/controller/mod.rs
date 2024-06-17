@@ -1,8 +1,8 @@
-mod controller;
-mod device;
-mod handle;
-mod init;
-mod nodes_controllers;
+pub mod controller;
+pub mod device;
+pub mod handle;
+pub mod init;
+pub mod nodes_controllers;
 
 pub use controller::*;
 pub use device::*;

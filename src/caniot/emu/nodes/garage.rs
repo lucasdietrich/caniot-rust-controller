@@ -4,7 +4,7 @@ use log::debug;
 
 use super::super::Behavior;
 use crate::{
-    caniot::{self as ct, class0, ResponseData, Temperature, Xps},
+    caniot::{self as ct, class0, AsPayload, Temperature, Xps},
     utils::expirable::ExpirableTrait,
 };
 
@@ -97,7 +97,7 @@ pub struct GarageController {
 impl Behavior for GarageController {
     fn on_command(&mut self, endpoint: &ct::Endpoint, payload: Vec<u8>) -> Option<ct::ErrorCode> {
         if endpoint == &ct::Endpoint::BoardControl {
-            if let Ok(command) = class0::Command::try_from(payload.as_slice()) {
+            if let Ok(command) = class0::Command::try_from_raw(&payload) {
                 if command.crl1 == Xps::PulseOn {
                     self.left_door.pulse_relay();
                 }
@@ -131,7 +131,7 @@ impl Behavior for GarageController {
                 Temperature::INVALID,
             ];
 
-            Some(telemetry.into())
+            Some(telemetry.to_raw_vec())
         } else {
             None
         }

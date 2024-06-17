@@ -9,7 +9,7 @@ use super::{
     DeviceError, ProcessContext,
 };
 
-pub trait DeviceControllerTrait: Send + Debug {
+pub trait DeviceControllerTrait: Send + Debug + Default {
     // TODO
     // type Class: Class<'a>; ???
     type Action: ActionTrait;

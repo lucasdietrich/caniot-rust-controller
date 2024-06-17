@@ -1,20 +1,20 @@
 use num::FromPrimitive;
 
-use crate::caniot::Temperature;
+use crate::caniot::{AsPayload, Payload, TelemetryPL, Temperature};
 
 use super::class1;
 
 #[test]
 fn telemetry() {
     let telem = class1::Telemetry::default();
-    let ser: Vec<u8> = telem.into();
+    let ser = telem.to_raw_vec();
     assert_eq!(ser.len(), 8);
     assert_eq!(ser, vec![0, 0, 0, 255, 255, 255, 255, 255]);
 
     for i in 0..class1::Telemetry::default().ios.len() {
         let mut telem = class1::Telemetry::default();
         telem.ios[i] = true;
-        let ser: Vec<u8> = telem.into();
+        let ser = telem.to_raw_vec();
         assert_eq!(ser.len(), 8);
         assert_eq!(ser[i / 8], 1 << (i % 8));
     }
@@ -30,9 +30,10 @@ fn telemetry() {
         for temp in temps.iter() {
             let mut telem = class1::Telemetry::default();
             telem.temp_out[i] = *temp;
-            let ser: Vec<u8> = telem.into();
+            let ser = telem.to_raw_vec();
 
-            let deser = class1::Telemetry::try_from(ser.as_slice());
+            let pl = Payload::<TelemetryPL>::try_from(ser).unwrap();
+            let deser = class1::Telemetry::try_from(&pl);
             assert_eq!(deser.is_ok(), true);
 
             let deser = deser.unwrap();
@@ -48,10 +49,10 @@ fn command() {
         FromPrimitive::from_u8((i & 0x7) as u8).map(|x| cmd.ios[i] = x);
     }
 
-    let ser: Vec<u8> = cmd.into();
+    let ser = cmd.to_raw_vec();
     assert_eq!(ser.len(), 7);
 
-    let deser = class1::Command::try_from(ser.as_slice());
+    let deser = class1::Command::try_from_raw(&ser);
     assert_eq!(deser.is_ok(), true);
 
     let deser = deser.unwrap();

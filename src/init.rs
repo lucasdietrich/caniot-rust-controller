@@ -50,7 +50,7 @@ pub fn run_controller() {
 
     // read settings from database
     let settings_lg = rt.block_on(database_handle.read());
-    let settings = settings_lg.get_settings_store();
+    let _settings = settings_lg.get_settings_store();
     drop(settings_lg);
 
     let controller =

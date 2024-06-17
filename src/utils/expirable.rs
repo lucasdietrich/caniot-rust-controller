@@ -60,6 +60,12 @@ where
     E: ExpirableTrait<T>,
     T: Eq + Ord + Default,
 {
+    /// Returns the minimum time to live of an iterator of expirable objects.
+    ///
+    /// # Returns
+    ///
+    /// The minimum time to live of the iterator of expirable objects.
+    /// If the iterator is empty, it returns None.
     fn ttl(&self) -> Option<T> {
         self.clone().filter_map(|e| e.ttl()).min()
     }
@@ -97,6 +103,16 @@ where
     }
 }
 
+/// Returns the minimum time to live of a list of expirable objects.
+///
+/// # Arguments
+///
+/// * `results` - A list of expiration results (e.g. after calling ttl() on a list of objects).
+///
+/// # Returns
+///
+/// The minimum time to live of the list of expirable objects.
+/// If the list is empty, it returns None.
 pub fn ttl<T>(results: &[Option<T>]) -> Option<T>
 where
     T: Eq + Ord + Default + Copy,

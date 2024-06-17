@@ -1,7 +1,7 @@
 use serde::Serialize;
 use strum::{EnumIter, IntoEnumIterator};
 
-use crate::caniot::{ProtocolError, Temperature, Xps};
+use crate::caniot::{ClassCommandPL, Payload, ProtocolError, TelemetryPL, Temperature, Xps};
 
 use super::traits::{Class, ClassCommandTrait, ClassTelemetryTrait};
 
@@ -15,11 +15,17 @@ pub struct Telemetry {
     pub temp_out: [Temperature; 3],
 }
 
-impl ClassTelemetryTrait<'_> for Telemetry {}
-impl TryFrom<&[u8]> for Telemetry {
+impl ClassTelemetryTrait for Telemetry {
+    fn get_board_temperature(&self) -> Option<f32> {
+        self.temp_in.to_celsius()
+    }
+}
+
+impl TryFrom<&Payload<TelemetryPL>> for Telemetry {
     type Error = ProtocolError;
 
-    fn try_from(payload: &[u8]) -> Result<Self, ProtocolError> {
+    fn try_from(payload: &Payload<TelemetryPL>) -> Result<Self, ProtocolError> {
+        let payload = payload.as_ref();
         if payload.len() >= 8 {
             Ok(Telemetry {
                 ios: [
@@ -68,8 +74,8 @@ impl TryFrom<&[u8]> for Telemetry {
     }
 }
 
-impl Into<Vec<u8>> for Telemetry {
-    fn into(self) -> Vec<u8> {
+impl Into<Payload<TelemetryPL>> for Telemetry {
+    fn into(self) -> Payload<TelemetryPL> {
         let mut payload = Vec::with_capacity(8);
 
         payload.push(
@@ -106,7 +112,7 @@ impl Into<Vec<u8>> for Telemetry {
         payload.push(temp_out[1][0] >> 4 | (temp_out[1][1] << 4) | (temp_out[2][0] << 6));
         payload.push(temp_out[2][0] >> 2 | (temp_out[2][1] << 6));
 
-        payload
+        Payload::<TelemetryPL>::new(payload).unwrap()
     }
 }
 
@@ -139,22 +145,24 @@ pub struct Command {
     pub ios: [Xps; CLASS1_IO_COUNT],
 }
 
-impl<'a> ClassCommandTrait<'a> for Command {}
-impl Into<Vec<u8>> for Command {
-    fn into(self) -> Vec<u8> {
+impl<'a> ClassCommandTrait for Command {}
+impl Into<Payload<ClassCommandPL>> for Command {
+    fn into(self) -> Payload<ClassCommandPL> {
         let mut payload = vec![0; 7];
         for (i, field) in self.ios.iter().enumerate() {
             field.set_at(&mut payload, i).unwrap();
         }
-        payload
+
+        Payload::<ClassCommandPL>::new(payload).unwrap()
     }
 }
 
-impl TryFrom<&[u8]> for Command {
+impl TryFrom<&Payload<ClassCommandPL>> for Command {
     type Error = ProtocolError;
 
     // Convert a Class1 command serialized payload into a Command struct
-    fn try_from(payload: &[u8]) -> Result<Self, ProtocolError> {
+    fn try_from(payload: &Payload<ClassCommandPL>) -> Result<Self, ProtocolError> {
+        let payload = payload.as_ref();
         if payload.len() >= 7 {
             Ok(Command {
                 ios: Class1CommandFields::iter()
@@ -169,9 +177,9 @@ impl TryFrom<&[u8]> for Command {
     }
 }
 
-pub enum Class1 {}
+pub struct Class1;
 
-impl Class<'_> for Class1 {
+impl Class for Class1 {
     type Telemetry = Telemetry;
     type Command = Command;
 

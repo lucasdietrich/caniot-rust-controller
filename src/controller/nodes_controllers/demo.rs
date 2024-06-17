@@ -1,5 +1,5 @@
 use crate::{
-    caniot::{self, BlcClassTelemetry, RequestData},
+    caniot::{self, BlcClassTelemetry, Payload, RequestData},
     controller::{
         ActionResultTrait, ActionTrait, ActionVerdict, DeviceControllerInfos,
         DeviceControllerTrait, DeviceError, ProcessContext, Verdict,
@@ -23,7 +23,7 @@ impl DemoController {
 
         Ok(ActionVerdict::ActionPendingOn(RequestData::Command {
             endpoint: caniot::Endpoint::ApplicationDefault,
-            payload: vec![active as u8],
+            payload: Payload::new_unchecked(&[active as u8]),
         }))
     }
 }
@@ -60,7 +60,7 @@ impl DeviceControllerTrait for DemoController {
         } = frame
         {
             if payload.len() >= 1 {
-                self.active = payload[0] != 0;
+                self.active = payload.as_ref()[0] != 0;
             }
         }
 

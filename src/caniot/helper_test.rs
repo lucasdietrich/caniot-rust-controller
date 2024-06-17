@@ -56,7 +56,7 @@ fn test_response_match_any_attribute_query() {
         device_id: DeviceId::try_from_u8(1).unwrap(),
         data: ResponseData::Telemetry {
             endpoint: Endpoint::Application2,
-            payload: vec![],
+            payload: Payload::new_empty(),
         },
     };
     assert!(is_response_to(&query, &response).is_valid_response());
@@ -65,7 +65,7 @@ fn test_response_match_any_attribute_query() {
         device_id: DeviceId::try_from_u8(1).unwrap(),
         data: ResponseData::Telemetry {
             endpoint: Endpoint::Application1,
-            payload: vec![],
+            payload: Payload::new_empty(),
         },
     };
     let m = is_response_to(&query, &response);

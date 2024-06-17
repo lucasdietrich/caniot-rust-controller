@@ -1,8 +1,8 @@
-use std::{thread, time::Duration};
+use std::time::Duration;
 
 use super::super::Behavior;
 use crate::{
-    caniot::{self as ct, class0, emu::helpers::EmuXps, Temperature},
+    caniot::{self as ct, class0, emu::helpers::EmuXps, AsPayload, Temperature},
     utils::expirable::ExpirableTrait,
 };
 
@@ -34,7 +34,7 @@ impl OutdoorAlarmController {
 impl Behavior for OutdoorAlarmController {
     fn on_command(&mut self, endpoint: &ct::Endpoint, payload: Vec<u8>) -> Option<ct::ErrorCode> {
         if endpoint == &ct::Endpoint::BoardControl {
-            if let Ok(command) = class0::Command::try_from(payload.as_slice()) {
+            if let Ok(command) = class0::Command::try_from_raw(&payload) {
                 self.lights[0].apply(&command.coc1);
                 self.lights[1].apply(&command.coc2);
                 self.siren.apply(&command.crl1);
@@ -70,7 +70,7 @@ impl Behavior for OutdoorAlarmController {
                 Temperature::INVALID,
             ];
 
-            Some(telemetry.into())
+            Some(telemetry.to_raw_vec())
         } else {
             None
         }

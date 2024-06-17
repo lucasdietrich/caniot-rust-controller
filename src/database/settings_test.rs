@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 
 use crate::{
-    database::{db, SettingsError, SettingsStore},
+    database::{db, SettingsStore},
     settings::SettingTrait,
 };
 

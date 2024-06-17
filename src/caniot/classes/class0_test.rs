@@ -1,22 +1,22 @@
-use crate::caniot::Temperature;
+use crate::caniot::{AsPayload, Temperature};
 
 use super::class0;
 
 #[test]
 fn telemetry() {
     let telem = class0::Telemetry::default();
-    let ser: Vec<u8> = telem.into();
+    let ser: Vec<u8> = telem.to_raw_vec();
     assert_eq!(ser.len(), 7);
     assert_eq!(ser, vec![0, 0, 255, 255, 255, 255, 255]);
 
     let mut telem = class0::Telemetry::default();
     telem.oc1 = true;
-    let ser: Vec<u8> = telem.into();
+    let ser: Vec<u8> = telem.to_raw_vec();
     assert_eq!(ser, vec![1, 0, 255, 255, 255, 255, 255]);
 
     let mut telem = class0::Telemetry::default();
     telem.in1 = true;
-    let ser: Vec<u8> = telem.into();
+    let ser: Vec<u8> = telem.to_raw_vec();
     assert_eq!(ser, vec![16, 0, 255, 255, 255, 255, 255]);
 
     let temps = [
@@ -30,9 +30,9 @@ fn telemetry() {
         for temp in temps.iter() {
             let mut telem = class0::Telemetry::default();
             telem.temp_out[i] = *temp;
-            let ser: Vec<u8> = telem.into();
+            let ser = telem.to_raw_vec();
 
-            let deser = class0::Telemetry::try_from(ser.as_slice());
+            let deser = class0::Telemetry::try_from_raw(&ser);
             assert_eq!(deser.is_ok(), true);
 
             let deser = deser.unwrap();

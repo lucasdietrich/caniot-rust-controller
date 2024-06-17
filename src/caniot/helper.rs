@@ -1,4 +1,6 @@
-use super::{DeviceId, Endpoint, ErrorSource, Request, RequestData, Response, ResponseData};
+use super::{
+    DeviceId, Endpoint, ErrorSource, Payload, Request, RequestData, Response, ResponseData,
+};
 
 pub fn build_telemetry_request_data(endpoint: Endpoint) -> RequestData {
     RequestData::Telemetry { endpoint }
@@ -13,7 +15,10 @@ pub fn build_attribute_write_request_data(key: u16, value: u32) -> RequestData {
 }
 
 pub fn build_command_request_data(endpoint: Endpoint, payload: Vec<u8>) -> RequestData {
-    RequestData::Command { endpoint, payload }
+    RequestData::Command {
+        endpoint,
+        payload: Payload::new(&payload).unwrap(),
+    }
 }
 
 pub fn build_telemetry_request(device_id: DeviceId, endpoint: Endpoint) -> Request {
@@ -41,17 +46,6 @@ pub fn build_command_request(device_id: DeviceId, endpoint: Endpoint, payload: V
     Request {
         device_id,
         data: build_command_request_data(endpoint, payload),
-    }
-}
-
-pub fn build_telemetry_response(
-    device_id: DeviceId,
-    endpoint: Endpoint,
-    payload: Vec<u8>,
-) -> Response {
-    Response {
-        device_id,
-        data: ResponseData::Telemetry { endpoint, payload },
     }
 }
 

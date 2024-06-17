@@ -1,6 +1,6 @@
-pub mod actions;
+mod actions;
 pub mod outdoor;
-pub mod types;
+mod types;
 
-pub use actions::*;
+pub use actions::{Action, AlarmEnable, LightAction, LightsActions, SirenAction};
 pub use outdoor::*;

@@ -1,12 +1,12 @@
 use crate::{
-    caniot::{
-        self, BlcClassTelemetry, HeatingControllerCommand, HeatingControllerTelemetry, HeatingMode,
-    },
+    caniot::{self, BlcClassTelemetry, HeatingMode},
     controller::{
         ActionResultTrait, ActionTrait, ActionVerdict, DeviceControllerInfos,
         DeviceControllerTrait, ProcessContext, Verdict,
     },
 };
+
+use super::types::{HeatingControllerCommand, HeatingControllerTelemetry};
 
 #[derive(Debug, Default, Clone)]
 pub struct HeatersController {
@@ -78,7 +78,7 @@ impl DeviceControllerTrait for HeatersController {
                 if endpoint == &caniot::Endpoint::ApplicationDefault =>
             {
                 // interpret the payload as telemetry
-                let telemetry = HeatingControllerTelemetry::try_from(payload.as_ref())?;
+                let telemetry = HeatingControllerTelemetry::try_from(payload)?;
 
                 // update internal state
                 self.status.heaters = telemetry.modes;

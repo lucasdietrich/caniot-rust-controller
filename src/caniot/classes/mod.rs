@@ -8,3 +8,5 @@ mod class0_test;
 
 #[cfg(test)]
 mod class1_test;
+
+pub use utils::*;
