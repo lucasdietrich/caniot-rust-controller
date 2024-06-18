@@ -12,7 +12,7 @@ clippy:
 	cargo clippy -- -D warnings
 
 run:
-	cargo run --features "emu"
+	cargo run --features "emu" --profile dev
 
 clean:
 	cargo clean

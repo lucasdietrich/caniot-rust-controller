@@ -60,7 +60,7 @@ function DevicesTable({ devicesList }: IDevicesTableProps) {
       action.setDid(did);
       action.setPing(Endpoint.ENDPOINTBOARDLEVELCONTROL);
       devicesStore.performAction(action, (resp) => {
-        console.log(resp);
+        console.log("[" + resp.getPong()?.getDid() + "] : " + resp.getPong()?.getPayloadList());
       });
     };
   };

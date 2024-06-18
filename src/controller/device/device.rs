@@ -177,12 +177,7 @@ impl Device {
             DeviceAction::Ping(endpoint) => {
                 // Simplify this code
                 if let Some(frame) = completed_by {
-                    if let ResponseData::Telemetry { ref payload, .. } = frame.data {
-                        Ok(DeviceActionResult::Pong(*endpoint, payload.clone()))
-                    } else {
-                        error!("Invalid frame for ping action");
-                        Err(DeviceError::InvalidFrame)
-                    }
+                    Ok(DeviceActionResult::Pong(frame.clone()))
                 } else {
                     error!("No result for ping action");
                     Err(DeviceError::NoActionResult)
