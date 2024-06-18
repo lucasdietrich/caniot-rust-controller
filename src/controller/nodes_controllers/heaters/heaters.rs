@@ -63,7 +63,7 @@ impl DeviceControllerTrait for HeatersController {
     fn handle_action_result(
         &self,
         _action: &Self::Action,
-        _completed_by: &Option<Response>,
+        _completed_by: Response,
     ) -> Result<<Self::Action as ActionTrait>::Result, crate::controller::DeviceError> {
         Ok(self.status.clone())
     }

@@ -146,7 +146,7 @@ impl DeviceControllerTrait for AlarmController {
     fn handle_action_result(
         &self,
         _delayed_action: &Self::Action,
-        _completed_by: &Option<Response>,
+        _completed_by: Response,
     ) -> Result<<Self::Action as ActionTrait>::Result, DeviceError> {
         Ok(self.get_state())
     }
