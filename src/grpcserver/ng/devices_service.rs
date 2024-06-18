@@ -43,12 +43,6 @@ impl Into<m::DeviceIdInfos> for ct::DeviceId {
     }
 }
 
-impl Into<ct::DeviceId> for m::DeviceId {
-    fn into(self) -> ct::DeviceId {
-        ct::DeviceId::try_from_u8(self.did as u8).unwrap()
-    }
-}
-
 impl Into<m::Class0Telemetry> for ct::class0::Telemetry {
     fn into(self) -> m::Class0Telemetry {
         m::Class0Telemetry {

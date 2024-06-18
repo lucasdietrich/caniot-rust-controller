@@ -10,6 +10,12 @@ impl Into<m::DeviceId> for ct::DeviceId {
     }
 }
 
+impl Into<ct::DeviceId> for m::DeviceId {
+    fn into(self) -> ct::DeviceId {
+        ct::DeviceId::try_from_u8(self.did as u8).unwrap()
+    }
+}
+
 impl From<m::Endpoint> for ct::Endpoint {
     fn from(value: m::Endpoint) -> Self {
         match value {

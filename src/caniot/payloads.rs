@@ -15,10 +15,15 @@ pub trait PayloadType {
 }
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+
+// Represents a Payload of type Command
 pub enum Cd {}
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+
+// Represents a Payload of type Class Command
 pub enum ClCd {}
 
+// Represents a Payload of type Telemetry
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 pub enum Ty {}
 
