@@ -263,9 +263,13 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
         device.schedule_next_process_in(device_context.next_process);
 
         // Let the device compute the action result if any
-        if let Some(answered_action) = answered_pending_action {
+        if let Some(mut answered_action) = answered_pending_action {
+            let completed_by = answered_action
+                .response
+                .take()
+                .expect("Response not set for action");
             let action_result =
-                device.handle_action_result(&answered_action.action, &answered_action.response)?;
+                device.handle_action_result(&answered_action.action, completed_by)?;
             answered_action.send(Ok(action_result));
         }
 

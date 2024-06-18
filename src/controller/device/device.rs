@@ -168,21 +168,13 @@ impl Device {
     pub fn handle_action_result(
         &self,
         delayed_action: &DeviceAction,
-        completed_by: &Option<Response>,
+        completed_by: Response,
     ) -> Result<<DeviceAction as ActionTrait>::Result, DeviceError> {
         match delayed_action {
             DeviceAction::Reset => Ok(DeviceActionResult::ResetSent),
             DeviceAction::ResetSettings => Ok(DeviceActionResult::ResetSettingsSent),
             DeviceAction::InhibitControl(_inhibit) => Ok(DeviceActionResult::InhibitControlSent),
-            DeviceAction::Ping(endpoint) => {
-                // Simplify this code
-                if let Some(frame) = completed_by {
-                    Ok(DeviceActionResult::Pong(frame.clone()))
-                } else {
-                    error!("No result for ping action");
-                    Err(DeviceError::NoActionResult)
-                }
-            }
+            DeviceAction::Ping(endpoint) => Ok(DeviceActionResult::Pong(completed_by)),
             DeviceAction::Inner(inner_action) => {
                 if let Some(inner_device) = self.controller.as_ref() {
                     let result = inner_device

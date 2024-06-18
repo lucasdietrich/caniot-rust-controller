@@ -39,7 +39,7 @@ pub trait DeviceControllerTrait: Send + Debug + Default {
     fn handle_action_result(
         &self,
         _delayed_action: &Self::Action,
-        _completed_by: &Option<Response>,
+        _completed_by: Response,
     ) -> Result<<Self::Action as ActionTrait>::Result, DeviceError> {
         error!(
             "handle_action_result not implemented for device controller \"{}\"",
@@ -90,7 +90,7 @@ pub trait DeviceControllerWrapperTrait: Send + Debug {
     fn wrapper_handle_delayed_action_result(
         &self,
         _delayed_action: &Box<dyn ActionWrapperTrait>,
-        completed_by: &Option<caniot::Response>,
+        _completed_by: caniot::Response,
     ) -> Result<Box<dyn ActionResultTrait>, DeviceError> {
         Err(DeviceError::NotImplemented)
     }
@@ -134,7 +134,7 @@ where
     fn wrapper_handle_delayed_action_result(
         &self,
         delayed_action: &Box<dyn ActionWrapperTrait>,
-        completed_by: &Option<Response>,
+        completed_by: Response,
     ) -> Result<Box<dyn ActionResultTrait>, DeviceError> {
         match delayed_action.deref().downcast_ref::<T::Action>() {
             Some(delayed_action) => self
