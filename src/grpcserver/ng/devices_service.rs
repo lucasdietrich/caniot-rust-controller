@@ -4,7 +4,7 @@ use crate::{
     caniot as ct,
     controller::{
         auto_attach::{DEVICE_GARAGE_DID, DEVICE_HEATERS_DID, DEVICE_OUTDOOR_ALARM_DID},
-        DeviceAction, DeviceInfos,
+        DeviceAction, DeviceActionResult, DeviceInfos,
     },
     grpcserver::datetime_to_prost_timestamp,
     shared::SharedHandle,
@@ -26,14 +26,6 @@ impl NgDevices {
             Ok(Response::new(infos.into()))
         } else {
             Err(Status::not_found("Device not found"))
-        }
-    }
-}
-
-impl Into<m::DeviceId> for ct::DeviceId {
-    fn into(self) -> m::DeviceId {
-        m::DeviceId {
-            did: self.to_u8() as u32,
         }
     }
 }
@@ -200,12 +192,28 @@ impl CaniotDevicesService for NgDevices {
         };
 
         // TODO is it important to verify the action result?
-        let _result = self
+        let result = self
             .shared
             .controller_handle
             .device_action(Some(did), action, None)
             .await
             .map_err(|e| Status::internal(format!("Error in perform_action: {:?}", e)))?;
+
+        let result = match result {
+            DeviceActionResult::ResetSent => m::action_result::ActionResult::Reboot(()),
+            DeviceActionResult::ResetSettingsSent => {
+                m::action_result::ActionResult::ResetSettings(())
+            }
+            DeviceActionResult::InhibitControlSent => {
+                m::action_result::ActionResult::Inhibit(true) // change
+            }
+            DeviceActionResult::Pong(response) => {
+                m::action_result::ActionResult::Pong(response.into())
+            }
+            _ => {
+                return Err(Status::internal("Invalid action result"));
+            }
+        };
 
         let infos = &self
             .shared
@@ -216,7 +224,7 @@ impl CaniotDevicesService for NgDevices {
 
         Ok(Response::new(m::ActionResult {
             device: Some(infos.into()),
-            action_result: Some(m::action_result::ActionResult::Reboot(())),
+            action_result: Some(result),
         }))
     }
 }

@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use serde::Serialize;
 
 use super::ProtocolError;
@@ -26,10 +28,24 @@ impl PayloadType for ClCd {
 }
 impl PayloadType for Ty {}
 
-#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
+#[derive(Clone, Serialize, PartialEq, Eq)]
 pub struct Payload<K: PayloadType> {
     data: Vec<u8>,
     marker: std::marker::PhantomData<K>,
+}
+
+// Custom implementation of the Debug trait for the Payload type
+// to avoid printing the the marker field
+impl<K> Debug for Payload<K>
+where
+    K: PayloadType,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Payload")
+            .field("data", &self.data)
+            .field("size", &self.data.len())
+            .finish()
+    }
 }
 
 impl<K> Payload<K>
