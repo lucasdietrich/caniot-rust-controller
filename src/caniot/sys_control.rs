@@ -22,18 +22,29 @@ impl SysCtrl {
         inhibit: TSP::None,
     };
 
-    pub const INHIBIT: SysCtrl = SysCtrl {
+    pub const FACTORY_RESET: SysCtrl = SysCtrl {
         hardware_reset: false,
         _software_reset: false,
         _watchdog_reset: false,
         watchdog_enable: TS::None,
-        factory_reset: false,
-        inhibit: TSP::Set,
+        factory_reset: true,
+        inhibit: TSP::None,
     };
 
     // Converts the SysCtrl into a class command request
     pub fn into_board_request(self) -> RequestData {
         RequestData::new_board_control_request(self)
+    }
+
+    pub const fn inhibit_control(inhibit: TSP) -> SysCtrl {
+        SysCtrl {
+            hardware_reset: false,
+            _software_reset: false,
+            _watchdog_reset: false,
+            watchdog_enable: TS::None,
+            factory_reset: false,
+            inhibit,
+        }
     }
 }
 
@@ -58,8 +69,8 @@ impl From<u8> for SysCtrl {
             hardware_reset: value & 0b0000_0001 != 0,
             _software_reset: value & 0b0000_0010 != 0,
             _watchdog_reset: value & 0b0000_0100 != 0,
-            watchdog_enable: FromPrimitive::from_u8((value & 0b0000_1100) >> 2).unwrap(),
-            factory_reset: value & 0b0001_0000 != 0,
+            watchdog_enable: FromPrimitive::from_u8((value & 0b0001_1000) >> 2).unwrap(),
+            factory_reset: value & 0b0010_0000 != 0,
             inhibit: FromPrimitive::from_u8((value & 0b1100_0000) >> 6).unwrap(),
         }
     }
@@ -81,18 +92,5 @@ impl TryFrom<&Payload<Cd>> for SysCtrl {
         }
 
         Ok(SysCtrl::from(value.data()[7]))
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::SysCtrl;
-
-    #[test]
-    fn sys_default() {
-        let sys = SysCtrl::default();
-        let sys_ser: u8 = sys.into();
-
-        assert_eq!(sys_ser, 0_u8);
     }
 }

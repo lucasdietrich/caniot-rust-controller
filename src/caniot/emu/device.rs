@@ -5,7 +5,7 @@ use crate::{
     utils::expirable::{ttl, ExpirableTrait},
 };
 
-use super::{Behavior, DefaultBehavior};
+use super::{Behavior, BoardControlBehavior};
 
 pub struct Device {
     pub did: DeviceId,
@@ -17,6 +17,7 @@ pub struct Device {
     start_time: Instant,             // ms
     last_telemetry: Option<Instant>, // ms
 
+    // Ordered list of behaviors the device implements
     pub(super) behavior: Vec<Box<dyn Behavior>>,
 }
 
@@ -24,8 +25,8 @@ impl Device {
     pub fn new(id: u8, telemetry_interval: Option<Duration>) -> Self {
         let did = DeviceId::from_u8(id);
 
-        let mut default_behavior = DefaultBehavior::default();
-        default_behavior.set_did(&did);
+        let mut board_behavior = BoardControlBehavior::default();
+        board_behavior.set_did(&did);
 
         Self {
             did,
@@ -34,7 +35,7 @@ impl Device {
             telemetry_endpoint: Endpoint::BoardControl,
             start_time: Instant::now(),
             last_telemetry: None,
-            behavior: vec![Box::new(default_behavior)],
+            behavior: vec![Box::new(board_behavior)],
         }
     }
 
@@ -96,6 +97,16 @@ impl Device {
         ])
     }
 
+    // Handle telemetry by calling behavior's on_telemetry method in reverse order
+    // until a handler returns a payload.
+    // If no handler is found, return an error.
+    //
+    // # Arguments
+    // * `endpoint` - The endpoint of the telemetry
+    //
+    // # Returns
+    // * Ok(payload) - The telemetry payload
+    // * Err(error) - The error code
     fn handle_telemetry(
         &mut self,
         endpoint: &caniot::Endpoint,
@@ -112,23 +123,50 @@ impl Device {
         Err(ErrorCode::Ehandlert)
     }
 
+    // Handle command by calling behavior's on_command method in order
+    // until a handler returns an error or a terminate flag is set.
+    // If no handler is found, return an error.
+    //
+    // If at least one handler is found and all of them return Ok,
+    // call handle_telemetry to get the telemetry payload.
+    //
+    // # Arguments
+    // * `endpoint` - The endpoint of the command
+    // * `payload` - The payload of the command
+    //
+    // # Returns
+    // * Ok(payload) - The telemetry payload
+    // * Err(error) - The error code
     fn handle_command(
         &mut self,
         endpoint: &caniot::Endpoint,
         payload: &[u8],
     ) -> Result<Vec<u8>, caniot::ErrorCode> {
-        for behavior in self.behavior.iter_mut().rev() {
-            if let Some(error_code) = behavior.on_command(endpoint, payload.to_vec()) {
-                if error_code == ErrorCode::Ok {
-                    return self.handle_telemetry(endpoint);
-                } else {
+        let mut command_processed_once = false;
+        let mut terminate = false;
+
+        for behavior in self.behavior.iter_mut() {
+            if let Some(error_code) =
+                behavior.on_command(endpoint, payload.to_vec(), &mut terminate)
+            {
+                command_processed_once = true;
+
+                if error_code != ErrorCode::Ok {
                     return Err(error_code);
+                }
+
+                if !terminate {
+                    break;
                 }
             }
         }
 
-        // No handler found
-        Err(ErrorCode::Ehandlerc)
+        if command_processed_once {
+            self.handle_telemetry(endpoint)
+        } else {
+            // No handler found
+            Err(ErrorCode::Ehandlerc)
+        }
     }
 
     pub fn process(&mut self, req: Option<&caniot::RequestData>) -> Option<caniot::Response> {

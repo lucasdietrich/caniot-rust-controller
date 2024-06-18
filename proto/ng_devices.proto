@@ -10,6 +10,9 @@ service CaniotDevicesService {
   rpc GetList(google.protobuf.Empty) returns (DevicesList) {}
   rpc Get(DeviceId) returns (Device) {}
 
+  // Action on device
+  rpc PerformAction(Action) returns (ActionResult) {}
+
   // specifics
   rpc GetHeatersDevice(google.protobuf.Empty) returns (Device) {}
   rpc GetGarageDevice(google.protobuf.Empty) returns (Device) {}
@@ -74,3 +77,23 @@ message Device {
 }
 
 message DevicesList { repeated Device devices = 1; }
+
+message Action {
+  DeviceId did = 1;
+  oneof action {
+    google.protobuf.Empty reboot = 10;
+    google.protobuf.Empty reset_settings = 11;
+    TwoStatePulse inhibit = 12;
+    Endpoint ping = 13;
+  }
+}
+
+message ActionResult {
+  Device device = 1;
+  oneof action_result {
+    google.protobuf.Empty reboot = 10;
+    google.protobuf.Empty reset_settings = 11;
+    bool inhibit = 12;
+    CaniotFrame pong = 13;
+  }
+}

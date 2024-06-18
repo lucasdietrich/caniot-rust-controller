@@ -10,6 +10,8 @@ use crate::{
 pub struct PendingAction {
     pub action: DeviceAction,
     send_to: oneshot::Sender<Result<DeviceActionResult, ControllerError>>,
+
+    // Response from the device which completed the action
     pub response: Option<caniot::Response>,
 }
 

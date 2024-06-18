@@ -1,6 +1,6 @@
 use std::{fmt::Debug, ops::Deref};
 
-use crate::caniot::{self, BoardClassTelemetry};
+use crate::caniot::{self, BoardClassTelemetry, Response};
 
 use as_any::{AsAny, Downcast};
 
@@ -39,6 +39,7 @@ pub trait DeviceControllerTrait: Send + Debug + Default {
     fn handle_action_result(
         &self,
         _delayed_action: &Self::Action,
+        _completed_by: &Option<Response>,
     ) -> Result<<Self::Action as ActionTrait>::Result, DeviceError> {
         error!(
             "handle_action_result not implemented for device controller \"{}\"",
@@ -89,6 +90,7 @@ pub trait DeviceControllerWrapperTrait: Send + Debug {
     fn wrapper_handle_delayed_action_result(
         &self,
         _delayed_action: &Box<dyn ActionWrapperTrait>,
+        completed_by: &Option<caniot::Response>,
     ) -> Result<Box<dyn ActionResultTrait>, DeviceError> {
         Err(DeviceError::NotImplemented)
     }
@@ -132,10 +134,11 @@ where
     fn wrapper_handle_delayed_action_result(
         &self,
         delayed_action: &Box<dyn ActionWrapperTrait>,
+        completed_by: &Option<Response>,
     ) -> Result<Box<dyn ActionResultTrait>, DeviceError> {
         match delayed_action.deref().downcast_ref::<T::Action>() {
             Some(delayed_action) => self
-                .handle_action_result(delayed_action)
+                .handle_action_result(delayed_action, completed_by)
                 .map(|result| Box::new(result) as Box<dyn ActionResultTrait>),
             None => Err(DeviceError::UnsupportedAction),
         }
@@ -150,12 +153,12 @@ where
     }
 }
 
-pub trait ActionTrait: AsAny + Send {
+pub trait ActionTrait: AsAny + Send + Debug {
     type Result: ActionResultTrait; // TODO Check if Clone trait can be added here
 }
 
 pub trait ActionResultTrait: AsAny + Send {}
 
-pub trait ActionWrapperTrait: AsAny + Send {}
+pub trait ActionWrapperTrait: AsAny + Send + Debug {}
 
-impl<T> ActionWrapperTrait for T where T: ActionTrait {}
+impl<T> ActionWrapperTrait for T where T: ActionTrait + Debug {}

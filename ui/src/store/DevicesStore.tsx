@@ -5,7 +5,12 @@ import { HandleError, HandleSuccess, getApiUrl } from "./helpers";
 import { Empty } from "google-protobuf/google/protobuf/empty_pb";
 // import google_protobuf_empty_pb from "google-protobuf/google/protobuf/empty_pb.js";
 
-import { Device, DevicesList } from "@caniot-controller/caniot-api-grpc-web/api/ng_devices_pb";
+import {
+  Action,
+  ActionResult,
+  Device,
+  DevicesList,
+} from "@caniot-controller/caniot-api-grpc-web/api/ng_devices_pb";
 
 import { CaniotDevicesServiceClient } from "@caniot-controller/caniot-api-grpc-web/api/Ng_devicesServiceClientPb";
 import { DeviceId } from "@caniot-controller/caniot-api-grpc-web/api/common_pb";
@@ -78,6 +83,19 @@ class DevicesStore extends EventEmitter {
       }
 
       HandleSuccess("DevicesStore::GetOutdoorAlarmDevice succeeded");
+
+      callbackFunc(resp);
+    });
+  };
+
+  performAction = (action: Action, callbackFunc: (resp: ActionResult) => void) => {
+    this.client.performAction(action, null, (err, resp) => {
+      if (err !== null) {
+        HandleError(err);
+        return;
+      }
+
+      HandleSuccess("DevicesStore::PerformAction succeeded");
 
       callbackFunc(resp);
     });

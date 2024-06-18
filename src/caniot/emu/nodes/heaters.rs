@@ -24,7 +24,12 @@ impl Default for HeatersController {
 }
 
 impl Behavior for HeatersController {
-    fn on_command(&mut self, endpoint: &ct::Endpoint, payload: Vec<u8>) -> Option<ct::ErrorCode> {
+    fn on_command(
+        &mut self,
+        endpoint: &ct::Endpoint,
+        payload: Vec<u8>,
+        _terminate: &mut bool,
+    ) -> Option<ct::ErrorCode> {
         if endpoint == &ct::Endpoint::ApplicationDefault {
             let command = HeatingControllerCommand::try_from_raw(&payload).unwrap();
 

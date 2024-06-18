@@ -1,10 +1,17 @@
+use crate::caniot;
+
 use super::{ActionResultTrait, ActionTrait, ActionWrapperTrait};
 
+#[derive(Debug)]
 pub enum DeviceAction {
     // Reset device
     Reset,
+    // Reset device settings to factory defaults
+    ResetSettings,
     // Inhibit device from performing control actions (e.g. siren, lights
-    InhibitControl,
+    InhibitControl(caniot::TSP),
+    // Ping (request telemetry)
+    Ping(caniot::Endpoint),
     // Action to pass to the underlying device
     Inner(Box<dyn ActionWrapperTrait>),
 }
@@ -21,7 +28,15 @@ impl ActionTrait for DeviceAction {
 
 // #[derive(Clone)]
 pub enum DeviceActionResult {
-    Reset,
+    // Reset command has been sent to the device and telemetry has been received
+    ResetSent,
+    // Reset settings command has been sent to the device and telemetry has been received
+    ResetSettingsSent,
+    // Inhibit control command has been sent to the device and telemetry has been received
+    InhibitControlSent,
+    // Pong response from the device
+    Pong(caniot::Endpoint, caniot::Payload<caniot::Ty>),
+    // Inner action result
     Inner(Box<dyn ActionResultTrait>),
 }
 

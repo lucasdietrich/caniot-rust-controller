@@ -95,7 +95,12 @@ pub struct GarageController {
 }
 
 impl Behavior for GarageController {
-    fn on_command(&mut self, endpoint: &ct::Endpoint, payload: Vec<u8>) -> Option<ct::ErrorCode> {
+    fn on_command(
+        &mut self,
+        endpoint: &ct::Endpoint,
+        payload: Vec<u8>,
+        _terminate: &mut bool,
+    ) -> Option<ct::ErrorCode> {
         if endpoint == &ct::Endpoint::BoardControl {
             if let Ok(command) = class0::Command::try_from_raw(&payload) {
                 if command.crl1 == Xps::PulseOn {

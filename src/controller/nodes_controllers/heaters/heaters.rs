@@ -1,5 +1,5 @@
 use crate::{
-    caniot::{self, BoardClassTelemetry, HeatingMode},
+    caniot::{self, BoardClassTelemetry, HeatingMode, Response},
     controller::{
         ActionResultTrait, ActionTrait, ActionVerdict, DeviceControllerInfos,
         DeviceControllerTrait, ProcessContext, Verdict,
@@ -63,6 +63,7 @@ impl DeviceControllerTrait for HeatersController {
     fn handle_action_result(
         &self,
         _action: &Self::Action,
+        _completed_by: &Option<Response>,
     ) -> Result<<Self::Action as ActionTrait>::Result, crate::controller::DeviceError> {
         Ok(self.status.clone())
     }

@@ -12,7 +12,12 @@ impl Default for DemoController {
 }
 
 impl Behavior for DemoController {
-    fn on_command(&mut self, _endpoint: &ct::Endpoint, payload: Vec<u8>) -> Option<ct::ErrorCode> {
+    fn on_command(
+        &mut self,
+        _endpoint: &ct::Endpoint,
+        payload: Vec<u8>,
+        _terminate: &mut bool,
+    ) -> Option<ct::ErrorCode> {
         if payload.len() >= 1 {
             if payload[0] == 0 {
                 self.status = false;

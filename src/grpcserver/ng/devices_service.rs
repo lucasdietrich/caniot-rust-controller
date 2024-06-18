@@ -1,19 +1,19 @@
 use tonic::{Request, Response, Result, Status};
 
 use crate::{
-    caniot,
+    caniot as ct,
     controller::{
         auto_attach::{DEVICE_GARAGE_DID, DEVICE_HEATERS_DID, DEVICE_OUTDOOR_ALARM_DID},
-        DeviceInfos,
+        DeviceAction, DeviceInfos,
     },
     grpcserver::datetime_to_prost_timestamp,
     shared::SharedHandle,
 };
 
-use super::model as m;
 use super::model::caniot_devices_service_server::{
     CaniotDevicesService, CaniotDevicesServiceServer,
 };
+use super::model::{self as m};
 
 #[derive(Debug)]
 pub struct NgDevices {
@@ -21,10 +21,7 @@ pub struct NgDevices {
 }
 
 impl NgDevices {
-    async fn get_device_by_did(
-        &self,
-        did: caniot::DeviceId,
-    ) -> Result<Response<m::Device>, Status> {
+    async fn get_device_by_did(&self, did: ct::DeviceId) -> Result<Response<m::Device>, Status> {
         if let Some(ref infos) = self.shared.controller_handle.get_device_infos(did).await {
             Ok(Response::new(infos.into()))
         } else {
@@ -33,7 +30,7 @@ impl NgDevices {
     }
 }
 
-impl Into<m::DeviceId> for caniot::DeviceId {
+impl Into<m::DeviceId> for ct::DeviceId {
     fn into(self) -> m::DeviceId {
         m::DeviceId {
             did: self.to_u8() as u32,
@@ -41,9 +38,12 @@ impl Into<m::DeviceId> for caniot::DeviceId {
     }
 }
 
-impl Into<m::DeviceIdInfos> for caniot::DeviceId {
+impl Into<m::DeviceIdInfos> for ct::DeviceId {
     fn into(self) -> m::DeviceIdInfos {
         m::DeviceIdInfos {
+            obj: Some(m::DeviceId {
+                did: self.to_u8() as u32,
+            }),
             did: self.to_u8() as u32,
             sid: self.sub_id as u32,
             cls: self.class as u32,
@@ -51,13 +51,13 @@ impl Into<m::DeviceIdInfos> for caniot::DeviceId {
     }
 }
 
-impl Into<caniot::DeviceId> for m::DeviceId {
-    fn into(self) -> caniot::DeviceId {
-        caniot::DeviceId::try_from_u8(self.did as u8).unwrap()
+impl Into<ct::DeviceId> for m::DeviceId {
+    fn into(self) -> ct::DeviceId {
+        ct::DeviceId::try_from_u8(self.did as u8).unwrap()
     }
 }
 
-impl Into<m::Class0Telemetry> for caniot::class0::Telemetry {
+impl Into<m::Class0Telemetry> for ct::class0::Telemetry {
     fn into(self) -> m::Class0Telemetry {
         m::Class0Telemetry {
             in1: self.in1,
@@ -76,7 +76,7 @@ impl Into<m::Class0Telemetry> for caniot::class0::Telemetry {
     }
 }
 
-impl Into<m::Class1Telemetry> for caniot::class1::Telemetry {
+impl Into<m::Class1Telemetry> for ct::class1::Telemetry {
     fn into(self) -> m::Class1Telemetry {
         m::Class1Telemetry {
             ios: self.ios.to_vec(),
@@ -88,11 +88,11 @@ impl Into<m::Class1Telemetry> for caniot::class1::Telemetry {
     }
 }
 
-impl Into<m::device::Measures> for caniot::classes::BoardClassTelemetry {
+impl Into<m::device::Measures> for ct::classes::BoardClassTelemetry {
     fn into(self) -> m::device::Measures {
         match self {
-            caniot::BoardClassTelemetry::Class0(t) => m::device::Measures::Class0(t.into()),
-            caniot::BoardClassTelemetry::Class1(t) => m::device::Measures::Class1(t.into()),
+            ct::BoardClassTelemetry::Class0(t) => m::device::Measures::Class0(t.into()),
+            ct::BoardClassTelemetry::Class1(t) => m::device::Measures::Class1(t.into()),
         }
     }
 }
@@ -138,7 +138,7 @@ impl CaniotDevicesService for NgDevices {
     }
 
     async fn get(&self, request: Request<m::DeviceId>) -> Result<Response<m::Device>, Status> {
-        let did: caniot::DeviceId = request.into_inner().into();
+        let did: ct::DeviceId = request.into_inner().into();
         if let Some(ref infos) = self.shared.controller_handle.get_device_infos(did).await {
             Ok(Response::new(infos.into()))
         } else {
@@ -150,7 +150,7 @@ impl CaniotDevicesService for NgDevices {
         &self,
         _request: Request<()>,
     ) -> Result<Response<m::Device>, Status> {
-        self.get_device_by_did(caniot::DeviceId::from_u8(DEVICE_HEATERS_DID))
+        self.get_device_by_did(ct::DeviceId::from_u8(DEVICE_HEATERS_DID))
             .await
     }
 
@@ -158,7 +158,7 @@ impl CaniotDevicesService for NgDevices {
         &self,
         _request: Request<()>,
     ) -> Result<Response<m::Device>, Status> {
-        self.get_device_by_did(caniot::DeviceId::from_u8(DEVICE_GARAGE_DID))
+        self.get_device_by_did(ct::DeviceId::from_u8(DEVICE_GARAGE_DID))
             .await
     }
 
@@ -166,8 +166,58 @@ impl CaniotDevicesService for NgDevices {
         &self,
         _request: Request<()>,
     ) -> Result<Response<m::Device>, Status> {
-        self.get_device_by_did(caniot::DeviceId::from_u8(DEVICE_OUTDOOR_ALARM_DID))
+        self.get_device_by_did(ct::DeviceId::from_u8(DEVICE_OUTDOOR_ALARM_DID))
             .await
+    }
+
+    async fn perform_action(
+        &self,
+        request: tonic::Request<m::Action>,
+    ) -> std::result::Result<tonic::Response<m::ActionResult>, tonic::Status> {
+        let action = request.into_inner();
+
+        let did: ct::DeviceId = action
+            .did
+            .ok_or_else(|| Status::invalid_argument("Missing did or action"))?
+            .into();
+
+        let action = match action
+            .action
+            .ok_or(Status::invalid_argument("Missing did or action"))?
+        {
+            m::action::Action::Reboot(..) => DeviceAction::Reset,
+            m::action::Action::ResetSettings(..) => DeviceAction::ResetSettings,
+            m::action::Action::Inhibit(inhibit) => {
+                let inhibit = m::TwoStatePulse::try_from(inhibit)
+                    .map_err(|e| Status::invalid_argument(format!("Invalid inhibit: {:?}", e)))?;
+                DeviceAction::InhibitControl(inhibit.into())
+            }
+            m::action::Action::Ping(endpoint) => {
+                let endpoint = m::Endpoint::try_from(endpoint)
+                    .map_err(|e| Status::invalid_argument(format!("Invalid endpoint: {:?}", e)))?;
+                DeviceAction::Ping(endpoint.into())
+            }
+        };
+
+        // TODO is it important to verify the action result?
+        let _result = self
+            .shared
+            .controller_handle
+            .device_action(Some(did), action, None)
+            .await
+            .map_err(|e| Status::internal(format!("Error in perform_action: {:?}", e)))?;
+
+        let infos = &self
+            .shared
+            .controller_handle
+            .get_device_infos(did)
+            .await
+            .ok_or(Status::not_found("Device not found"))?;
+
+        Ok(Response::new(m::ActionResult {
+            device: Some(infos.into()),
+            action_result: Some(m::action_result::ActionResult::Reboot(())),
+        }))
     }
 }
 

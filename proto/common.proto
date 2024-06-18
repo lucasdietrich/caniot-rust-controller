@@ -3,9 +3,11 @@ syntax = "proto3";
 package ng;
 
 message DeviceIdInfos {
-  uint32 did = 1;
-  uint32 cls = 2;
-  uint32 sid = 3;
+  DeviceId obj = 1;
+
+  uint32 did = 2;
+  uint32 cls = 3;
+  uint32 sid = 4;
 }
 
 message DeviceId { uint32 did = 1; }
@@ -15,4 +17,16 @@ enum Endpoint {
   EndpointApp1 = 1;
   EndpointApp2 = 2;
   EndpointBoardLevelControl = 3;
+}
+
+enum TwoStatePulse {
+  TSP_NONE = 0;
+  TSP_SET = 1;
+  TSP_RESET = 2;
+  TSP_PULSE = 3;
+}
+
+message CaniotFrame {
+  DeviceId did = 1;
+  repeated uint32 payload = 2;
 }

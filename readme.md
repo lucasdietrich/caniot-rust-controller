@@ -99,6 +99,8 @@ Run with
 - Implement inhibit mode for devices
 - Settings: Add cache for Settings to avoid reading the database at each request and avoid writing the database if the value is the same
 - Settings: handle settings default values
+- How to compare to make sure the result is expected for the action ?
+- Find a way to make the completed_by: &Option<Frame<ResponseData>> to &Frame<ResponseData> !
 
 ```
 device_temperature{medium="CAN",mac="16",device="GarageDoorController",sensor="EMBEDDED",room="",collector="pycaniotcontroller"} 19.00
@@ -119,3 +121,5 @@ device_temperature{medium="CAN",mac="1",device="HeatersController",sensor="EXTER
 - Correctly select the route (in the menu) when the URL is directly accessed
 - Make the UI layout compatible with mobile devices
 - Introduce a 'Settings' class to abstract the settings management
+- Add modal for reboot and reset settings of a device (to confirm the action)
+- Refresh devices table dynamically after a reset/reset settings

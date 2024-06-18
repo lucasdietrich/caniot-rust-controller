@@ -2,7 +2,12 @@ use std::time::Duration;
 
 use super::super::Behavior;
 use crate::{
-    caniot::{self as ct, class0, emu::helpers::EmuXps, AsPayload, Temperature},
+    caniot::{
+        self as ct,
+        class0::{self, Class0},
+        emu::helpers::EmuXps,
+        AsPayload, BoardClassCommand, Temperature,
+    },
     utils::expirable::ExpirableTrait,
 };
 
@@ -32,9 +37,16 @@ impl OutdoorAlarmController {
 }
 
 impl Behavior for OutdoorAlarmController {
-    fn on_command(&mut self, endpoint: &ct::Endpoint, payload: Vec<u8>) -> Option<ct::ErrorCode> {
+    fn on_command(
+        &mut self,
+        endpoint: &ct::Endpoint,
+        payload: Vec<u8>,
+        _terminate: &mut bool,
+    ) -> Option<ct::ErrorCode> {
         if endpoint == &ct::Endpoint::BoardControl {
-            if let Ok(command) = class0::Command::try_from_raw(&payload) {
+            if let Ok(blc_cmd) = BoardClassCommand::<Class0>::try_from_raw(&payload) {
+                let command = blc_cmd.class_payload;
+
                 self.lights[0].apply(&command.coc1);
                 self.lights[1].apply(&command.coc2);
                 self.siren.apply(&command.crl1);
