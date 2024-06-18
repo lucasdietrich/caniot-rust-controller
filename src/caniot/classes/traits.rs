@@ -34,7 +34,7 @@ impl From<Payload<ClCd>> for Payload<Cd> {
     }
 }
 
-pub trait ClassCommandTrait: AsPayload<ClCd> + Default {
+pub trait ClassCommandTrait: AsPayload<ClCd> + Default + Clone {
     fn into_request(&self) -> caniot::RequestData {
         caniot::RequestData::Command {
             endpoint: caniot::Endpoint::BoardControl,

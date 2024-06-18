@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-use crate::caniot::{AsPayload, Payload, ProtocolError, Ty};
+use crate::caniot::{Payload, ProtocolError, Ty};
 
 use super::{
     class0::{self, Class0},
@@ -60,8 +60,6 @@ impl Into<Payload<Ty>> for BoardClassTelemetry {
         }
     }
 }
-
-// impl AsPayload<Ty> for BoardClassTelemetry {}
 
 pub fn boardlc_parse_telemetry<C: Class>(
     payload: &Payload<Ty>,

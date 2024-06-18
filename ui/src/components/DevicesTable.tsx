@@ -1,8 +1,13 @@
-import { Device, DevicesList } from "@caniot-controller/caniot-api-grpc-web/api/ng_devices_pb";
+import {
+  Action,
+  Device,
+  DevicesList,
+} from "@caniot-controller/caniot-api-grpc-web/api/ng_devices_pb";
 import { Timestamp } from "google-protobuf/google/protobuf/timestamp_pb";
 import { Table, TableProps, Button, Space, Tag, Badge } from "antd";
 import devicesStore from "../store/DevicesStore";
-import { DeviceId } from "@caniot-controller/caniot-api-grpc-web/api/common_pb";
+import { DeviceId, Endpoint } from "@caniot-controller/caniot-api-grpc-web/api/common_pb";
+import { Empty as ProtobufEmpty } from "google-protobuf/google/protobuf/empty_pb";
 import { useState } from "react";
 import DeviceStatusCard from "./DeviceStatusCard";
 import { LoadingOutlined } from "@ant-design/icons";
@@ -48,6 +53,39 @@ function DevicesTable({ devicesList }: IDevicesTableProps) {
   if (devicesList === undefined) {
     return undefined;
   }
+
+  const handlePing = (did: DeviceId | undefined) => {
+    return () => {
+      let action = new Action();
+      action.setDid(did);
+      action.setPing(Endpoint.ENDPOINTBOARDLEVELCONTROL);
+      devicesStore.performAction(action, (resp) => {
+        console.log(resp);
+      });
+    };
+  };
+
+  const handleReboot = (did: DeviceId | undefined) => {
+    return () => {
+      let action = new Action();
+      action.setDid(did);
+      action.setReboot(new ProtobufEmpty());
+      devicesStore.performAction(action, (resp) => {
+        console.log(resp);
+      });
+    };
+  };
+
+  const handleResetSettings = (did: DeviceId | undefined) => {
+    return () => {
+      let action = new Action();
+      action.setDid(did);
+      action.setResetSettings(new ProtobufEmpty());
+      devicesStore.performAction(action, (resp) => {
+        console.log(resp);
+      });
+    };
+  };
 
   const columns: TableProps<DeviceRow>["columns"] = [
     {
@@ -108,13 +146,29 @@ function DevicesTable({ devicesList }: IDevicesTableProps) {
       key: "action",
       render: (_, record) => (
         <Space size="small">
-          <Button size="small" type="dashed">
+          <Button
+            size="small"
+            type="dashed"
+            disabled={record.device?.getDid()?.getObj() === undefined}
+            onClick={handlePing(record.device?.getDid()?.getObj())}
+          >
             Ping
           </Button>
-          <Button type="default" size="small">
+          <Button
+            size="small"
+            type="primary"
+            disabled={record.device?.getDid()?.getObj() === undefined}
+            onClick={handleReboot(record.device?.getDid()?.getObj())}
+          >
             Reboot
           </Button>
-          <Button size="small" type="primary">
+          <Button
+            size="small"
+            type="primary"
+            danger
+            disabled={record.device?.getDid()?.getObj() === undefined}
+            onClick={handleResetSettings(record.device?.getDid()?.getObj())}
+          >
             Reset settings
           </Button>
         </Space>

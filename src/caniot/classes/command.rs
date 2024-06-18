@@ -1,11 +1,23 @@
-use crate::caniot::{AsPayload, Cd, ClCd, Payload, ProtocolError, RequestData, SysCtrl};
+use crate::caniot::{AsPayload, Cd, Payload, ProtocolError, RequestData, SysCtrl};
 
-use super::traits::{Class, ClassCommandTrait};
+use super::traits::Class;
 
-#[derive(Clone)]
+// #[derive(Clone)]
 pub struct BoardClassCommand<C: Class> {
     pub class_payload: C::Command,
     pub sys_ctrl: SysCtrl,
+}
+
+// TODO
+// Why does the #[derive(Clone)] doesn't work?
+// Having "unsatisfied trait bound introduced here" for Clone if not implemented explicitly
+impl<C: Class> Clone for BoardClassCommand<C> {
+    fn clone(&self) -> Self {
+        Self {
+            class_payload: self.class_payload.clone(),
+            sys_ctrl: self.sys_ctrl.clone(),
+        }
+    }
 }
 
 impl<C: Class> BoardClassCommand<C> {
@@ -53,4 +65,4 @@ impl<C: Class> Into<Payload<Cd>> for BoardClassCommand<C> {
     }
 }
 
-// impl<C: Class> AsPayload<Cmd> for BoardClassCommand<C> {}
+// impl<C: Class> AsPayload<Cd> for BoardClassCommand<C> {}

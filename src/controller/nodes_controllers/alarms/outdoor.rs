@@ -1,7 +1,7 @@
 use log::debug;
 
 use crate::{
-    caniot::{self, Xps},
+    caniot::{self, Response, Xps},
     controller::{
         alarms::{actions::SirenAction, types::OutdoorAlarmCommand},
         ActionResultTrait, ActionTrait, ActionVerdict, DeviceControllerInfos,
@@ -146,6 +146,7 @@ impl DeviceControllerTrait for AlarmController {
     fn handle_action_result(
         &self,
         _delayed_action: &Self::Action,
+        _completed_by: &Option<Response>,
     ) -> Result<<Self::Action as ActionTrait>::Result, DeviceError> {
         Ok(self.get_state())
     }

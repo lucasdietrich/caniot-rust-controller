@@ -31,6 +31,8 @@ mod helper_test;
 mod payloads_test;
 #[cfg(test)]
 mod protocol_test;
+#[cfg(test)]
+mod sys_control_test;
 
 #[cfg(feature = "emu")]
 pub mod emu;

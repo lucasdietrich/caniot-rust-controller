@@ -4,7 +4,10 @@ use serde::Serialize;
 use std::time::{Duration, Instant};
 
 use crate::{
-    caniot::{classes, AsPayload, BoardClassTelemetry, DeviceId, Endpoint, ResponseData, SysCtrl},
+    caniot::{
+        self, classes, BoardClassTelemetry, DeviceId, Endpoint, Frame, Response, ResponseData,
+        SysCtrl, TSP,
+    },
     controller::ActionTrait,
     utils::expirable::ExpirableTrait,
 };
@@ -119,6 +122,27 @@ impl Device {
         Ok(ActionVerdict::ActionPendingOn(req))
     }
 
+    fn handle_action_reset_settings(&mut self) -> Result<ActionVerdict<DeviceAction>, DeviceError> {
+        let req = SysCtrl::FACTORY_RESET.into_board_request();
+        Ok(ActionVerdict::ActionPendingOn(req))
+    }
+
+    fn handle_action_inhibit_control(
+        &mut self,
+        inhibit: TSP,
+    ) -> Result<ActionVerdict<DeviceAction>, DeviceError> {
+        let req = SysCtrl::inhibit_control(inhibit).into_board_request();
+        Ok(ActionVerdict::ActionPendingOn(req))
+    }
+
+    fn handle_action_ping(
+        &mut self,
+        endpoint: Endpoint,
+    ) -> Result<ActionVerdict<DeviceAction>, DeviceError> {
+        let req = caniot::RequestData::Telemetry { endpoint };
+        Ok(ActionVerdict::ActionPendingOn(req))
+    }
+
     pub fn handle_action(
         &mut self,
         action: &DeviceAction,
@@ -126,7 +150,9 @@ impl Device {
     ) -> Result<ActionVerdict<DeviceAction>, DeviceError> {
         match action {
             DeviceAction::Reset => self.handle_action_reset(),
-            DeviceAction::InhibitControl => Err(DeviceError::NotImplemented),
+            DeviceAction::ResetSettings => self.handle_action_reset_settings(),
+            DeviceAction::InhibitControl(inhibit) => self.handle_action_inhibit_control(*inhibit),
+            DeviceAction::Ping(endpoint) => self.handle_action_ping(*endpoint),
 
             DeviceAction::Inner(inner_action) => {
                 if let Some(inner_device) = self.controller.as_mut() {
@@ -142,17 +168,35 @@ impl Device {
     pub fn handle_action_result(
         &self,
         delayed_action: &DeviceAction,
+        completed_by: &Option<Response>,
     ) -> Result<<DeviceAction as ActionTrait>::Result, DeviceError> {
         match delayed_action {
+            DeviceAction::Reset => Ok(DeviceActionResult::ResetSent),
+            DeviceAction::ResetSettings => Ok(DeviceActionResult::ResetSettingsSent),
+            DeviceAction::InhibitControl(_inhibit) => Ok(DeviceActionResult::InhibitControlSent),
+            DeviceAction::Ping(endpoint) => {
+                // Simplify this code
+                if let Some(frame) = completed_by {
+                    if let ResponseData::Telemetry { ref payload, .. } = frame.data {
+                        Ok(DeviceActionResult::Pong(*endpoint, payload.clone()))
+                    } else {
+                        error!("Invalid frame for ping action");
+                        Err(DeviceError::InvalidFrame)
+                    }
+                } else {
+                    error!("No result for ping action");
+                    Err(DeviceError::NoActionResult)
+                }
+            }
             DeviceAction::Inner(inner_action) => {
                 if let Some(inner_device) = self.controller.as_ref() {
-                    let result = inner_device.wrapper_handle_delayed_action_result(inner_action)?;
+                    let result = inner_device
+                        .wrapper_handle_delayed_action_result(inner_action, completed_by)?;
                     Ok(DeviceActionResult::new_boxed_inner(result))
                 } else {
                     Err(DeviceError::NoInnerDevice)
                 }
             }
-            _ => Err(DeviceError::NotImplemented),
         }
     }
 

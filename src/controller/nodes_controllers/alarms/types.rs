@@ -1,4 +1,4 @@
-use crate::caniot::{self, class0, traits::ClassCommandTrait, AsPayload, Xps};
+use crate::caniot::{self, class0, traits::ClassCommandTrait, Xps};
 
 #[derive(Default)]
 pub struct OutdoorAlarmCommand(pub class0::Command);

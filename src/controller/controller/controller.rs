@@ -264,7 +264,8 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
 
         // Let the device compute the action result if any
         if let Some(answered_action) = answered_pending_action {
-            let action_result = device.handle_action_result(&answered_action.action)?;
+            let action_result =
+                device.handle_action_result(&answered_action.action, &answered_action.response)?;
             answered_action.send(Ok(action_result));
         }
 

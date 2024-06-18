@@ -1,6 +1,6 @@
 import { Button, Card, Space, Spin } from "antd";
 import React, { useEffect, useState } from "react";
-import DevicesTable from "../components/DevicesArray";
+import DevicesTable from "../components/DevicesTable";
 import { Empty } from "google-protobuf/google/protobuf/empty_pb";
 import { DevicesList } from "@caniot-controller/caniot-api-grpc-web/api/ng_devices_pb";
 import devicesStore from "../store/DevicesStore";

@@ -134,7 +134,7 @@ pub type Response = Frame<ResponseData>;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Frame<T>
 where
-    T: Serialize,
+    T: Serialize + Clone,
 {
     pub device_id: DeviceId,
     pub data: T,
@@ -142,10 +142,14 @@ where
 
 impl<T> Frame<T>
 where
-    T: Serialize,
+    T: Serialize + Clone,
 {
     pub fn new(device_id: DeviceId, data: T) -> Self {
         Self { device_id, data }
+    }
+
+    pub fn into_data(self) -> T {
+        self.data
     }
 }
 

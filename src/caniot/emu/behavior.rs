@@ -1,5 +1,7 @@
+use log::info;
+
 use crate::{
-    caniot::{self, class0::Class0, class1::Class1, AsPayload, Temperature},
+    caniot::{self, class0::Class0, class1::Class1, AsPayload, SysCtrl, Temperature},
     utils::expirable::ExpirableTrait,
 };
 
@@ -16,10 +18,17 @@ pub trait Behavior: Send + Sync {
         None
     }
 
+    // Called when a command is received
+    //
+    // # Arguments
+    // * `endpoint` - The endpoint of the command
+    // * `payload` - The payload of the command
+    // * `terminale` - A flag to indicate if the command is terminal (i.e. no further behavior command handler should be called)
     fn on_command(
         &mut self,
         _endpoint: &caniot::Endpoint,
         _payload: Vec<u8>,
+        _terminate: &mut bool,
     ) -> Option<caniot::ErrorCode> {
         None
     }
@@ -55,13 +64,6 @@ impl Device {
     }
 }
 
-/// Default behavior
-/// - Nothing handled
-#[derive(Default)]
-pub struct DefaultBehavior();
-
-impl Behavior for DefaultBehavior {}
-
 /// Counter behavior
 /// - Count up on command and return the count on telemetry
 #[derive(Default)]
@@ -80,6 +82,7 @@ impl Behavior for CounterBehavior {
         &mut self,
         _endpoint: &caniot::Endpoint,
         _payload: Vec<u8>,
+        _terminate: &mut bool,
     ) -> Option<caniot::ErrorCode> {
         self.count += 1;
         Some(caniot::ErrorCode::Ok)
@@ -108,6 +111,7 @@ impl Behavior for EchoBehavior {
         &mut self,
         _endpoint: &caniot::Endpoint,
         payload: Vec<u8>,
+        _terminate: &mut bool,
     ) -> Option<caniot::ErrorCode> {
         self.last_command = Some(payload);
         Some(caniot::ErrorCode::Ok)
@@ -130,6 +134,7 @@ impl Behavior for RandomBehavior {
         &mut self,
         _endpoint: &caniot::Endpoint,
         _payload: Vec<u8>,
+        _terminate: &mut bool,
     ) -> Option<caniot::ErrorCode> {
         Some(caniot::ErrorCode::Ok)
     }
@@ -140,6 +145,47 @@ impl Behavior for RandomBehavior {
 
     fn on_write_attribute(&mut self, _key: u16, _value: u32) -> Option<caniot::ErrorCode> {
         Some(caniot::ErrorCode::Ok)
+    }
+}
+
+/// Board control behavior
+///
+/// - Count hardware reset command
+#[derive(Default)]
+pub struct BoardControlBehavior {
+    pub did: Option<caniot::DeviceId>,
+    pub reset_count: u32,
+}
+
+impl Behavior for BoardControlBehavior {
+    fn set_did(&mut self, did: &caniot::DeviceId) {
+        self.did.replace(*did);
+    }
+
+    fn on_command(
+        &mut self,
+        _endpoint: &caniot::Endpoint,
+        payload: Vec<u8>,
+        _terminate: &mut bool,
+    ) -> Option<caniot::ErrorCode> {
+        if let Ok(sys_ctrl) = SysCtrl::try_from_raw(&payload) {
+            debug!(
+                "BoardControlBehavior: {:?} received for {:?}",
+                sys_ctrl, self.did
+            );
+
+            if sys_ctrl.hardware_reset {
+                self.reset_count += 1;
+                debug!(
+                    "BoardControlBehavior: hardware reset receiver for {:?} (count: {})",
+                    self.did, self.reset_count
+                );
+            }
+
+            Some(caniot::ErrorCode::Ok)
+        } else {
+            None
+        }
     }
 }
 
@@ -189,6 +235,7 @@ impl Behavior for Class0Behavior {
         &mut self,
         endpoint: &caniot::Endpoint,
         _payload: Vec<u8>,
+        _terminate: &mut bool,
     ) -> Option<caniot::ErrorCode> {
         if endpoint == &caniot::Endpoint::BoardControl {
             Some(caniot::ErrorCode::Enimpl)
@@ -233,6 +280,7 @@ impl Behavior for Class1Behavior {
         &mut self,
         endpoint: &caniot::Endpoint,
         _payload: Vec<u8>,
+        _terminate: &mut bool,
     ) -> Option<caniot::ErrorCode> {
         if endpoint == &caniot::Endpoint::BoardControl {
             Some(caniot::ErrorCode::Ok)
