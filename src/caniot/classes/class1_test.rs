@@ -1,6 +1,6 @@
 use num::FromPrimitive;
 
-use crate::caniot::{AsPayload, Payload, TelemetryPL, Temperature};
+use crate::caniot::{AsPayload, Payload, Temperature, Ty};
 
 use super::class1;
 
@@ -32,7 +32,7 @@ fn telemetry() {
             telem.temp_out[i] = *temp;
             let ser = telem.to_raw_vec();
 
-            let pl = Payload::<TelemetryPL>::try_from(ser).unwrap();
+            let pl = Payload::<Ty>::try_from(ser).unwrap();
             let deser = class1::Telemetry::try_from(&pl);
             assert_eq!(deser.is_ok(), true);
 

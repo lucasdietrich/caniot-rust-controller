@@ -1,10 +1,10 @@
-use crate::caniot::{self, AsPayload, ClassCommandPL, Payload, TelemetryPL};
+use crate::caniot::{self, AsPayload, Cd, ClCd, Payload, Ty};
 
 pub trait Class {
+    const CLASS_ID: u8;
+
     type Telemetry: ClassTelemetryTrait;
     type Command: ClassCommandTrait;
-
-    fn get_class_id() -> u8;
 
     // layout functions
     // inputs count
@@ -13,7 +13,7 @@ pub trait Class {
     //
 }
 
-pub trait ClassTelemetryTrait: AsPayload<TelemetryPL> {
+pub trait ClassTelemetryTrait: AsPayload<Ty> {
     fn to_response(self) -> caniot::ResponseData {
         caniot::ResponseData::Telemetry {
             endpoint: caniot::Endpoint::BoardControl,
@@ -28,11 +28,17 @@ pub trait ClassTelemetryTrait: AsPayload<TelemetryPL> {
     fn get_board_temperature(&self) -> Option<f32>;
 }
 
-pub trait ClassCommandTrait: AsPayload<ClassCommandPL> {
-    fn to_request(self) -> caniot::RequestData {
+impl From<Payload<ClCd>> for Payload<Cd> {
+    fn from(value: Payload<ClCd>) -> Self {
+        Self::new_unchecked(value.data())
+    }
+}
+
+pub trait ClassCommandTrait: AsPayload<ClCd> + Default {
+    fn into_request(&self) -> caniot::RequestData {
         caniot::RequestData::Command {
             endpoint: caniot::Endpoint::BoardControl,
-            payload: Into::<Payload<ClassCommandPL>>::into(self).into(),
+            payload: self.to_payload().into(),
         }
     }
 }

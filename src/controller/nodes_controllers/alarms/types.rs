@@ -1,4 +1,4 @@
-use crate::caniot::{self, class0, traits::ClassCommandTrait, Xps};
+use crate::caniot::{self, class0, traits::ClassCommandTrait, AsPayload, Xps};
 
 #[derive(Default)]
 pub struct OutdoorAlarmCommand(pub class0::Command);
@@ -26,6 +26,6 @@ impl OutdoorAlarmCommand {
     }
 
     pub fn into_request(self) -> caniot::RequestData {
-        self.0.to_request()
+        self.0.into_request()
     }
 }

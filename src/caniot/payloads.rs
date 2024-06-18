@@ -1,22 +1,30 @@
 use serde::Serialize;
 
-use super::{ProtocolError, SysCtrl};
+use super::ProtocolError;
 
 // Sealed trait to ensure that only the allowed types are used as payload types
 // TODO suppress warning
-trait PayloadType {}
+pub trait PayloadType {
+    const MAX_SIZE: usize = 8;
+
+    fn max_size() -> usize {
+        Self::MAX_SIZE
+    }
+}
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
-pub enum CommandPL {}
+pub enum Cd {}
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
-pub enum ClassCommandPL {}
+pub enum ClCd {}
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
-pub enum TelemetryPL {}
+pub enum Ty {}
 
-impl PayloadType for CommandPL {}
-impl PayloadType for ClassCommandPL {}
-impl PayloadType for TelemetryPL {}
+impl PayloadType for Cd {}
+impl PayloadType for ClCd {
+    const MAX_SIZE: usize = 7;
+}
+impl PayloadType for Ty {}
 
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 pub struct Payload<K: PayloadType> {
@@ -28,8 +36,6 @@ impl<K> Payload<K>
 where
     K: PayloadType,
 {
-    const MAX_SIZE: usize = 8;
-
     pub const EMPTY: Self = Self {
         data: Vec::new(),
         marker: std::marker::PhantomData,
@@ -45,8 +51,8 @@ where
 
     pub fn new_truncated(data: impl AsRef<[u8]>) -> Self {
         let data = data.as_ref();
-        let mut truncated_data = Vec::with_capacity(Self::MAX_SIZE);
-        truncated_data.extend_from_slice(&data[..Self::MAX_SIZE]);
+        let mut truncated_data = Vec::with_capacity(K::MAX_SIZE);
+        truncated_data.extend_from_slice(&data[..K::MAX_SIZE]);
         Self {
             data: truncated_data,
             marker: std::marker::PhantomData,
@@ -55,7 +61,7 @@ where
 
     pub fn new(data: impl AsRef<[u8]>) -> Result<Self, ProtocolError> {
         let data = data.as_ref();
-        if data.len() > Self::MAX_SIZE {
+        if data.len() > K::MAX_SIZE {
             return Err(ProtocolError::BufferSizeError);
         }
 
@@ -65,8 +71,8 @@ where
         })
     }
 
-    fn new_from_vec(data: Vec<u8>) -> Result<Self, ProtocolError> {
-        if data.len() > Self::MAX_SIZE {
+    pub fn new_from_vec(data: Vec<u8>) -> Result<Self, ProtocolError> {
+        if data.len() > K::MAX_SIZE {
             return Err(ProtocolError::BufferSizeError);
         }
 
@@ -87,20 +93,19 @@ where
     pub fn into_raw_vec(self) -> Vec<u8> {
         self.data
     }
+
+    pub fn max_size() -> usize {
+        K::MAX_SIZE
+    }
 }
 
 pub trait AsPayload<K: PayloadType>:
     for<'s> TryFrom<&'s Payload<K>, Error = ProtocolError> + Into<Payload<K>> + Clone
 {
     fn to_payload(&self) -> Payload<K> {
-        // Try to remove the clone here and auto implement Into<Payload<K>> for &T where T: AsPayload
+        // Ty to remove the clone here and auto implement Into<Payload<K>> for &T where T: AsPayload
         self.clone().into()
     }
-
-    // TODO implement
-    // fn as_ref(&self) -> &[u8] {
-    //     self.to_payload().as_ref()
-    // }
 
     fn to_raw_vec(&self) -> Vec<u8> {
         self.to_payload().into_raw_vec()
@@ -175,46 +180,4 @@ where
     }
 }
 
-impl Payload<TelemetryPL> {}
-
-impl Payload<ClassCommandPL> {
-    pub fn get_system_control(&self) -> Result<SysCtrl, ProtocolError> {
-        if self.len() >= 8 {
-            Ok(SysCtrl::from(self.data[0]))
-        } else {
-            Err(ProtocolError::ClassCommandSizeError)
-        }
-    }
-
-    pub fn get_class_payload(&self) -> &[u8] {
-        &self.data[..7]
-    }
-
-    pub fn from(class_payload: &[u8], sys_ctrl: Option<SysCtrl>) -> Result<Self, ProtocolError> {
-        let pl_len = class_payload.len();
-        if pl_len > 7 {
-            return Err(ProtocolError::ClassCommandSizeError);
-        }
-
-        let sys: u8 = sys_ctrl.unwrap_or_default().into();
-
-        let mut data = Vec::with_capacity(8);
-        data.extend_from_slice(&class_payload);
-        data.extend_from_slice(&[0_u8; 7][..7 - pl_len]);
-        data.extend_from_slice(&[sys]);
-
-        Ok(Self {
-            data,
-            marker: std::marker::PhantomData,
-        })
-    }
-}
-
-impl From<Payload<ClassCommandPL>> for Payload<CommandPL> {
-    fn from(value: Payload<ClassCommandPL>) -> Self {
-        Self {
-            data: value.data,
-            marker: std::marker::PhantomData,
-        }
-    }
-}
+impl Payload<Ty> {}

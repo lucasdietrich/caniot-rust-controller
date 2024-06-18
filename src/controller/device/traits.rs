@@ -1,6 +1,6 @@
 use std::{fmt::Debug, ops::Deref};
 
-use crate::caniot::{self, BlcClassTelemetry};
+use crate::caniot::{self, BoardClassTelemetry};
 
 use as_any::{AsAny, Downcast};
 
@@ -17,7 +17,7 @@ pub trait DeviceControllerTrait: Send + Debug + Default {
     fn handle_frame(
         &mut self,
         _frame: &caniot::ResponseData,
-        _as_class_blc: &Option<BlcClassTelemetry>,
+        _as_class_blc: &Option<BoardClassTelemetry>,
         _ctx: &mut ProcessContext,
     ) -> Result<Verdict, DeviceError> {
         Ok(Verdict::default())
@@ -73,7 +73,7 @@ pub trait DeviceControllerWrapperTrait: Send + Debug {
     fn wrapper_handle_frame(
         &mut self,
         frame: &caniot::ResponseData,
-        as_class_blc: &Option<BlcClassTelemetry>,
+        as_class_blc: &Option<BoardClassTelemetry>,
         ctx: &mut ProcessContext,
     ) -> Result<Verdict, DeviceError>;
 
@@ -110,7 +110,7 @@ where
     fn wrapper_handle_frame(
         &mut self,
         frame: &caniot::ResponseData,
-        as_class_blc: &Option<BlcClassTelemetry>,
+        as_class_blc: &Option<BoardClassTelemetry>,
         ctx: &mut ProcessContext,
     ) -> Result<Verdict, DeviceError> {
         self.handle_frame(frame, as_class_blc, ctx)

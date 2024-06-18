@@ -4,9 +4,7 @@ use serde::Serialize;
 use std::time::{Duration, Instant};
 
 use crate::{
-    caniot::{
-        utils::blc_parse_telemetry_as_class, BlcClassTelemetry, DeviceId, Endpoint, ResponseData,
-    },
+    caniot::{classes, AsPayload, BoardClassTelemetry, DeviceId, Endpoint, ResponseData, SysCtrl},
     controller::ActionTrait,
     utils::expirable::ExpirableTrait,
 };
@@ -47,7 +45,7 @@ pub struct Device {
     pub last_process: Option<Instant>,
 
     // Last class telemetry values
-    pub measures: Option<BlcClassTelemetry>,
+    pub measures: Option<BoardClassTelemetry>,
 }
 
 impl Device {
@@ -107,6 +105,7 @@ impl Device {
         None
     }
 
+    /// Returns wether the inner controller can handle the action
     pub fn can_inner_controller_handle_action(&self, action: &dyn ActionWrapperTrait) -> bool {
         if let Some(inner) = self.controller.as_ref() {
             inner.wrapper_can_handle_action(action)
@@ -116,9 +115,8 @@ impl Device {
     }
 
     fn handle_action_reset(&mut self) -> Result<ActionVerdict<DeviceAction>, DeviceError> {
-        // let blc_req = BlcCommand::HARDWARE_RESET.into_request();
-        // let verdict = ActionVerdict::ActionPendingOn(blc_req);
-        Err(DeviceError::NotImplemented)
+        let req = SysCtrl::HARDWARE_RESET.into_board_request();
+        Ok(ActionVerdict::ActionPendingOn(req))
     }
 
     pub fn handle_action(
@@ -161,7 +159,7 @@ impl Device {
     pub fn handle_frame(
         &mut self,
         frame: &ResponseData,
-        _as_class_blc: &Option<BlcClassTelemetry>,
+        _as_class_blc: &Option<BoardClassTelemetry>,
         ctx: &mut ProcessContext,
     ) -> Result<Verdict, DeviceError> {
         self.mark_last_seen();
@@ -173,12 +171,12 @@ impl Device {
             ResponseData::Error { .. } => self.stats.err_rx += 1,
         }
 
-        // Try to parse the telemetry frame as a class telemetry if possible
+        // Ty to parse the telemetry frame as a class telemetry if possible
         let as_class_blc = match frame {
             ResponseData::Telemetry { endpoint, payload }
                 if endpoint == &Endpoint::BoardControl =>
             {
-                blc_parse_telemetry_as_class(self.did.class, payload).ok()
+                classes::telemetry::boardlc_parse_telemetry_as_class(self.did.class, payload).ok()
             }
             _ => None,
         };

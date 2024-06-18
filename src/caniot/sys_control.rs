@@ -1,6 +1,6 @@
 use num::FromPrimitive;
 
-use super::{TS, TSP};
+use super::{Cd, Payload, ProtocolError, RequestData, TS, TSP};
 
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct SysCtrl {
@@ -30,6 +30,11 @@ impl SysCtrl {
         factory_reset: false,
         inhibit: TSP::Set,
     };
+
+    // Converts the SysCtrl into a class command request
+    pub fn into_board_request(self) -> RequestData {
+        RequestData::new_board_control_request(self)
+    }
 }
 
 impl Into<u8> for SysCtrl {
@@ -57,6 +62,25 @@ impl From<u8> for SysCtrl {
             factory_reset: value & 0b0001_0000 != 0,
             inhibit: FromPrimitive::from_u8((value & 0b1100_0000) >> 6).unwrap(),
         }
+    }
+}
+
+// Implement AsPayload<Cd> for SysCtrl
+impl Into<Payload<Cd>> for SysCtrl {
+    fn into(self) -> Payload<Cd> {
+        Payload::new_from_vec(vec![0, 0, 0, 0, 0, 0, 0, self.into()]).unwrap()
+    }
+}
+
+impl TryFrom<&Payload<Cd>> for SysCtrl {
+    type Error = ProtocolError;
+
+    fn try_from(value: &Payload<Cd>) -> Result<Self, Self::Error> {
+        if value.len() < 8 {
+            return Err(ProtocolError::ClassCommandSizeError);
+        }
+
+        Ok(SysCtrl::from(value.data()[7]))
     }
 }
 

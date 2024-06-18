@@ -1,7 +1,7 @@
 use serde::Serialize;
 use strum::{EnumIter, IntoEnumIterator};
 
-use crate::caniot::{ClassCommandPL, Payload, ProtocolError, TelemetryPL, Temperature, Xps};
+use crate::caniot::{ClCd, Payload, ProtocolError, Temperature, Ty, Xps};
 
 use super::traits::{Class, ClassCommandTrait, ClassTelemetryTrait};
 
@@ -21,10 +21,10 @@ impl ClassTelemetryTrait for Telemetry {
     }
 }
 
-impl TryFrom<&Payload<TelemetryPL>> for Telemetry {
+impl TryFrom<&Payload<Ty>> for Telemetry {
     type Error = ProtocolError;
 
-    fn try_from(payload: &Payload<TelemetryPL>) -> Result<Self, ProtocolError> {
+    fn try_from(payload: &Payload<Ty>) -> Result<Self, ProtocolError> {
         let payload = payload.as_ref();
         if payload.len() >= 8 {
             Ok(Telemetry {
@@ -74,8 +74,8 @@ impl TryFrom<&Payload<TelemetryPL>> for Telemetry {
     }
 }
 
-impl Into<Payload<TelemetryPL>> for Telemetry {
-    fn into(self) -> Payload<TelemetryPL> {
+impl Into<Payload<Ty>> for Telemetry {
+    fn into(self) -> Payload<Ty> {
         let mut payload = Vec::with_capacity(8);
 
         payload.push(
@@ -112,7 +112,7 @@ impl Into<Payload<TelemetryPL>> for Telemetry {
         payload.push(temp_out[1][0] >> 4 | (temp_out[1][1] << 4) | (temp_out[2][0] << 6));
         payload.push(temp_out[2][0] >> 2 | (temp_out[2][1] << 6));
 
-        Payload::<TelemetryPL>::new(payload).unwrap()
+        Payload::<Ty>::new(payload).unwrap()
     }
 }
 
@@ -140,28 +140,28 @@ pub enum Class1CommandFields {
     Ee1,
 }
 
-#[derive(Default, Clone, Copy, PartialEq, Serialize)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Serialize)]
 pub struct Command {
     pub ios: [Xps; CLASS1_IO_COUNT],
 }
 
 impl<'a> ClassCommandTrait for Command {}
-impl Into<Payload<ClassCommandPL>> for Command {
-    fn into(self) -> Payload<ClassCommandPL> {
+impl Into<Payload<ClCd>> for Command {
+    fn into(self) -> Payload<ClCd> {
         let mut payload = vec![0; 7];
         for (i, field) in self.ios.iter().enumerate() {
             field.set_at(&mut payload, i).unwrap();
         }
 
-        Payload::<ClassCommandPL>::new(payload).unwrap()
+        Payload::<ClCd>::new(payload).unwrap()
     }
 }
 
-impl TryFrom<&Payload<ClassCommandPL>> for Command {
+impl TryFrom<&Payload<ClCd>> for Command {
     type Error = ProtocolError;
 
     // Convert a Class1 command serialized payload into a Command struct
-    fn try_from(payload: &Payload<ClassCommandPL>) -> Result<Self, ProtocolError> {
+    fn try_from(payload: &Payload<ClCd>) -> Result<Self, ProtocolError> {
         let payload = payload.as_ref();
         if payload.len() >= 7 {
             Ok(Command {
@@ -180,10 +180,8 @@ impl TryFrom<&Payload<ClassCommandPL>> for Command {
 pub struct Class1;
 
 impl Class for Class1 {
+    const CLASS_ID: u8 = 1;
+
     type Telemetry = Telemetry;
     type Command = Command;
-
-    fn get_class_id() -> u8 {
-        1
-    }
 }

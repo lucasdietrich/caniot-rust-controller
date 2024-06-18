@@ -14,7 +14,7 @@ use embedded_can::{Frame as EmbeddedFrame, Id as EmbeddedId, StandardId};
 use socketcan::CanDataFrame;
 use thiserror::Error;
 
-use super::{CommandPL, DeviceId, ErrorCode, Payload, ProtocolError, TelemetryPL};
+use super::{Cd, DeviceId, ErrorCode, Payload, ProtocolError, SysCtrl, Ty};
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, FromPrimitive)]
 pub enum Type {
@@ -205,7 +205,7 @@ pub enum RequestData {
     },
     Command {
         endpoint: Endpoint,
-        payload: Payload<CommandPL>,
+        payload: Payload<Cd>,
     },
     AttributeRead {
         key: u16,
@@ -217,6 +217,21 @@ pub enum RequestData {
 }
 
 impl RequestData {
+    /// Create a new board control request.
+    ///
+    /// Board control requests are used to control the board itself. (e.g. reset, watchdog, etc.)
+    /// The endpoint is always set to `Endpoint::BoardControl`.
+    ///
+    /// # Arguments
+    ///
+    /// * `sys` - The system control data
+    pub fn new_board_control_request(sys: SysCtrl) -> Self {
+        RequestData::Command {
+            endpoint: Endpoint::BoardControl,
+            payload: sys.into(),
+        }
+    }
+
     fn get_can_payload(&self) -> Vec<u8> {
         match self {
             RequestData::Telemetry { .. } => vec![],
@@ -316,7 +331,7 @@ pub enum ErrorSource {
 pub enum ResponseData {
     Telemetry {
         endpoint: Endpoint,
-        payload: Payload<TelemetryPL>,
+        payload: Payload<Ty>,
     },
     Attribute {
         key: u16,

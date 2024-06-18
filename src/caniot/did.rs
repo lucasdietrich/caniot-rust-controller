@@ -41,7 +41,7 @@ impl DeviceId {
     }
 
     pub fn class_try_new_sid<C: Class>(sub_id: u8) -> Result<Self, ProtocolError> {
-        Self::try_new(C::get_class_id(), sub_id)
+        Self::try_new(C::CLASS_ID, sub_id)
     }
 
     pub unsafe fn new_unchecked(class: u8, sub_id: u8) -> Self {
@@ -61,7 +61,7 @@ impl DeviceId {
     }
 
     pub fn is<C: Class>(&self) -> bool {
-        self.class == C::get_class_id()
+        self.class == C::CLASS_ID
     }
 }
 

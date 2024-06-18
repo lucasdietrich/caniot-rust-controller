@@ -1,5 +1,5 @@
 use crate::{
-    caniot::{self, BlcClassTelemetry, HeatingMode},
+    caniot::{self, BoardClassTelemetry, HeatingMode},
     controller::{
         ActionResultTrait, ActionTrait, ActionVerdict, DeviceControllerInfos,
         DeviceControllerTrait, ProcessContext, Verdict,
@@ -70,7 +70,7 @@ impl DeviceControllerTrait for HeatersController {
     fn handle_frame(
         &mut self,
         frame: &caniot::ResponseData,
-        _as_class_blc: &Option<BlcClassTelemetry>,
+        _as_class_blc: &Option<BoardClassTelemetry>,
         _ctx: &mut ProcessContext,
     ) -> Result<Verdict, crate::controller::DeviceError> {
         match &frame {

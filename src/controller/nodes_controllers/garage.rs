@@ -157,7 +157,7 @@ impl DeviceControllerTrait for GarageController {
             GarageAction::GetStatus => Ok(ActionVerdict::ActionResult(self.status.clone())),
             GarageAction::SetStatus(command) => {
                 let blc0_command: class0::Command = command.into();
-                Ok(ActionVerdict::ActionPendingOn(blc0_command.to_request()))
+                Ok(ActionVerdict::ActionPendingOn(blc0_command.into_request()))
             }
         }
     }
@@ -172,7 +172,7 @@ impl DeviceControllerTrait for GarageController {
     fn handle_frame(
         &mut self,
         _frame: &crate::caniot::ResponseData,
-        as_class_blc: &Option<BlcClassTelemetry>,
+        as_class_blc: &Option<BoardClassTelemetry>,
         _ctx: &mut crate::controller::ProcessContext,
     ) -> Result<crate::controller::Verdict, crate::controller::DeviceError> {
         if let Some(telemetry) = as_class_blc {
