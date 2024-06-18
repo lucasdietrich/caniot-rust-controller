@@ -121,11 +121,11 @@ impl DeviceControllerTrait for AlarmController {
     fn handle_frame(
         &mut self,
         _frame: &caniot::ResponseData,
-        as_class_blc: &Option<crate::caniot::BlcClassTelemetry>,
+        as_class_blc: &Option<crate::caniot::BoardClassTelemetry>,
         ctx: &mut ProcessContext,
     ) -> Result<crate::controller::Verdict, DeviceError> {
         match as_class_blc {
-            Some(caniot::BlcClassTelemetry::Class0(telemetry)) => {
+            Some(caniot::BoardClassTelemetry::Class0(telemetry)) => {
                 let new_state = DeviceState {
                     siren: telemetry.rl1,
                     detectors: [telemetry.in1, telemetry.in2],

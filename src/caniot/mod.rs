@@ -1,5 +1,4 @@
 pub mod attributes;
-pub mod board;
 pub mod classes;
 pub mod datatypes;
 pub mod did;

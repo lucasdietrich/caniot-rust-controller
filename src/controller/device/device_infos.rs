@@ -13,7 +13,7 @@ pub struct DeviceInfos {
     pub controller_attached: bool,
     pub controller_name: Option<String>,
     pub stats: DeviceStats,
-    pub measures: Option<caniot::BlcClassTelemetry>,
+    pub measures: Option<caniot::BoardClassTelemetry>,
 
     // measures
     pub board_temperature: Option<f32>,

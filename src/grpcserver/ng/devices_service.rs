@@ -88,11 +88,11 @@ impl Into<m::Class1Telemetry> for caniot::class1::Telemetry {
     }
 }
 
-impl Into<m::device::Measures> for caniot::BlcClassTelemetry {
+impl Into<m::device::Measures> for caniot::classes::BoardClassTelemetry {
     fn into(self) -> m::device::Measures {
         match self {
-            caniot::BlcClassTelemetry::Class0(t) => m::device::Measures::Class0(t.into()),
-            caniot::BlcClassTelemetry::Class1(t) => m::device::Measures::Class1(t.into()),
+            caniot::BoardClassTelemetry::Class0(t) => m::device::Measures::Class0(t.into()),
+            caniot::BoardClassTelemetry::Class1(t) => m::device::Measures::Class1(t.into()),
         }
     }
 }
