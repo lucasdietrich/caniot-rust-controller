@@ -47,6 +47,7 @@ fn test_iter_expirable() {
         assert_eq!(vec.iter().ttl(), time_to_expire);
     }
 
+    // negative ttl means no expiration (transformed to None)
     test_vec(&[], false, false, None);
     test_vec(&[0], true, true, Some(0));
     test_vec(&[1], true, false, Some(1));

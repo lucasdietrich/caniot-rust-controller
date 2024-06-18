@@ -1,5 +1,3 @@
-use log::info;
-
 use crate::{
     caniot::{self, class0::Class0, class1::Class1, AsPayload, SysCtrl, Temperature},
     utils::expirable::ExpirableTrait,
