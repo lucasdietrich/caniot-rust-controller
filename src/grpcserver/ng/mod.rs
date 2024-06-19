@@ -1,4 +1,5 @@
 pub mod alarms_service;
+pub mod can_iface_service;
 pub mod controller_service;
 pub mod devices_service;
 pub mod garage_service;
@@ -7,6 +8,7 @@ pub mod helpers;
 pub mod internal_service;
 
 pub use alarms_service::*;
+pub use can_iface_service::*;
 pub use controller_service::*;
 pub use devices_service::*;
 pub use garage_service::*;
@@ -21,10 +23,6 @@ mod model {
 
     pub mod internal {
         tonic::include_proto!("ng.internal");
-    }
-
-    pub mod common {
-        tonic::include_proto!("ng.common");
     }
 
     pub mod controller {
@@ -46,8 +44,9 @@ mod model {
     pub mod devices {
         tonic::include_proto!("ng.devices");
     }
-}
 
-mod model_alarms {
-    tonic::include_proto!("ng.alarms");
+    #[cfg(any(feature = "grpc_can_iface_server", feature = "grpc_can_iface_client"))]
+    pub mod can_iface {
+        tonic::include_proto!("ng.can_iface");
+    }
 }
