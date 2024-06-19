@@ -70,29 +70,29 @@ as-any = "0.3"
 [build-dependencies]
 tonic-build = { version = "0.11.0", features = ["prost"] }
 
-# [profile.release]
-# opt-level = 3
-# lto = false
-# codegen-units = 1
-# debug = false
-# strip = false            # "debuginfo"
-# debug-assertions = false
-# overflow-checks = false
-# panic = 'abort'          # might be 'abort'
-# incremental = false
-# rpath = false
-
 [profile.release]
-opt-level = "z"
+opt-level = 3
 lto = false
-codegen-units = 256
+codegen-units = 1
 debug = false
-strip = false           # "debuginfo"
-debug-assertions = true
-overflow-checks = true
-panic = 'abort'
-incremental = true
+strip = false            # "debuginfo"
+debug-assertions = false
+overflow-checks = false
+panic = 'abort'          # might be 'abort'
+incremental = false
 rpath = false
+
+# [profile.release]
+# opt-level = "z"
+# lto = false
+# codegen-units = 256
+# debug = false
+# strip = false           # "debuginfo"
+# debug-assertions = true
+# overflow-checks = true
+# panic = 'abort'
+# incremental = true
+# rpath = false
 
 [profile.dev]
 opt-level = 0
