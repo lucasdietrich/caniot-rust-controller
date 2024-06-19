@@ -20,21 +20,25 @@ clean:
 target:
 	./scripts/build.sh build debug
 
-deploy: deploy_config deploy_static
-	./scripts/build.sh build debug
-	scp target/armv7-unknown-linux-gnueabihf/debug/caniot-controller rpi:/home/root/rust-controller/caniot-controller
+target_release:
+	./scripts/build.sh build release
+
+deploy_release: deploy_config deploy_static deploy_bin_release
+deploy_debug: deploy_config deploy_static deploy_bin_debug
 
 deploy_static:
 	ssh rpi "mkdir -p /home/root/rust-controller/ui/dist"
 	scp -rp ui/dist/* rpi:/home/root/rust-controller/ui/dist
 
-deploy_release: deploy_config deploy_static
-	./scripts/build.sh build release
-	scp target/armv7-unknown-linux-gnueabihf/release/caniot-controller rpi:/home/root/rust-controller/caniot-controller
-
 deploy_config:
 	ssh rpi "mkdir -p /home/root/rust-controller"
 	scp scripts/caniot-controller.toml rpi:/home/root/rust-controller/caniot-controller.toml
+
+deploy_bin_release: target_release
+	scp target/armv7-unknown-linux-gnueabihf/release/caniot-controller rpi:/home/root/rust-controller/caniot-controller
+
+deploy_bin_debug: target
+	scp target/armv7-unknown-linux-gnueabihf/debug/caniot-controller rpi:/home/root/rust-controller/caniot-controller
 
 ui:
 	make -C proto/grpc-web
