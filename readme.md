@@ -102,6 +102,7 @@ Run with
 - How to compare to make sure the result is expected for the action ?
 - Test how the controller behaves with delayed responses or timouts
 - Try to get rid of the `handle_action_result()` method, find a way to merge it with `handle_action()`
+- Allow to use a remote controller as a can interface (Hardware in the loop), using the GRPC API
 
 ```
 device_temperature{medium="CAN",mac="16",device="GarageDoorController",sensor="EMBEDDED",room="",collector="pycaniotcontroller"} 19.00

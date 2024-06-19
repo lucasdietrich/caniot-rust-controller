@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package ng;
+package ng.devices;
 
 import "common.proto";
 import "google/protobuf/timestamp.proto";

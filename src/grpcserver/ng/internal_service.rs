@@ -3,7 +3,7 @@ use std::{collections::HashMap, time::SystemTime};
 use log::debug;
 use tonic::{Request, Response, Status};
 
-use super::model::{
+use super::model::internal::{
     self as m,
     internal_service_server::{InternalService, InternalServiceServer},
 };

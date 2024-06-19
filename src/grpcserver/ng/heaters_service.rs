@@ -3,7 +3,7 @@ use tonic::{Request, Response, Result, Status};
 
 use crate::{caniot::HeatingMode, controller::heaters, shared::SharedHandle};
 
-use super::model_heaters::{
+use super::model::heaters::{
     self as m,
     heaters_service_server::{HeatersService, HeatersServiceServer},
 };

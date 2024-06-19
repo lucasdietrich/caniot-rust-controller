@@ -7,7 +7,7 @@ use crate::{
     shared::SharedHandle,
 };
 
-use super::model_alarms::{
+use super::model::alarms::{
     self as m,
     alarms_service_server::{AlarmsService, AlarmsServiceServer},
 };

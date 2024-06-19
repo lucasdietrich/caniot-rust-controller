@@ -6,8 +6,8 @@ use crate::caniot::{self};
 use crate::controller::ControllerError;
 use crate::shared::SharedHandle;
 
-use super::model::{
-    self,
+use super::model::controller::{
+    self as m,
     controller_service_server::{ControllerService, ControllerServiceServer},
 };
 
@@ -29,24 +29,21 @@ where
 
 #[tonic::async_trait]
 impl ControllerService for NgController {
-    async fn query(
-        &self,
-        request: Request<model::Request>,
-    ) -> Result<Response<model::Response>, Status> {
+    async fn query(&self, request: Request<m::Request>) -> Result<Response<m::Response>, Status> {
         let req = request.into_inner();
         let did = req.did.expect("Missing device id");
         let caniot_did = caniot::DeviceId::from_u8(did.did as u8);
 
         let query = match req.query.expect("Missing query") {
-            model::request::Query::Telemetry(t) => {
+            m::request::Query::Telemetry(t) => {
                 let ep = caniot::Endpoint::try_from(t.endpoint).expect("Invalid endpoint");
                 caniot::build_telemetry_request(caniot_did, ep)
             }
-            model::request::Query::Command(a) => {
+            m::request::Query::Command(a) => {
                 let ep = caniot::Endpoint::try_from(a.endpoint).expect("Invalid endpoint");
                 caniot::build_command_request(caniot_did, ep, convert_payload(a.payload.as_slice()))
             }
-            model::request::Query::Attribute(a) => match a.value {
+            m::request::Query::Attribute(a) => match a.value {
                 Some(value) => {
                     caniot::build_attribute_write_request(caniot_did, a.key as u16, value)
                 }
@@ -62,13 +59,13 @@ impl ControllerService for NgController {
 
         // Handle request error
         if let Err(err) = reply {
-            return Ok(Response::new(model::Response {
+            return Ok(Response::new(m::Response {
                 did: Some(caniot_did.into()),
                 response: None,
                 response_time: 0,
                 status: match err {
-                    ControllerError::Timeout => model::Status::Timeout as i32,
-                    _ => model::Status::Nok as i32,
+                    ControllerError::Timeout => m::Status::Timeout as i32,
+                    _ => m::Status::Nok as i32,
                 },
                 timestamp: None,
             }));
@@ -90,11 +87,11 @@ impl ControllerService for NgController {
 
         // let r2 = model::response::Response::Attribute(model::Attribute { key: 0, value: 0 });
 
-        Ok(Response::new(model::Response {
+        Ok(Response::new(m::Response {
             did: Some(caniot_did.into()),
             response: None,
             response_time: 0,
-            status: model::Status::Ok as i32,
+            status: m::Status::Ok as i32,
             timestamp: None,
         }))
     }

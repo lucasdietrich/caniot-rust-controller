@@ -24,8 +24,7 @@ service CanController {
 
 /*____________________________________________________________________________________________________________________*/
 
-message DeviceId
-{
+message DeviceId {
   uint32 cls = 1;
   uint32 sid = 2;
 }
@@ -36,9 +35,7 @@ enum Status {
   TIMEOUT = 2;
 }
 
-message CommandResponse {
-  Status status = 4;
-}
+message CommandResponse { Status status = 4; }
 
 message Attribute {
   uint32 key = 1;
@@ -100,9 +97,7 @@ enum GarageDoorCommand {
   COMMAND_ALL = 3;
 }
 
-message GarageCommand {
-  GarageDoorCommand command = 2;
-}
+message GarageCommand { GarageDoorCommand command = 2; }
 
 /*____________________________________________________________________________________________________________________*/
 
@@ -119,9 +114,7 @@ message AlarmCommand {
   CaniotComplexDigitalCommand light2 = 3;
 }
 
-message HeatersCommand {
-  repeated CaniotHeaterState heater = 1;
-}
+message HeatersCommand { repeated CaniotHeaterState heater = 1; }
 
 /*____________________________________________________________________________________________________________________*/
 
@@ -130,9 +123,10 @@ message AttributeRequest {
   uint32 key = 3;
   uint32 value = 4;
 
-  float timeout = 5;  // if timeout == 0.0 then return immediately with status OK
+  float timeout = 5; // if timeout == 0.0 then return immediately with status OK
   // if timeout != 0.0 return status TIMEOUT if timeout value exceeded
-  // return pending ok if value == write value with WriteAttribute and check key anywhere
+  // return pending ok if value == write value with WriteAttribute and check key
+  // anywhere
 }
 
 message AttributeResponse {
@@ -147,14 +141,9 @@ message AttributeResponse {
 
 /*____________________________________________________________________________________________________________________*/
 
-message Empty {
+message Empty {}
 
-}
-
-message DateTime
-{
-  uint32 seconds = 1;
-}
+message DateTime { uint32 seconds = 1; }
 
 message Device {
   DeviceId deviceid = 1;
@@ -170,7 +159,7 @@ message Device {
 
   Status status = 4;
 
-  repeated int32 raw = 5 [packed = true];
+  repeated int32 raw = 5 [ packed = true ];
 
   oneof model {
     bool generic = 11;
@@ -191,16 +180,14 @@ message DeviceResponse {
   }
 }
 
-message TelemetryTarget
-{
+message TelemetryTarget {
   DeviceId deviceid = 1;
   TELEMETRY_ENDPOINT endpoint = 2;
 }
 
 /*____________________________________________________________________________________________________________________*/
 
-message V1BSPModel
-{
+message V1BSPModel {
   uint32 oc1 = 1;
   uint32 oc2 = 2;
 
@@ -227,10 +214,9 @@ message V1BSPModel
   uint32 prl2 = 18;
 }
 
-message TinyBSPModel
-{
+message TinyBSPModel {
   // array of digital states
-  repeated bool in = 1 [packed = true];
+  repeated bool in = 1 [ packed = true ];
 
   float int_temp = 9;
   bool active_int_temp = 10;
@@ -239,8 +225,7 @@ message TinyBSPModel
   bool active_ext_temp = 12;
 }
 
-message GarageDoorModel
-{
+message GarageDoorModel {
   V1BSPModel base = 1;
 
   bool left = 2;
@@ -248,8 +233,7 @@ message GarageDoorModel
   bool gate = 4;
 }
 
-message OutdoorControllerModel
-{
+message OutdoorControllerModel {
   V1BSPModel base = 1;
 
   bool enabled = 2;
@@ -260,13 +244,9 @@ message OutdoorControllerModel
   float last_command = 7;
 }
 
-message IndoorControllerModel
-{
-  TinyBSPModel base = 1;
-}
+message IndoorControllerModel { TinyBSPModel base = 1; }
 
-message HeatingControllerModel
-{
+message HeatingControllerModel {
   TinyBSPModel base = 1;
 
   repeated CaniotHeaterState heater = 2;
@@ -274,6 +254,4 @@ message HeatingControllerModel
   bool power_status = 6;
 }
 
-message Devices {
-  repeated Device device = 1;
-}
+message Devices { repeated Device device = 1; }

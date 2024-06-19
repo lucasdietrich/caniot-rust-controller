@@ -10,10 +10,13 @@ use crate::{
     shared::SharedHandle,
 };
 
-use super::model::caniot_devices_service_server::{
-    CaniotDevicesService, CaniotDevicesServiceServer,
+use super::model::{
+    self as ng,
+    devices::{
+        self as m,
+        caniot_devices_service_server::{CaniotDevicesService, CaniotDevicesServiceServer},
+    },
 };
-use super::model::{self as m};
 
 #[derive(Debug)]
 pub struct NgDevices {
@@ -26,19 +29,6 @@ impl NgDevices {
             Ok(Response::new(infos.into()))
         } else {
             Err(Status::not_found("Device not found"))
-        }
-    }
-}
-
-impl Into<m::DeviceIdInfos> for ct::DeviceId {
-    fn into(self) -> m::DeviceIdInfos {
-        m::DeviceIdInfos {
-            obj: Some(m::DeviceId {
-                did: self.to_u8() as u32,
-            }),
-            did: self.to_u8() as u32,
-            sid: self.sub_id as u32,
-            cls: self.class as u32,
         }
     }
 }
@@ -123,7 +113,7 @@ impl CaniotDevicesService for NgDevices {
         Ok(Response::new(m::DevicesList { devices }))
     }
 
-    async fn get(&self, request: Request<m::DeviceId>) -> Result<Response<m::Device>, Status> {
+    async fn get(&self, request: Request<ng::DeviceId>) -> Result<Response<m::Device>, Status> {
         let did: ct::DeviceId = request.into_inner().into();
         if let Some(ref infos) = self.shared.controller_handle.get_device_infos(did).await {
             Ok(Response::new(infos.into()))
@@ -174,12 +164,12 @@ impl CaniotDevicesService for NgDevices {
             m::action::Action::Reboot(..) => DeviceAction::Reset,
             m::action::Action::ResetSettings(..) => DeviceAction::ResetSettings,
             m::action::Action::Inhibit(inhibit) => {
-                let inhibit = m::TwoStatePulse::try_from(inhibit)
+                let inhibit = ng::TwoStatePulse::try_from(inhibit)
                     .map_err(|e| Status::invalid_argument(format!("Invalid inhibit: {:?}", e)))?;
                 DeviceAction::InhibitControl(inhibit.into())
             }
             m::action::Action::Ping(endpoint) => {
-                let endpoint = m::Endpoint::try_from(endpoint)
+                let endpoint = ng::Endpoint::try_from(endpoint)
                     .map_err(|e| Status::invalid_argument(format!("Invalid endpoint: {:?}", e)))?;
                 DeviceAction::Ping(endpoint.into())
             }

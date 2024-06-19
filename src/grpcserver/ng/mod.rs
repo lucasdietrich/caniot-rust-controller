@@ -14,15 +14,38 @@ pub use heaters_service::*;
 pub use internal_service::*;
 
 mod model {
-    tonic::include_proto!("ng");
-}
+    // Only a single proto file can be included in a module
+    tonic::include_proto!("ng"); // commons
 
-mod model_heaters {
-    tonic::include_proto!("ng.heaters");
-}
+    // proto files must be hierarchically structured when referencing each other
 
-mod model_garage {
-    tonic::include_proto!("ng.garage");
+    pub mod internal {
+        tonic::include_proto!("ng.internal");
+    }
+
+    pub mod common {
+        tonic::include_proto!("ng.common");
+    }
+
+    pub mod controller {
+        tonic::include_proto!("ng.controller");
+    }
+
+    pub mod heaters {
+        tonic::include_proto!("ng.heaters");
+    }
+
+    pub mod garage {
+        tonic::include_proto!("ng.garage");
+    }
+
+    pub mod alarms {
+        tonic::include_proto!("ng.alarms");
+    }
+
+    pub mod devices {
+        tonic::include_proto!("ng.devices");
+    }
 }
 
 mod model_alarms {
