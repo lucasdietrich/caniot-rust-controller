@@ -90,6 +90,8 @@ impl Into<m::Device> for &DeviceInfos {
                 err_rx: self.stats.err_rx as u32,
                 attribute_rx: self.stats.attribute_rx as u32,
                 attribute_tx: self.stats.attribute_tx as u32,
+                reset_requested: self.stats.reset_requested as u32,
+                reset_settings_requested: self.stats.reset_settings_requested as u32,
             }),
             board_temp: self.board_temperature,
             measures: self.measures.map(|m| m.into()),

@@ -28,6 +28,8 @@ message DeviceStats {
   uint32 attribute_rx = 6;
   uint32 attribute_tx = 7;
   uint32 err_rx = 8;
+  uint32 reset_requested = 9;
+  uint32 reset_settings_requested = 10;
 }
 
 message Class0Telemetry {

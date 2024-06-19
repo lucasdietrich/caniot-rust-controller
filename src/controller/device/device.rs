@@ -30,6 +30,9 @@ pub struct DeviceStats {
     pub attribute_rx: usize,
     pub attribute_tx: usize,
     pub err_rx: usize,
+
+    pub reset_requested: usize,
+    pub reset_settings_requested: usize,
 }
 
 #[derive(Debug)]
@@ -118,11 +121,15 @@ impl Device {
     }
 
     fn handle_action_reset(&mut self) -> Result<ActionVerdict<DeviceAction>, DeviceError> {
+        self.stats.reset_requested += 1;
+
         let req = SysCtrl::HARDWARE_RESET.into_board_request();
         Ok(ActionVerdict::ActionPendingOn(req))
     }
 
     fn handle_action_reset_settings(&mut self) -> Result<ActionVerdict<DeviceAction>, DeviceError> {
+        self.stats.reset_settings_requested += 1;
+
         let req = SysCtrl::FACTORY_RESET.into_board_request();
         Ok(ActionVerdict::ActionPendingOn(req))
     }
