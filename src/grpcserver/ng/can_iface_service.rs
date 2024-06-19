@@ -1,4 +1,7 @@
-use tonic::{Request, Response, Result, Status};
+// Help for implementing the streams RPC: https://github.com/hyperium/tonic/blob/master/examples/routeguide-tutorial.md#creating-the-server
+
+use tokio_stream::{wrappers::ReceiverStream, Stream};
+use tonic::{Request, Response, Result, Status, Streaming};
 
 use crate::shared::SharedHandle;
 
@@ -12,14 +15,17 @@ pub struct NgCanIface {
     pub shared: SharedHandle,
 }
 
+type RxStream = ReceiverStream<Result<m::RxCanFrame, Status>>;
+
 #[tonic::async_trait]
 impl CanIfaceService for NgCanIface {
-    async fn open(
+    type IfaceStream = RxStream;
+
+    async fn iface(
         &self,
-        request: tonic::Request<m::TxCanFrame>,
-    ) -> std::result::Result<tonic::Response<m::RxCanFrame>, tonic::Status> {
-        // Implement the logic for the `open` method here
-        unimplemented!()
+        request: Request<Streaming<m::TxCanFrame>>,
+    ) -> Result<Response<Self::IfaceStream>, Status> {
+        todo!()
     }
 }
 
