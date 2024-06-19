@@ -2,29 +2,36 @@ use std::path::{Path, PathBuf};
 
 use rocket::fs::NamedFile;
 use rocket::serde::{Deserialize, Serialize};
+use rocket::State;
 use rocket::{log::LogLevel, Build, Config, Rocket};
 
 use crate::shared::SharedHandle;
+
+const DEFAULT_PORT: u16 = 8000;
+const DEFAULT_LISTEN: &str = "0.0.0.0";
+const DEFAULT_STATIC_PATH: &str = "ui/dist";
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct WebserverConfig {
     pub port: u16,
     pub listen: String,
+    pub static_path: String,
 }
 
 impl Default for WebserverConfig {
     fn default() -> Self {
         WebserverConfig {
-            port: 8000,
-            listen: "0.0.0.0".to_string(),
+            port: DEFAULT_PORT,
+            listen: DEFAULT_LISTEN.to_string(),
+            static_path: DEFAULT_STATIC_PATH.to_string(),
         }
     }
 }
 
 // Copyright kirauks
 #[get("/<path..>")]
-pub async fn files(path: PathBuf) -> Option<NamedFile> {
-    let www = "ui/dist";
+pub async fn files(path: PathBuf, state: &State<SharedHandle>) -> Option<NamedFile> {
+    let www: &str = &state.config.web.static_path.as_ref();
 
     let mut path = Path::new(www).join(path);
     if path.is_dir() {
