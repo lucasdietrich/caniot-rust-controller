@@ -85,9 +85,11 @@ function DeviceStatusCardContent({ device: resp }: IDeviceCardContentProps) {
     ["telemetry_tx", stats?.getTelemetryTx() || 0],
     ["telemetry_rx", stats?.getTelemetryRx() || 0],
     ["command_tx", stats?.getCommandTx() || 0],
-    ["err", stats?.getErrRx() || 0],
+    ["err_rx", stats?.getErrRx() || 0],
     ["attribute_rx", stats?.getAttributeRx() || 0],
     ["attribute_tx", stats?.getAttributeTx() || 0],
+    ["reset_requested", stats?.getResetRequested() || 0],
+    ["reset_settings_requested", stats?.getResetSettingsRequested() || 0],
   ]);
 
   const statsData = Array.from(statsDataRoot).map(([metric, value]) => ({

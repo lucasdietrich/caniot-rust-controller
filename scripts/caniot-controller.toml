@@ -4,6 +4,7 @@ interface = "can0"
 [web]
 port = 8080
 listen = "0.0.0.0"
+static_path = "ui/dist"
 
 [grpc]
 listen = "[::]:50051"
