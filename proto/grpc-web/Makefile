@@ -10,4 +10,4 @@ build: dependencies
 
 clean:
 	rm -rf node_modules
-	rm api/*
+	rm -rf api/*

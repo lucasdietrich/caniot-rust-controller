@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package ng.can_iface;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+service CanIfaceService {
+  rpc Open(TxCanFrame) returns (RxCanFrame) {}
+}
+
+message TxCanFrame { CanFrame frame = 1; }
+message RxCanFrame {
+  CanFrame frame = 1;
+  google.protobuf.Timestamp timestamp = 2;
+}
+
+message CanFrame {
+  bool is_extended = 1;
+  uint32 id = 2;
+  bytes payload = 3;
+}

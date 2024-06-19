@@ -2,12 +2,12 @@ use garage::GarageDoorCommand;
 
 use tonic::{Request, Response, Result, Status};
 
-use crate::{controller::garage, shared::SharedHandle};
-
-use super::model_garage::{
+use super::model::garage::{
     self as m,
     garage_service_server::{GarageService, GarageServiceServer},
 };
+
+use crate::{controller::garage, shared::SharedHandle};
 
 #[derive(Debug)]
 pub struct NgGarage {
