@@ -8,7 +8,7 @@ homepage = "https://github.com/lucasdietrich/caniot-rust-controller.git"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["grpc_can_iface_server", "grpc_can_iface_client"]
+default = []
 
 # feature for emulated can interface and devices
 emu = []
