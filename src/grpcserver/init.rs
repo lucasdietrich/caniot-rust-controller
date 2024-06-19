@@ -9,12 +9,15 @@ use crate::{
     grpcserver::{
         legacy::get_legacy_caniot_controller,
         ng::{
-            get_ng_alarms_server, get_ng_can_iface_server, get_ng_controller_server,
-            get_ng_devices_server, get_ng_garage_server, get_ng_heaters_server,
+            get_ng_alarms_server, get_ng_controller_server, get_ng_devices_server,
+            get_ng_garage_server, get_ng_heaters_server,
         },
     },
     shared::SharedHandle,
 };
+
+#[cfg(feature = "grpc_can_iface_server")]
+use crate::grpcserver::ng::get_ng_can_iface_server;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GrpcConfig {
@@ -59,7 +62,7 @@ pub async fn grpc_server(shared: SharedHandle) -> Result<(), GrpcServerInitError
 
     info!("gRPC server listening on {}", addr);
 
-    let mut builder = Server::builder()
+    let builder = Server::builder()
         .accept_http1(true)
         .add_service(tonic_web::enable(ng_controller))
         .add_service(tonic_web::enable(ng_internal))
@@ -70,9 +73,7 @@ pub async fn grpc_server(shared: SharedHandle) -> Result<(), GrpcServerInitError
         .add_service(tonic_web::enable(legacy_controller));
 
     #[cfg(feature = "grpc_can_iface_server")]
-    {
-        builder = builder.add_service(tonic_web::enable(ng_can_iface));
-    }
+    let builder = { builder.add_service(tonic_web::enable(ng_can_iface)) };
 
     // Start
     builder.serve_with_shutdown(addr, shutdown_future).await?;

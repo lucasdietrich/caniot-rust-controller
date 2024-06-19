@@ -1,4 +1,5 @@
 pub mod alarms_service;
+#[cfg(feature = "grpc_can_iface_server")]
 pub mod can_iface_service;
 pub mod controller_service;
 pub mod devices_service;
@@ -8,6 +9,7 @@ pub mod helpers;
 pub mod internal_service;
 
 pub use alarms_service::*;
+#[cfg(feature = "grpc_can_iface_server")]
 pub use can_iface_service::*;
 pub use controller_service::*;
 pub use devices_service::*;
