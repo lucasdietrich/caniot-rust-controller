@@ -2,6 +2,7 @@ use std::ops::Deref;
 
 use as_any::Downcast;
 use chrono::{DateTime, Utc};
+use socketcan::CanDataFrame;
 use tokio::sync::{mpsc, oneshot};
 
 use crate::{
@@ -17,8 +18,8 @@ use super::{
 };
 
 pub enum ControllerMessage {
-    GetStats {
-        respond_to: oneshot::Sender<(ControllerStats, Vec<DeviceStatsEntry>, CanStats)>,
+    GetControllerStats {
+        respond_to: oneshot::Sender<(ControllerStats, CanStats)>,
     },
     GetDevices {
         did: Option<DeviceId>,
@@ -37,6 +38,12 @@ pub enum ControllerMessage {
         action: DeviceAction,
         respond_to: oneshot::Sender<Result<<DeviceAction as ActionTrait>::Result, ControllerError>>,
         timeout_ms: Option<u32>,
+    },
+    #[cfg(feature = "can-tunnel")]
+    EstablishCanTunnel {
+        rx_queue: mpsc::Sender<CanDataFrame>, // Messages received from the bus
+        tx_queue: mpsc::Receiver<CanDataFrame>, // Messages to sent to the bus
+        respond_to: oneshot::Sender<Result<(), ControllerError>>,
     },
 }
 
@@ -70,15 +77,6 @@ impl ControllerHandle {
         .await
     }
 
-    pub async fn device_send(&self, frame: ct::Request) -> Result<(), ControllerError> {
-        self.query(|_sender| ControllerMessage::Query {
-            query: frame,
-            timeout_ms: None,
-            respond_to: None,
-        })
-        .await
-    }
-
     /// Query a controller message
     ///
     /// Create a one-shot channel, embed it in a message using the provided closure, and send the
@@ -96,8 +94,8 @@ impl ControllerHandle {
         receiver.await.expect("IPC Sender dropped before response")
     }
 
-    pub async fn get_stats(&self) -> (ControllerStats, Vec<DeviceStatsEntry>, CanStats) {
-        self.query(|respond_to| ControllerMessage::GetStats { respond_to })
+    pub async fn get_controller_stats(&self) -> (ControllerStats, CanStats) {
+        self.query(|respond_to| ControllerMessage::GetControllerStats { respond_to })
             .await
     }
 

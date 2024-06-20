@@ -20,10 +20,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .build_client(false)
         .compile(PROTO_FILES, &[PROTO_DIR])?;
 
-    #[cfg(any(feature = "grpc_can_iface_server", feature = "grpc_can_iface_client"))]
+    #[cfg(any(feature = "grpc-can-iface-server", feature = "grpc-can-iface-client"))]
     tonic_build::configure()
-        .build_server(cfg!(feature = "grpc_can_iface_server"))
-        .build_client(cfg!(feature = "grpc_can_iface_client"))
+        .build_server(cfg!(feature = "grpc-can-iface-server"))
+        .build_client(cfg!(feature = "grpc-can-iface-client"))
         .compile(&[PROTO_CAN_IFACE], &[PROTO_DIR])?;
 
     // build on change
@@ -31,7 +31,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("cargo:rerun-if-changed={}", proto);
     }
 
-    #[cfg(any(feature = "grpc_can_iface_server", feature = "grpc_can_iface_client"))]
+    #[cfg(any(feature = "grpc-can-iface-server", feature = "grpc-can-iface-client"))]
     println!("cargo:rerun-if-changed={}", PROTO_CAN_IFACE);
 
     println!("cargo:rerun-if-changed={}", DB_MIGRATION_DIR);

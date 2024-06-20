@@ -177,7 +177,8 @@ impl CaniotDevicesService for NgDevices {
             }
         };
 
-        // TODO is it important to verify the action result?
+        // TODO is it important to compare the result type with the action type to verify they match?
+        // should it be done in the controller?
         let result = self
             .shared
             .controller_handle

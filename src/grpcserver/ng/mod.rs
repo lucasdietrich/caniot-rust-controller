@@ -1,5 +1,5 @@
 pub mod alarms_service;
-#[cfg(feature = "grpc_can_iface_server")]
+#[cfg(feature = "grpc-can-iface-server")]
 pub mod can_iface_service;
 pub mod controller_service;
 pub mod devices_service;
@@ -9,7 +9,7 @@ pub mod helpers;
 pub mod internal_service;
 
 pub use alarms_service::*;
-#[cfg(feature = "grpc_can_iface_server")]
+#[cfg(feature = "grpc-can-iface-server")]
 pub use can_iface_service::*;
 pub use controller_service::*;
 pub use devices_service::*;
@@ -47,7 +47,7 @@ mod model {
         tonic::include_proto!("ng.devices");
     }
 
-    #[cfg(any(feature = "grpc_can_iface_server", feature = "grpc_can_iface_client"))]
+    #[cfg(any(feature = "grpc-can-iface-server", feature = "grpc-can-iface-client"))]
     pub mod can_iface {
         tonic::include_proto!("ng.can_iface");
     }
