@@ -16,7 +16,7 @@ use crate::{
     shared::SharedHandle,
 };
 
-#[cfg(feature = "grpc_can_iface_server")]
+#[cfg(feature = "grpc-can-iface-server")]
 use crate::grpcserver::ng::get_ng_can_iface_server;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -51,7 +51,7 @@ pub async fn grpc_server(shared: SharedHandle) -> Result<(), GrpcServerInitError
     let ng_alarms = get_ng_alarms_server(shared.clone());
     let ng_garage = get_ng_garage_server(shared.clone());
     let legacy_controller = get_legacy_caniot_controller(shared.clone());
-    #[cfg(feature = "grpc_can_iface_server")]
+    #[cfg(feature = "grpc-can-iface-server")]
     let ng_can_iface = get_ng_can_iface_server(shared.clone());
 
     let mut rx: tokio::sync::broadcast::Receiver<()> = shared.notify_shutdown.subscribe();
@@ -72,7 +72,7 @@ pub async fn grpc_server(shared: SharedHandle) -> Result<(), GrpcServerInitError
         .add_service(tonic_web::enable(ng_alarms))
         .add_service(tonic_web::enable(legacy_controller));
 
-    #[cfg(feature = "grpc_can_iface_server")]
+    #[cfg(feature = "grpc-can-iface-server")]
     let builder = { builder.add_service(tonic_web::enable(ng_can_iface)) };
 
     // Start

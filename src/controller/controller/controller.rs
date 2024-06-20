@@ -4,6 +4,7 @@ use std::time::Duration;
 
 use itertools::{partition, Itertools};
 
+use socketcan::CanDataFrame;
 use tokio::sync::oneshot::Sender;
 
 use crate::bus::{CanInterfaceError, CanInterfaceTrait};
@@ -17,6 +18,8 @@ use crate::controller::{
 use crate::shutdown::Shutdown;
 use crate::utils::expirable::{ttl, ExpirableTrait};
 
+#[cfg(feature = "can-tunnel")]
+use super::can_tunnel::CanTunnelContext;
 use super::pending_query::PendingQueryTenant;
 use super::{pending_action, CaniotConfig};
 
@@ -83,6 +86,10 @@ pub enum ControllerError {
 
     #[error("Device error: {0}")]
     DeviceError(#[from] DeviceError),
+
+    #[cfg(feature = "can-tunnel")]
+    #[error("Can tunnel error: {0}")]
+    CanTunnelError(#[from] super::can_tunnel::CanTunnelError),
 }
 
 enum ActionResultOrPending {
@@ -107,6 +114,9 @@ pub struct Controller<IF: CanInterfaceTrait> {
     // State
     pending_queries: Vec<PendingQuery>,
     devices: HashMap<DeviceId, Device>,
+
+    #[cfg(feature = "can-tunnel")]
+    tunnel: CanTunnelContext,
 }
 
 impl<IF: CanInterfaceTrait> Controller<IF> {
@@ -126,6 +136,8 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
             handle: handle::ControllerHandle::new(sender),
             pending_queries: Vec::new(),
             devices: HashMap::new(),
+            #[cfg(feature = "can-tunnel")]
+            tunnel: CanTunnelContext::default(),
         })
     }
 
@@ -327,11 +339,27 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
             ])
             .unwrap_or(Duration::MAX);
 
+            let tunnel_poll_tx = {
+                #[cfg(feature = "can-tunnel")]
+                {
+                    self.tunnel.poll_tx()
+                }
+                #[cfg(not(feature = "can-tunnel"))]
+                {
+                    futures::future::pending()
+                }
+            };
+
             select! {
                 Some(message) = self.receiver.recv() => {
                     let _ = self.handle_api_message(message).await;
                 },
                 Some(frame) = self.iface.recv_poll() => {
+                    // Send frame to tunnel if established
+                    #[cfg(feature = "can-tunnel")]
+                    self.tunnel.notify_rx(frame.clone());
+
+                    // Process the frame in the curren controller
                     match caniot::Response::try_from(frame) {
                         Ok(frame) => {
                             info!("RX {}", frame);
@@ -345,6 +373,10 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
                             error!("Failed to convert into CANIOT frame {}", err)
                         },
                     }
+                },
+                Some(frame) = tunnel_poll_tx => {
+                    // If frame is received from tunnel, send it to the bus
+                    let _ = self.iface.send(frame).await;
                 },
                 _ = sleep(sleep_time) => {
                     // Timeout of pending queries handled in handle_pending_queries_timeout()
@@ -364,20 +396,6 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
         }
 
         Ok(())
-    }
-
-    fn get_devices_stats(&self) -> Vec<handle::DeviceStatsEntry> {
-        self.devices
-            .iter()
-            .filter(|(_did, device)| device.last_seen.is_some())
-            .sorted_by_key(|(_did, device)| device.last_seen.unwrap())
-            .rev()
-            .map(|(_did, device)| handle::DeviceStatsEntry {
-                did: device.did,
-                last_seen: device.last_seen,
-                stats: device.stats,
-            })
-            .collect()
     }
 
     fn get_devices_infos(&self, did: Option<DeviceId>) -> Vec<DeviceInfos> {
@@ -486,9 +504,8 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
         message: ControllerMessage,
     ) -> Result<(), ControllerError> {
         match message {
-            ControllerMessage::GetStats { respond_to } => {
-                let _ =
-                    respond_to.send((self.stats, self.get_devices_stats(), self.iface.get_stats()));
+            ControllerMessage::GetControllerStats { respond_to } => {
+                let _ = respond_to.send((self.stats, self.iface.get_stats()));
             }
             ControllerMessage::GetDevices { did, respond_to } => {
                 let _ = respond_to.send(self.get_devices_infos(did));
@@ -512,6 +529,18 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
             } => {
                 self.handle_api_device_action(did, action, respond_to, timeout_ms)
                     .await;
+            }
+            #[cfg(feature = "can-tunnel")]
+            ControllerMessage::EstablishCanTunnel {
+                rx_queue,
+                tx_queue,
+                respond_to,
+            } => {
+                let result = self
+                    .tunnel
+                    .establish_can_tunnel(rx_queue, tx_queue)
+                    .map_err(Into::into);
+                let _ = respond_to.send(result);
             }
         }
 
