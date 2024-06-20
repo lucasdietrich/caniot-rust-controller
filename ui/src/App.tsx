@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { Fragment, useEffect, useState } from "react";
 import { ConfigProvider, FloatButton, Layout, Switch, theme } from "antd";
 
 import { Routes, Route } from "react-router-dom";
@@ -13,6 +13,7 @@ import SettingsView from "./view/SettingsView";
 import NoMatch from "./view/NoMatch";
 import Debug from "./view/Debug";
 import DemoView from "./view/DemoView";
+import Media from "react-media";
 
 import "./App.css";
 import {
@@ -23,16 +24,31 @@ import internalStore from "./store/InternalStore";
 
 const { Content, Sider } = Layout;
 
+const MobileMaxSize = 700;
+
 const App: React.FC = () => {
+  const [width, setWidth] = useState<number>(window.innerWidth);
   const [settings, setSettings] = useState<Settings | undefined>(undefined);
   const [darkMode, setDarkMode] = useState(true);
 
+  function handleWindowSizeChange() {
+    setWidth(window.innerWidth);
+  }
+
+  const isMobile = width <= MobileMaxSize;
+
   useEffect(() => {
+    window.addEventListener("resize", handleWindowSizeChange);
+
     internalStore.getSettings((resp) => {
       setSettings(resp);
       setDarkMode(resp.getDarkMode());
       console.log("Loaded settings", resp.toObject());
     });
+
+    return () => {
+      window.removeEventListener("resize", handleWindowSizeChange);
+    };
   }, []);
 
   const onDarkModeChange = (checked: boolean) => {
@@ -63,17 +79,40 @@ const App: React.FC = () => {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
 
+  const SiderWidth = 250;
+  const SiderMobileWidth = 50;
+
   return (
     <ConfigProvider
+      // change sizeXS
       theme={{
         algorithm: darkMode ? theme.darkAlgorithm : theme.defaultAlgorithm,
+        token: {
+          // sizeXS: SizeXS,
+        },
       }}
     >
       <Layout>
-        <Sider width={200} style={{ background: colorBgContainer }}>
+        <Sider
+          style={{
+            background: colorBgContainer,
+            position: "fixed",
+            left: 0,
+            overflow: "auto",
+            height: "100vh",
+          }}
+          collapsed={isMobile}
+          collapsedWidth={SiderMobileWidth}
+          width={SiderWidth}
+        >
           <AppMenu settings={settings} />
         </Sider>
-        <Layout style={{ padding: "24px 24px 24px" }}>
+        <Layout
+          style={{
+            padding: isMobile ? 6 : "24px 24px 24px",
+            marginLeft: isMobile ? SiderMobileWidth : SiderWidth,
+          }}
+        >
           <Content
             style={{
               margin: 0,
@@ -88,9 +127,9 @@ const App: React.FC = () => {
               <Route path="/devices" element={<DevicesView />} />
               <Route path="/about" element={<About />} />
               {settings?.getDebugMode() && <Route path="/debug" element={<Debug />} />}
-              <Route path="/devices/heaters" element={<HeatersView />} />
+              <Route path="/devices/heaters" element={<HeatersView isMobile={isMobile} />} />
               <Route path="/devices/garage" element={<GarageDoorsView refreshInterval={1000} />} />
-              <Route path="/devices/alarms" element={<AlarmsView />} />
+              <Route path="/devices/alarms" element={<AlarmsView isMobile={isMobile} />} />
               <Route
                 path="/settings"
                 element={
@@ -113,3 +152,4 @@ const App: React.FC = () => {
 };
 
 export default App;
+export { MobileMaxSize };

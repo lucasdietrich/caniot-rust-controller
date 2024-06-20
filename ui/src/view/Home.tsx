@@ -24,10 +24,10 @@ function Home() {
   return (
     <>
       <Row gutter={16}>
-        <Col span={12}>
+        <Col xs={24} xl={12}>
           <HelloCard user_name="Lucas" />
         </Col>
-        <Col span={12}>
+        <Col xs={24} xl={12}>
           <Card title="Firmware" bordered={false}>
             <List>
               <ListLabelledItem label="Firmware version">v0.1.0-beta</ListLabelledItem>
@@ -40,10 +40,10 @@ function Home() {
         </Col>
       </Row>
       <Row gutter={16} style={{ paddingTop: 20 }}>
-        <Col span={12}>
+        <Col xs={24} xl={12}>
           <HelloCard user_name="Tom" />
         </Col>
-        <Col span={12}>
+        <Col xs={24} xl={12}>
           <DeviceStatusCard title="Demo" device={demoDevice} />
         </Col>
       </Row>

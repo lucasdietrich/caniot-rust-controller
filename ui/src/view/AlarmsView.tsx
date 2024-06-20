@@ -18,9 +18,10 @@ import { MinusCircleOutlined, SyncOutlined } from "@ant-design/icons";
 
 interface IAlarmsViewProps {
   refreshInterval?: number;
+  isMobile?: boolean;
 }
 
-function AlarmsView({ refreshInterval = 5000 }: IAlarmsViewProps) {
+function AlarmsView({ refreshInterval = 5000, isMobile = false }: IAlarmsViewProps) {
   const [outdoorAlarmDevice, setOutdoorAlarmDevice] = useState<Device | undefined>(undefined);
   const [outdoorAlarmState, setOutdoorAlarmState] = useState<OutdoorAlarmState | undefined>(
     undefined
@@ -130,7 +131,7 @@ function AlarmsView({ refreshInterval = 5000 }: IAlarmsViewProps) {
   return (
     <>
       <Row gutter={16}>
-        <Col span={14}>
+        <Col xl={14} xs={24} style={{ marginBottom: 16 }}>
           <LoadableCard
             title="Alarme extérieure"
             status={undefined}
@@ -150,7 +151,7 @@ function AlarmsView({ refreshInterval = 5000 }: IAlarmsViewProps) {
                 <span style={{ fontWeight: "bold" }}>Lumières</span>
               </List.Item>
 
-              <ListGridItem label="Lumières" description="Lumières extérieures">
+              <ListGridItem label="Lumières" description="Lumières extérieures" isMobile={isMobile}>
                 <TwoStatesSelector
                   disabledIfValueUndefined={false}
                   onStateChange={onAllLightChange}
@@ -165,6 +166,7 @@ function AlarmsView({ refreshInterval = 5000 }: IAlarmsViewProps) {
                   />
                 }
                 description="Lumière extérieure Sud"
+                isMobile={isMobile}
               >
                 <TwoStatesSelector
                   value={outdoorAlarmSouthLight}
@@ -180,6 +182,7 @@ function AlarmsView({ refreshInterval = 5000 }: IAlarmsViewProps) {
                   />
                 }
                 description="Lumière extérieure Est"
+                isMobile={isMobile}
               >
                 <TwoStatesSelector
                   value={outdoorAlarmEastLight}
@@ -191,7 +194,11 @@ function AlarmsView({ refreshInterval = 5000 }: IAlarmsViewProps) {
                 <span style={{ fontWeight: "bold" }}>Alarme</span>
               </List.Item>
 
-              <ListGridItem label="Sirène extérieure" description="Sirène extérieure active">
+              <ListGridItem
+                label="Sirène extérieure"
+                description="Sirène extérieure active"
+                isMobile={isMobile}
+              >
                 {outdoorSirenActive ? (
                   <Button
                     type="default"
@@ -216,6 +223,7 @@ function AlarmsView({ refreshInterval = 5000 }: IAlarmsViewProps) {
                   />
                 }
                 description="Active/désactive l'alarme extérieure"
+                isMobile={isMobile}
               >
                 <TwoStatesSelector
                   value={outdoorAlarmEnabled}
@@ -230,7 +238,7 @@ function AlarmsView({ refreshInterval = 5000 }: IAlarmsViewProps) {
             </List.Item>
           </LoadableCard>
         </Col>
-        <Col span={10}>
+        <Col xl={10} xs={24}>
           <DeviceStatusCard title="Alarme extérieure" device={outdoorAlarmDevice} />
         </Col>
       </Row>

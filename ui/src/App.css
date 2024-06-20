@@ -7,3 +7,15 @@ body {
     flex-direction: column;
     min-height: 100vh;
 }
+
+@media (max-width: 700px) {
+    .ant-card-body {
+        padding: 12px !important;
+    }
+}
+
+@media (min-width: 700px) {
+    .ant-card-body {
+        padding: 24px !important;
+    }
+}

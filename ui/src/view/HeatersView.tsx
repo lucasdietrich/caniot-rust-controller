@@ -14,9 +14,10 @@ import LoadableCard from "../components/LoadableCard";
 
 interface IHeatersViewProps {
   refreshInterval?: number;
+  isMobile?: boolean;
 }
 
-function HeatersView({ refreshInterval = 5000 }: IHeatersViewProps) {
+function HeatersView({ refreshInterval = 5000, isMobile = false }: IHeatersViewProps) {
   const [heatersStatus, setHeatersStatus] = useState<Status | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [heatersDevice, setHeatersDevice] = useState<Device | undefined>(undefined);
@@ -61,7 +62,13 @@ function HeatersView({ refreshInterval = 5000 }: IHeatersViewProps) {
   return (
     <>
       <Row gutter={16}>
-        <Col span={14}>
+        <Col
+          xl={14}
+          xs={24}
+          style={{
+            marginBottom: 16,
+          }}
+        >
           <LoadableCard
             title="Chauffage (lucas)"
             status={heatersStatus !== undefined && heatersStatus?.getPowerStatus()}
@@ -76,28 +83,32 @@ function HeatersView({ refreshInterval = 5000 }: IHeatersViewProps) {
               heaterIndex={0}
               initialMode={heatersStatus?.getHeaterList()[0]}
               onModeChange={onModeChange}
+              isMobile={isMobile}
             ></HeaterModeSelector>
             <HeaterModeSelector
               label="Chauffage 2"
               heaterIndex={1}
               initialMode={heatersStatus?.getHeaterList()[1]}
               onModeChange={onModeChange}
+              isMobile={isMobile}
             ></HeaterModeSelector>
             <HeaterModeSelector
               label="Chauffage 3"
               heaterIndex={2}
               initialMode={heatersStatus?.getHeaterList()[2]}
               onModeChange={onModeChange}
+              isMobile={isMobile}
             ></HeaterModeSelector>
             <HeaterModeSelector
               label="Chauffage 4"
               heaterIndex={3}
               initialMode={heatersStatus?.getHeaterList()[3]}
               onModeChange={onModeChange}
+              isMobile={isMobile}
             ></HeaterModeSelector>
           </LoadableCard>
         </Col>
-        <Col span={10}>
+        <Col xl={10} xs={24}>
           <DeviceStatusCard title="Chauffage" device={heatersDevice} />
         </Col>
       </Row>

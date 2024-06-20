@@ -125,3 +125,32 @@ device_temperature{medium="CAN",mac="1",device="HeatersController",sensor="EXTER
 - Introduce a 'Settings' class to abstract the settings management
 - Add modal for reboot and reset settings of a device (to confirm the action)
 - Refresh devices table dynamically after a reset/reset settings
+- Add alert when an action has been sent to a device
+
+### Evaluate `react-media` for responsive design
+
+- <https://www.npmjs.com/package/react-media>
+
+```jsx
+const queries = {
+  "screen-mobile": {
+    maxWidth: 575,
+  },
+  "screen-large": {
+    minWidth: 576,
+  },
+};
+
+<Media queries={queries}>
+  {(matches) => (
+    <Sider
+      style={{ background: colorBgContainer }}
+      collapsed={matches["screen-mobile"]}
+      collapsedWidth={50}
+      width={250}
+    >
+      <AppMenu settings={settings} />
+    </Sider>
+  )}
+</Media>;
+```
