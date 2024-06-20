@@ -17,12 +17,14 @@ import { PiSnowflakeLight, PiSnowflakeThin } from "react-icons/pi";
 import { TbSnowflake } from "react-icons/tb";
 import heatersStore from "../store/HeatersStore";
 import useFormItemStatus from "antd/es/form/hooks/useFormItemStatus";
+import MediaMobile from "./responsive/MediaMobile";
 
 interface IHeaterModeSelectorProps {
   label: string;
   heaterIndex: number;
   initialMode?: State;
   onModeChange?: (heaterIndex: number, mode: State) => void;
+  isMobile?: boolean;
 }
 
 function HeaterModeSelector({
@@ -30,6 +32,7 @@ function HeaterModeSelector({
   heaterIndex,
   initialMode = State.NONE,
   onModeChange = () => {},
+  isMobile = false,
 }: IHeaterModeSelectorProps) {
   const [form] = Form.useForm();
 
@@ -45,24 +48,38 @@ function HeaterModeSelector({
 
   return (
     <Form form={form} initialValues={{ [heaterIndex]: initialMode }}>
-      <Form.Item label={label} name={heaterIndex}>
-        <Radio.Group disabled={disabled} buttonStyle="solid" onChange={onChange}>
+      <Form.Item label={!isMobile ? label : undefined} name={heaterIndex}>
+        <Radio.Group
+          disabled={disabled}
+          buttonStyle="solid"
+          onChange={onChange}
+          size={isMobile ? "large" : "middle"}
+        >
           <Radio.Button value={State.OFF}>
-            <PoweroffOutlined /> Arrêt
+            <PoweroffOutlined /> {!isMobile ? "Off" : undefined}
           </Radio.Button>
           <Radio.Button value={State.COMFORT_ENERGY_SAVING}>
-            <LuLeaf /> Eco
+            <LuLeaf /> {!isMobile ? "Eco" : undefined}
             {/* <ThunderboltOutlined /> Eco */}
           </Radio.Button>
           <Radio.Button value={State.COMFORT}>
-            <HomeOutlined /> Comfort
+            <HomeOutlined /> {!isMobile ? "Comfort" : undefined}
           </Radio.Button>
-          <Radio.Button value={State.COMFORT_MIN_1}>Comfort -1°C</Radio.Button>
+          <Radio.Button value={State.COMFORT_MIN_1}>
+            {!isMobile ? "Comfort -1°C" : "-1°C"}
+          </Radio.Button>
           <Radio.Button value={State.COMFORT_MIN_2}>
-            <MoonOutlined /> Comfort -2°C
+            {!isMobile ? (
+              <>
+                <MoonOutlined /> Comfort -2°C
+              </>
+            ) : (
+              "-2°C"
+            )}
           </Radio.Button>
           <Radio.Button value={State.FROST_FREE}>
-            <LuThermometerSnowflake /> Hors-gel
+            <LuThermometerSnowflake />
+            {!isMobile ? "Hors-gel" : undefined}
           </Radio.Button>
         </Radio.Group>
       </Form.Item>

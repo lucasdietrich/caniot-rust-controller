@@ -42,7 +42,7 @@ function SettingsView({
 
   return (
     <Row gutter={24}>
-      <Col span={16}>
+      <Col xl={14} xs={24}>
         {" "}
         <LoadableCard title="Settings" loading={loading}>
           <List>
@@ -93,7 +93,7 @@ function SettingsView({
           </List>
         </LoadableCard>
       </Col>
-      <Col span={12}></Col>
+      <Col xl={14} xs={24}></Col>
     </Row>
   );
 }

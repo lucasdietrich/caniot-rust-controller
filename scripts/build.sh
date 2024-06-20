@@ -11,12 +11,17 @@ else
     BUILD_TYPE="debug"
 fi
 
+# flavor
+if [ "$3" == "emu" ]; then
+    FEATURES="--features emu"
+fi
+
 function build() {
     # if release add --release
     if [ "$BUILD_TYPE" == "release" ]; then
-        cargo build --target=$TARGET_ARCH --release --verbose
+        cargo build --target=$TARGET_ARCH --release --verbose $FEATURES
     else
-        cargo build --target=$TARGET_ARCH --verbose
+        cargo build --target=$TARGET_ARCH --verbose $FEATURES
     fi
 }
 

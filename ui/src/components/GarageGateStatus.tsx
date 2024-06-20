@@ -8,7 +8,7 @@ interface IGarageGateStatusProps {
 function GarageGateStatus({ closed }: IGarageGateStatusProps) {
   return (
     <>
-      <img src="/static/gate.png" height={230} />
+      <img src="/static/gate.png" height="200px" width="100%" />
       <Progress percent={100} showInfo={false} status={closed ? "success" : "exception"} />
     </>
   );

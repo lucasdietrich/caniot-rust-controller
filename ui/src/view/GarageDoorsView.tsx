@@ -18,9 +18,10 @@ import LoadableCard from "../components/LoadableCard";
 
 interface IGarageDoorsViewProps {
   refreshInterval?: number;
+  isMobile?: boolean;
 }
 
-function GarageDoorsView({ refreshInterval = 5000 }: IGarageDoorsViewProps) {
+function GarageDoorsView({ refreshInterval = 5000, isMobile = false }: IGarageDoorsViewProps) {
   const [garageState, setGarageState] = useState<Status | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [garageDevice, setGarageDevice] = useState<Device | undefined>(undefined);
@@ -60,7 +61,7 @@ function GarageDoorsView({ refreshInterval = 5000 }: IGarageDoorsViewProps) {
 
   return (
     <Row gutter={16}>
-      <Col span={14}>
+      <Col xl={14} xs={24} style={{ marginBottom: 16 }}>
         <LoadableCard
           title="Portes de garage"
           status={garageState !== undefined && garageState?.getGateClosed() !== DoorState.UNKNOWN}
@@ -70,18 +71,18 @@ function GarageDoorsView({ refreshInterval = 5000 }: IGarageDoorsViewProps) {
             setTime(Date.now());
           }}
         >
-          <Row gutter={20}>
-            <Col flex="300px">
+          <Row gutter={0} style={{ maxWidth: 700 }}>
+            <Col span={10}>
               <GarageDoorStatus
                 closed={garageState?.getLeftClosed() == DoorState.CLOSED}
                 progress={garageState?.getLeftProgress() || 0}
                 onDoorClick={onLeftDoorClick}
               />
             </Col>
-            <Col flex="120px">
+            <Col span={4}>
               <GarageGateStatus closed={garageState?.getGateClosed() == DoorState.CLOSED} />
             </Col>
-            <Col flex="300px">
+            <Col span={10}>
               <GarageDoorStatus
                 closed={garageState?.getRightClosed() == DoorState.CLOSED}
                 progress={garageState?.getRightProgress() || 0}
@@ -94,7 +95,7 @@ function GarageDoorsView({ refreshInterval = 5000 }: IGarageDoorsViewProps) {
           </Row>
         </LoadableCard>
       </Col>
-      <Col span={10}>
+      <Col xl={10} xs={24}>
         <DeviceStatusCard title="Contrôleur portes de garage" device={garageDevice} />
       </Col>
     </Row>
