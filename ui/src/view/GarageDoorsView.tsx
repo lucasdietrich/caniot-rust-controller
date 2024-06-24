@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Card, Row, Col, Badge, Space, Spin } from "antd";
 import GarageDoorStatus from "../components/GarageDoorStatus";
 import GarageGateStatus from "../components/GarageGateStatus";
-import DeviceStatusCard from "../components/DeviceStatusCard";
+import DeviceDetailsCard from "../components/DeviceDetailsCard";
 import {
   Command,
   CommandMessage,
@@ -15,6 +15,7 @@ import { Empty } from "google-protobuf/google/protobuf/empty_pb";
 import devicesStore from "../store/DevicesStore";
 import { LoadingOutlined } from "@ant-design/icons";
 import LoadableCard from "../components/LoadableCard";
+import GarageDoorsStatus from "../components/GarageDoorsStatus";
 
 interface IGarageDoorsViewProps {
   refreshInterval?: number;
@@ -71,32 +72,19 @@ function GarageDoorsView({ refreshInterval = 5000, isMobile = false }: IGarageDo
             setTime(Date.now());
           }}
         >
-          <Row gutter={0} style={{ maxWidth: 700 }}>
-            <Col span={10}>
-              <GarageDoorStatus
-                closed={garageState?.getLeftClosed() == DoorState.CLOSED}
-                progress={garageState?.getLeftProgress() || 0}
-                onDoorClick={onLeftDoorClick}
-              />
-            </Col>
-            <Col span={4}>
-              <GarageGateStatus closed={garageState?.getGateClosed() == DoorState.CLOSED} />
-            </Col>
-            <Col span={10}>
-              <GarageDoorStatus
-                closed={garageState?.getRightClosed() == DoorState.CLOSED}
-                progress={garageState?.getRightProgress() || 0}
-                onDoorClick={onRightDoorClick}
-              />
-            </Col>
-          </Row>
+          <GarageDoorsStatus
+            garageState={garageState}
+            onLeftDoorClick={onLeftDoorClick}
+            onRightDoorClick={onRightDoorClick}
+          ></GarageDoorsStatus>
+
           <Row style={{ paddingTop: 20 }}>
-            <DeviceStatusCard device={undefined} title="Garage Doors" />
+            <DeviceDetailsCard device={undefined} title="Garage Doors" />
           </Row>
         </LoadableCard>
       </Col>
       <Col xl={10} xs={24}>
-        <DeviceStatusCard title="Contrôleur portes de garage" device={garageDevice} />
+        <DeviceDetailsCard title="Contrôleur portes de garage" device={garageDevice} />
       </Col>
     </Row>
   );

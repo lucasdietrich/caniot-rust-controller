@@ -1,6 +1,16 @@
-import { LoadingOutlined, ReloadOutlined } from "@ant-design/icons";
+import {
+  CaretRightFilled,
+  CaretRightOutlined,
+  InfoCircleOutlined,
+  LoadingOutlined,
+  ReloadOutlined,
+  RightSquareOutlined,
+  SettingFilled,
+  SettingOutlined,
+} from "@ant-design/icons";
 import { Badge, Button, Card, Progress, Space, Spin } from "antd";
 import React, { PropsWithChildren } from "react";
+import { LiaHandPaper } from "react-icons/lia";
 
 interface ICardLoadableProps {
   title?: React.ReactNode;
@@ -8,14 +18,23 @@ interface ICardLoadableProps {
   loading?: boolean;
   onRefresh?: () => void;
   progress?: number;
+
+  // Button to go to a specific page
+  onGoto?: () => void;
+
+  bordered?: boolean;
+  cardStyle?: React.CSSProperties;
 }
 
 function LoadableCard({
-  title,
-  status,
-  loading,
-  onRefresh,
-  progress,
+  title = undefined,
+  status = undefined,
+  loading = undefined,
+  onRefresh = undefined,
+  progress = undefined,
+  onGoto = undefined,
+  cardStyle = undefined,
+  bordered = true,
   children,
 }: PropsWithChildren<ICardLoadableProps>) {
   let titleComponent = (
@@ -25,36 +44,49 @@ function LoadableCard({
     </Space>
   );
 
-  let extraComponent;
+  // Build refresh button
+  const refreshButton = onRefresh ? (
+    <Button
+      disabled={loading}
+      onClick={onRefresh}
+      icon={
+        progress !== undefined ? (
+          <Progress type="circle" percent={progress} size={20} />
+        ) : (
+          <ReloadOutlined />
+        )
+      }
+    />
+  ) : progress !== undefined ? (
+    <Progress
+      type="circle"
+      percent={progress}
+      size={20}
+      style={{ marginLeft: 10, verticalAlign: "middle" }}
+    />
+  ) : undefined;
 
-  if (progress !== undefined && onRefresh !== undefined) {
-    extraComponent = (
-      <Button
-        disabled={loading}
-        onClick={onRefresh}
-        icon={<Progress type="circle" percent={progress} size={20} />}
-      />
-    );
-  } else if (onRefresh !== undefined) {
-    extraComponent = <Button disabled={loading} onClick={onRefresh} icon={<ReloadOutlined />} />;
-  } else if (progress !== undefined) {
-    extraComponent = (
-      <Progress
-        type="circle"
-        percent={progress}
-        size={20}
-        style={{
-          marginLeft: 10,
-          verticalAlign: "middle",
-        }}
-      />
-    );
-  } else {
-    extraComponent = undefined;
-  }
+  // Build go to button
+  const gotoButton = onGoto ? (
+    <Button
+      type="text"
+      onClick={onGoto}
+      icon={<LiaHandPaper />} // <RightSquareOutlined /> <LiaHandPaper /> <CaretRightOutlined /> <SettingOutlined />
+      style={{ marginLeft: 10 }}
+    />
+  ) : undefined;
+
+  // Build extra
+  const extra = (
+    <>
+      {refreshButton}
+      {gotoButton}
+    </>
+  );
 
   return (
     <Card
+      bordered={bordered}
       title={
         title &&
         (status === undefined ? (
@@ -63,7 +95,8 @@ function LoadableCard({
           <Badge status={status ? "success" : "error"} text={titleComponent} />
         ))
       }
-      extra={extraComponent}
+      extra={extra}
+      style={cardStyle}
     >
       {children}
     </Card>

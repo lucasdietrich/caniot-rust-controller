@@ -94,6 +94,7 @@ impl Into<m::Device> for &DeviceInfos {
                 reset_settings_requested: self.stats.reset_settings_requested as u32,
             }),
             board_temp: self.board_temperature,
+            outside_temp: self.outside_temperature,
             measures: self.measures.map(|m| m.into()),
             ..Default::default()
         }

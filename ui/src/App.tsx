@@ -109,7 +109,7 @@ const App: React.FC = () => {
         </Sider>
         <Layout
           style={{
-            padding: isMobile ? 6 : "24px 24px 24px",
+            padding: isMobile ? "8px 8px 8px" : "24px 24px 24px",
             marginLeft: isMobile ? SiderMobileWidth : SiderWidth,
           }}
         >
@@ -123,7 +123,7 @@ const App: React.FC = () => {
             }}
           >
             <Routes>
-              <Route path="/" element={<Home />} />
+              <Route path="/" element={<Home isMobile={isMobile} />} />
               <Route path="/devices" element={<DevicesView />} />
               <Route path="/about" element={<About />} />
               {settings?.getDebugMode() && <Route path="/debug" element={<Debug />} />}

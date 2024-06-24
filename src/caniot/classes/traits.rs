@@ -26,6 +26,8 @@ pub trait ClassTelemetryTrait: AsPayload<Ty> {
     // # Returns
     // - `Some(f32)`: The board temperature in Celsius degrees (°C)
     fn get_board_temperature(&self) -> Option<f32>;
+
+    fn get_outside_temperature(&self) -> Option<f32>;
 }
 
 impl From<Payload<ClCd>> for Payload<Cd> {

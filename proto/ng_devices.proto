@@ -59,8 +59,10 @@ message Class1Telemetry {
 
 message Device {
   DeviceIdInfos did = 1;
-  string name = 2;
-  string status = 3;
+
+  string name = 2;   // TODO implement
+  string status = 3; // TODO implement
+
   google.protobuf.Timestamp lastSeen = 4;
   optional uint32 lastSeenFromNow = 5; // seconds
 
@@ -74,8 +76,8 @@ message Device {
     Class1Telemetry class1 = 11;
   };
 
-  // common to both classes
   optional float board_temp = 20;
+  optional float outside_temp = 21;
 }
 
 message DevicesList { repeated Device devices = 1; }

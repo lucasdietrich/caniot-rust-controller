@@ -26,6 +26,11 @@ impl ClassTelemetryTrait for Telemetry {
     fn get_board_temperature(&self) -> Option<f32> {
         self.temp_in.to_celsius()
     }
+
+    fn get_outside_temperature(&self) -> Option<f32> {
+        // return first valid temperature (get first if multiple are valid)
+        self.temp_out.iter().find_map(|t| t.to_celsius())
+    }
 }
 
 impl TryFrom<&Payload<Ty>> for Telemetry {
