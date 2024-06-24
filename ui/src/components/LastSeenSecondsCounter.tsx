@@ -3,11 +3,13 @@ import React, { useEffect, useState } from "react";
 interface ILastSeenSecondsCounterProps {
   lastSeenValue?: number;
   refreshIntervalMs?: number;
+  minimalDisplay?: boolean;
 }
 
 function LastSeenSecondsCounter({
   lastSeenValue = 0,
   refreshIntervalMs = 1000,
+  minimalDisplay = false,
 }: ILastSeenSecondsCounterProps) {
   const [seconds, setSeconds] = useState(lastSeenValue);
 
@@ -20,7 +22,9 @@ function LastSeenSecondsCounter({
     };
   }, [lastSeenValue, refreshIntervalMs]);
 
-  return <>{" (actif il y a " + seconds + "s)"}</>;
+  const fmt = minimalDisplay ? seconds + "s" : " (actif il y a " + seconds + "s)";
+
+  return <>{fmt}</>;
 }
 
 export default LastSeenSecondsCounter;

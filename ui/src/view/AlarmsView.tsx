@@ -1,6 +1,6 @@
 import { Alert, Badge, Button, Col, List, Row, Tag } from "antd";
 import React, { useEffect, useState } from "react";
-import DeviceStatusCard from "../components/DeviceStatusCard";
+import DeviceDetailsCard from "../components/DeviceDetailsCard";
 import { Device } from "@caniot-controller/caniot-api-grpc-web/api/ng_devices_pb";
 import devicesStore from "../store/DevicesStore";
 import LoadableCard from "../components/LoadableCard";
@@ -239,7 +239,7 @@ function AlarmsView({ refreshInterval = 5000, isMobile = false }: IAlarmsViewPro
           </LoadableCard>
         </Col>
         <Col xl={10} xs={24}>
-          <DeviceStatusCard title="Alarme extérieure" device={outdoorAlarmDevice} />
+          <DeviceDetailsCard title="Alarme extérieure" device={outdoorAlarmDevice} />
         </Col>
       </Row>
     </>

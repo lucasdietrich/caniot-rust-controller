@@ -5,6 +5,7 @@ import ListLabelledItem from "./ListLabelledItem";
 import { Timestamp } from "google-protobuf/google/protobuf/timestamp_pb";
 import LoadableCard from "./LoadableCard";
 import LastSeenBadge from "./LastSeenBadge";
+import { SECONDS_TO_CONSIDER_ONLINE } from "../constants";
 
 interface IDeviceStatusCardProps {
   title?: string;
@@ -12,13 +13,12 @@ interface IDeviceStatusCardProps {
   progress?: number;
 }
 
-const SECONDS_TO_CONSIDER_ONLINE = 60;
-
-function DeviceStatusCard({ title, device, progress }: IDeviceStatusCardProps) {
+function DeviceDetailsCard({ title, device, progress }: IDeviceStatusCardProps) {
   if (device === undefined) {
     return undefined;
   }
 
+  const isLoaded = device !== undefined;
   const isOnline = device.getLastseenfromnow() < SECONDS_TO_CONSIDER_ONLINE;
 
   return (
@@ -44,6 +44,7 @@ function DeviceStatusCardContent({ device: resp }: IDeviceCardContentProps) {
     ios_count = 0;
 
   let tempBoard = resp.hasBoardTemp() ? resp.getBoardTemp().toFixed(2) : "N/A";
+  let tempOut = resp.hasOutsideTemp() ? resp.getOutsideTemp().toFixed(2) : "N/A";
 
   if (resp.hasClass0()) {
     const c0 = resp.getClass0();
@@ -158,5 +159,5 @@ function DeviceStatusCardContent({ device: resp }: IDeviceCardContentProps) {
   );
 }
 
-export default DeviceStatusCard;
+export default DeviceDetailsCard;
 export { DeviceStatusCardContent };

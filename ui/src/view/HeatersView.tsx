@@ -6,7 +6,7 @@ import { Command, State, Status } from "@caniot-controller/caniot-api-grpc-web/a
 import heatersStore from "../store/HeatersStore";
 import { Empty } from "google-protobuf/google/protobuf/empty_pb";
 import Icon from "@ant-design/icons/lib/components/Icon";
-import DeviceStatusCard from "../components/DeviceStatusCard";
+import DeviceDetailsCard from "../components/DeviceDetailsCard";
 import { Device } from "@caniot-controller/caniot-api-grpc-web/api/ng_devices_pb";
 import devicesStore from "../store/DevicesStore";
 import { DeviceId } from "@caniot-controller/caniot-api-grpc-web/api/common_pb";
@@ -109,7 +109,7 @@ function HeatersView({ refreshInterval = 5000, isMobile = false }: IHeatersViewP
           </LoadableCard>
         </Col>
         <Col xl={10} xs={24}>
-          <DeviceStatusCard title="Chauffage" device={heatersDevice} />
+          <DeviceDetailsCard title="Chauffage" device={heatersDevice} />
         </Col>
       </Row>
     </>

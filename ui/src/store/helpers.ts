@@ -12,6 +12,7 @@ export function HandleError(e: RpcError) {
     message: "Error",
     description: e.message,
     duration: 3,
+    // showProgress: true,
   });
 }
 
@@ -19,6 +20,7 @@ export function HandleSuccess(message: string) {
   // notification.success({
   //   message: message,
   //   duration: 3,
+  //   // showProgress: true,
   // });
 }
 

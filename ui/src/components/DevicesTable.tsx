@@ -9,11 +9,10 @@ import devicesStore from "../store/DevicesStore";
 import { DeviceId, Endpoint } from "@caniot-controller/caniot-api-grpc-web/api/common_pb";
 import { Empty as ProtobufEmpty } from "google-protobuf/google/protobuf/empty_pb";
 import { useState } from "react";
-import DeviceStatusCard from "./DeviceStatusCard";
+import DeviceDetailsCard from "./DeviceDetailsCard";
 import { LoadingOutlined } from "@ant-design/icons";
 import LastSeenBadge from "./LastSeenBadge";
-
-const SECONDS_TO_CONSIDER_ONLINE = 60;
+import { SECONDS_TO_CONSIDER_ONLINE } from "../constants";
 
 interface IDevicesTableProps {
   devicesList: DevicesList | undefined;
@@ -209,7 +208,7 @@ function DevicesTable({ devicesList }: IDevicesTableProps) {
 
   const expandedRowRender = (record: DeviceRow) => {
     if (record.device !== undefined) {
-      return <DeviceStatusCard device={record.device} />;
+      return <DeviceDetailsCard device={record.device} />;
     } else {
       return <LoadingOutlined />;
     }

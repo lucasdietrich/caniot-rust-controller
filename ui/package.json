@@ -13,7 +13,7 @@
     "@ant-design/icons": "^5.3.6",
     "@caniot-controller/caniot-api-grpc-web": "file:../proto/grpc-web",
     "@types/node": "^20.12.7",
-    "antd": "^5.16.1",
+    "antd": "^5.18.0",
     "events": "^3.3.0",
     "google-protobuf": "^3.21.2",
     "grpc-web": "^1.2.1",

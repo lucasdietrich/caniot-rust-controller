@@ -17,6 +17,7 @@ pub struct DeviceInfos {
 
     // measures
     pub board_temperature: Option<f32>,
+    pub outside_temperature: Option<f32>,
 }
 
 impl Into<DeviceInfos> for &Device {
@@ -33,6 +34,7 @@ impl Into<DeviceInfos> for &Device {
             stats: self.stats,
             measures: self.measures,
             board_temperature: self.measures.and_then(|m| m.get_board_temperature()),
+            outside_temperature: self.measures.and_then(|m| m.get_outside_temperature()),
         }
     }
 }

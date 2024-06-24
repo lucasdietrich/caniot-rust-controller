@@ -12,6 +12,13 @@ body {
     .ant-card-body {
         padding: 12px !important;
     }
+
+    /* Force first level cols to be more packed in mobile view */
+    main > .ant-row > .ant-col {
+        margin-bottom: 6px !important;
+        padding-left: 4px !important;
+        padding-right: 4px !important;
+    }
 }
 
 @media (min-width: 700px) {

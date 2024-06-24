@@ -6,26 +6,31 @@ interface IGarageDoorStatusProps {
   closed: boolean;
   progress: number;
   onDoorClick?: () => void;
+
+  height?: string;
 }
 
-function GarageDoorStatus({ closed, progress, onDoorClick = () => {} }: IGarageDoorStatusProps) {
-  const handleImageClick = () => {
-    onDoorClick();
-  };
-
+function GarageDoorStatus({
+  closed,
+  progress,
+  onDoorClick = undefined,
+  height = "200px",
+}: IGarageDoorStatusProps) {
   return (
     <>
       <Button
         type="link"
-        onClick={handleImageClick}
+        onClick={onDoorClick}
         style={{
           padding: 0,
           border: "none",
           background: "none",
           width: "100%",
+          cursor: onDoorClick ? "pointer" : "default",
+          height: height,
         }}
       >
-        <img src="/static/door.png" height="200px" width="100%" alt="Garage Door" />
+        <img src="/static/door.png" height={height} width="100%" alt="Garage Door" />
       </Button>
       {closed && <Progress percent={100} showInfo={false} status="success" />}
       {!closed && progress != 0 && <Progress percent={progress} showInfo={false} status="active" />}

@@ -5,7 +5,7 @@ use crate::caniot::{Payload, ProtocolError, Ty};
 use super::{
     class0::{self, Class0},
     class1::{self, Class1},
-    traits::Class,
+    traits::{Class, ClassTelemetryTrait},
 };
 
 #[derive(Debug, Clone, Copy, Serialize)]
@@ -38,8 +38,15 @@ impl BoardClassTelemetry {
 
     pub fn get_board_temperature(&self) -> Option<f32> {
         match self {
-            BoardClassTelemetry::Class0(telemetry) => telemetry.temp_in.to_celsius(),
-            BoardClassTelemetry::Class1(telemetry) => telemetry.temp_in.to_celsius(),
+            BoardClassTelemetry::Class0(telemetry) => telemetry.get_board_temperature(),
+            BoardClassTelemetry::Class1(telemetry) => telemetry.get_board_temperature(),
+        }
+    }
+
+    pub fn get_outside_temperature(&self) -> Option<f32> {
+        match self {
+            BoardClassTelemetry::Class0(telemetry) => telemetry.get_outside_temperature(),
+            BoardClassTelemetry::Class1(telemetry) => telemetry.get_outside_temperature(),
         }
     }
 }

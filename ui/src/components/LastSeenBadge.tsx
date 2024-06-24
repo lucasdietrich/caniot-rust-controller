@@ -1,17 +1,20 @@
 import { Badge } from "antd";
 import React, { useEffect, useState } from "react";
 import LastSeenSecondsCounter from "./LastSeenSecondsCounter";
+import { SECONDS_TO_CONSIDER_ONLINE } from "../constants";
 
 interface ILastSeenBadge {
   lastSeenDate?: Date;
   lastSeenValue: number;
   secondsToConsiderOnline?: number;
+  minimalDisplay?: boolean;
 }
 
 function LastSeenBadge({
   lastSeenDate,
   lastSeenValue,
-  secondsToConsiderOnline = 60,
+  secondsToConsiderOnline = SECONDS_TO_CONSIDER_ONLINE,
+  minimalDisplay = false,
 }: ILastSeenBadge) {
   if (lastSeenDate !== undefined) {
     const isOnline = lastSeenValue < secondsToConsiderOnline;
@@ -22,8 +25,12 @@ function LastSeenBadge({
         status={isOnline ? "success" : "error"}
         text={
           <>
-            {lastseen_fmt}
-            <LastSeenSecondsCounter lastSeenValue={lastSeenValue} refreshIntervalMs={1000} />
+            {!minimalDisplay && lastseen_fmt}
+            <LastSeenSecondsCounter
+              lastSeenValue={lastSeenValue}
+              refreshIntervalMs={1000}
+              minimalDisplay={minimalDisplay}
+            />
           </>
         }
       />
