@@ -126,6 +126,7 @@ device_temperature{medium="CAN",mac="1",device="HeatersController",sensor="EXTER
 - Add modal for reboot and reset settings of a device (to confirm the action)
 - Refresh devices table dynamically after a reset/reset settings
 - Add alert when an action has been sent to a device
+- TODO: select the menu item depending on the current route: `const url = window.location.href;` ?
 
 ### Evaluate `react-media` for responsive design
 
@@ -154,3 +155,9 @@ const queries = {
   )}
 </Media>;
 ```
+
+## Icons
+
+- Icons libraries:
+  - https://ant.design/components/icon
+  - https://react-icons.github.io/react-icons/
