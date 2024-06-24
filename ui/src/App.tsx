@@ -105,7 +105,7 @@ const App: React.FC = () => {
           collapsedWidth={SiderMobileWidth}
           width={SiderWidth}
         >
-          <AppMenu settings={settings} />
+          <AppMenu settings={settings} isMobile={isMobile} />
         </Sider>
         <Layout
           style={{
