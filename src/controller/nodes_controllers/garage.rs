@@ -144,7 +144,7 @@ impl DeviceControllerTrait for GarageController {
     type Action = GarageAction;
 
     fn get_infos(&self) -> DeviceControllerInfos {
-        DeviceControllerInfos::new("Garage Controller")
+        DeviceControllerInfos::new("garage", Some("Portes de garage"), Some("garage"))
     }
 
     fn handle_action(
@@ -188,7 +188,7 @@ impl DeviceControllerTrait for GarageController {
     fn get_alert(&self) -> Option<DeviceAlert> {
         self.status.and_then(|s| {
             if s.left_door_status.is_open() || s.right_door_status.is_open() || !s.gate_closed {
-                Some(DeviceAlert::new_warning("Garage doors not closed"))
+                Some(DeviceAlert::new_warning("Porte(s) de garage ouverte(s)"))
             } else {
                 None
             }

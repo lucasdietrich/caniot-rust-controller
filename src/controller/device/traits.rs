@@ -1,4 +1,7 @@
-use std::{fmt::Debug, ops::Deref};
+use std::{
+    fmt::{Debug, Display},
+    ops::Deref,
+};
 
 use crate::caniot::{self, BoardClassTelemetry, Response};
 
@@ -31,7 +34,7 @@ pub trait DeviceControllerTrait: Send + Debug + Default {
     ) -> Result<ActionVerdict<Self::Action>, DeviceError> {
         error!(
             "handle_action not implemented for device controller \"{}\"",
-            self.get_infos().name.unwrap_or_default()
+            self.get_infos()
         );
         Err(DeviceError::NotImplemented)
     }
@@ -44,7 +47,7 @@ pub trait DeviceControllerTrait: Send + Debug + Default {
     ) -> Result<<Self::Action as ActionTrait>::Result, DeviceError> {
         error!(
             "handle_action_result not implemented for device controller \"{}\"",
-            self.get_infos().name.unwrap_or_default()
+            self.get_infos()
         );
         Err(DeviceError::NotImplemented)
     }
@@ -64,13 +67,29 @@ pub trait DeviceControllerTrait: Send + Debug + Default {
 
 #[derive(Debug, Default)]
 pub struct DeviceControllerInfos {
-    pub name: Option<String>,
+    pub name: String,
+    pub display_name: Option<String>,
+
+    // Name of the controller view in the UI
+    pub ui_view_name: Option<String>,
 }
 
 impl DeviceControllerInfos {
-    pub fn new(name: &str) -> Self {
+    pub fn new(name: &str, display_name: Option<&str>, ui_view_name: Option<&str>) -> Self {
         Self {
-            name: Some(name.to_string()),
+            name: name.to_string(),
+            display_name: display_name.map(|s| s.to_string()),
+            ui_view_name: ui_view_name.map(|s| s.to_string()),
+        }
+    }
+}
+
+impl Display for DeviceControllerInfos {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some(display_name) = &self.display_name {
+            write!(f, "{} ({})", display_name, self.name)
+        } else {
+            write!(f, "{}", self.name)
         }
     }
 }

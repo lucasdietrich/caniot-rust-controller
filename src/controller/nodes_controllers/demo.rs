@@ -32,7 +32,7 @@ impl DeviceControllerTrait for DemoController {
     type Action = DemoAction;
 
     fn get_infos(&self) -> DeviceControllerInfos {
-        DeviceControllerInfos::new("Demo Controller")
+        DeviceControllerInfos::new("demo", Some("Demo Controller"), None)
     }
 
     fn handle_action(

@@ -79,7 +79,7 @@ impl Into<m::device::Measures> for ct::classes::BoardClassTelemetry {
 impl Into<m::DeviceAlert> for &DeviceAlert {
     fn into(self) -> m::DeviceAlert {
         m::DeviceAlert {
-            message: self.string.clone(),
+            message: self.name.clone(),
             timestamp: Some(datetime_to_prost_timestamp(&self.timestamp)),
             alert_type: match self.alert_type {
                 DeviceAlertType::Ok => m::DeviceAlertType::Ok as i32,
@@ -88,6 +88,7 @@ impl Into<m::DeviceAlert> for &DeviceAlert {
                 DeviceAlertType::Error => m::DeviceAlertType::Inerror as i32,
                 DeviceAlertType::Inhibitted => m::DeviceAlertType::Inhibitted as i32,
             },
+            description: self.description.clone(),
         }
     }
 }
@@ -116,6 +117,7 @@ impl Into<m::Device> for &DeviceInfos {
             outside_temp: self.outside_temperature,
             measures: self.measures.map(|m| m.into()),
             active_alert: self.active_alert.as_ref().map(|a| a.into()),
+            ui_view_name: self.ui_view_name.clone(),
             ..Default::default()
         }
     }
@@ -128,6 +130,22 @@ impl CaniotDevicesService for NgDevices {
             .shared
             .controller_handle
             .get_devices_infos_list()
+            .await
+            .iter()
+            .map(|dev| dev.into())
+            .collect();
+
+        Ok(Response::new(m::DevicesList { devices }))
+    }
+
+    async fn get_devices_with_active_alert(
+        &self,
+        _request: Request<()>,
+    ) -> Result<Response<m::DevicesList>, Status> {
+        let devices: Vec<m::Device> = self
+            .shared
+            .controller_handle
+            .get_devices_with_active_alert()
             .await
             .iter()
             .map(|dev| dev.into())

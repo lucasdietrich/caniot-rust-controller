@@ -1,4 +1,4 @@
-use std::ops::Deref;
+use std::{default, ops::Deref};
 
 use as_any::Downcast;
 use chrono::{DateTime, Utc};
@@ -13,16 +13,34 @@ use crate::{
 use serde::Serialize;
 
 use super::{
-    ActionTrait, ControllerError, ControllerStats, DeviceAction, DeviceActionResult, DeviceInfos,
-    DeviceStats,
+    ActionTrait, ControllerError, ControllerStats, Device, DeviceAction, DeviceActionResult,
+    DeviceInfos, DeviceStats,
 };
+
+#[derive(Debug, Default)]
+pub enum DeviceFilter {
+    #[default]
+    All,
+    ById(DeviceId),
+    WithActiveAlert,
+}
+
+impl DeviceFilter {
+    pub fn get_filter_function<'a>(&'a self) -> Box<dyn Fn(&Device) -> bool + 'a> {
+        match self {
+            DeviceFilter::All => Box::new(|_| true),
+            DeviceFilter::ById(did) => Box::new(move |device| device.did == *did),
+            DeviceFilter::WithActiveAlert => Box::new(|device| device.get_alert().is_some()),
+        }
+    }
+}
 
 pub enum ControllerMessage {
     GetControllerStats {
         respond_to: oneshot::Sender<(ControllerStats, CanStats)>,
     },
     GetDevices {
-        did: Option<DeviceId>,
+        filter: DeviceFilter,
         respond_to: oneshot::Sender<Vec<DeviceInfos>>,
     },
     Query {
@@ -101,7 +119,15 @@ impl ControllerHandle {
 
     pub async fn get_devices_infos_list(&self) -> Vec<DeviceInfos> {
         self.query(|respond_to| ControllerMessage::GetDevices {
-            did: None,
+            filter: DeviceFilter::All,
+            respond_to,
+        })
+        .await
+    }
+
+    pub async fn get_devices_with_active_alert(&self) -> Vec<DeviceInfos> {
+        self.query(|respond_to| ControllerMessage::GetDevices {
+            filter: DeviceFilter::WithActiveAlert,
             respond_to,
         })
         .await
@@ -109,7 +135,7 @@ impl ControllerHandle {
 
     pub async fn get_device_infos(&self, did: DeviceId) -> Option<DeviceInfos> {
         self.query(|respond_to| ControllerMessage::GetDevices {
-            did: Some(did),
+            filter: DeviceFilter::ById(did),
             respond_to,
         })
         .await
