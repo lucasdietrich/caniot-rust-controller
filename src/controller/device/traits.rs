@@ -5,6 +5,7 @@ use crate::caniot::{self, BoardClassTelemetry, Response};
 use as_any::{AsAny, Downcast};
 
 use super::{
+    alert::DeviceAlert,
     verdict::{ActionVerdict, ActionVerdictWrapper, Verdict},
     DeviceError, ProcessContext,
 };
@@ -52,7 +53,13 @@ pub trait DeviceControllerTrait: Send + Debug + Default {
         Ok(Verdict::default())
     }
 
+    // Retrieve device controller infos
     fn get_infos(&self) -> DeviceControllerInfos;
+
+    // Retrieve active alert if any
+    fn get_alert(&self) -> Option<DeviceAlert> {
+        None
+    }
 }
 
 #[derive(Debug, Default)]
@@ -98,6 +105,8 @@ pub trait DeviceControllerWrapperTrait: Send + Debug {
     fn wrapper_process(&mut self, ctx: &mut ProcessContext) -> Result<Verdict, DeviceError>;
 
     fn wrapper_get_infos(&self) -> DeviceControllerInfos;
+
+    fn wrapper_get_alert(&self) -> Option<DeviceAlert>;
 }
 
 /// Automatically implement DeviceWrapperTrait for any DeviceTrait
@@ -150,6 +159,10 @@ where
 
     fn wrapper_get_infos(&self) -> DeviceControllerInfos {
         self.get_infos()
+    }
+
+    fn wrapper_get_alert(&self) -> Option<DeviceAlert> {
+        self.get_alert()
     }
 }
 

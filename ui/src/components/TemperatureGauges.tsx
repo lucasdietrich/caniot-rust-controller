@@ -14,9 +14,9 @@ const ROUND_PRECISION = 1;
 
 export function GetTemperatureColor(temp: number) {
   if (temp < 0) {
-    return "#3FA0FF";
-  } else if (temp < 14) {
     return "#AAF7FF";
+  } else if (temp < 14) {
+    return "#3FA0FF";
   } else if (temp < 22) {
     return "#FFFFBF";
   } else if (temp < 30) {

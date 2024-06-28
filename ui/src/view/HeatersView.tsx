@@ -11,6 +11,7 @@ import { Device } from "@caniot-controller/caniot-api-grpc-web/api/ng_devices_pb
 import devicesStore from "../store/DevicesStore";
 import { DeviceId } from "@caniot-controller/caniot-api-grpc-web/api/common_pb";
 import LoadableCard from "../components/LoadableCard";
+import DeviceAlert from "../components/DeviceAlert";
 
 interface IHeatersViewProps {
   refreshInterval?: number;
@@ -78,34 +79,41 @@ function HeatersView({ refreshInterval = 5000, isMobile = false }: IHeatersViewP
               setTime(Date.now());
             }}
           >
-            <HeaterModeSelector
-              label="Chauffage 1"
-              heaterIndex={0}
-              initialMode={heatersStatus?.getHeaterList()[0]}
-              onModeChange={onModeChange}
-              isMobile={isMobile}
-            ></HeaterModeSelector>
-            <HeaterModeSelector
-              label="Chauffage 2"
-              heaterIndex={1}
-              initialMode={heatersStatus?.getHeaterList()[1]}
-              onModeChange={onModeChange}
-              isMobile={isMobile}
-            ></HeaterModeSelector>
-            <HeaterModeSelector
-              label="Chauffage 3"
-              heaterIndex={2}
-              initialMode={heatersStatus?.getHeaterList()[2]}
-              onModeChange={onModeChange}
-              isMobile={isMobile}
-            ></HeaterModeSelector>
-            <HeaterModeSelector
-              label="Chauffage 4"
-              heaterIndex={3}
-              initialMode={heatersStatus?.getHeaterList()[3]}
-              onModeChange={onModeChange}
-              isMobile={isMobile}
-            ></HeaterModeSelector>
+            <Row>
+              <Col span={24}>
+                <DeviceAlert alert={heatersDevice?.getActiveAlert()} />
+              </Col>
+              <Col span={24} style={{ marginTop: 20 }}>
+                <HeaterModeSelector
+                  label="Chauffage 1"
+                  heaterIndex={0}
+                  initialMode={heatersStatus?.getHeaterList()[0]}
+                  onModeChange={onModeChange}
+                  isMobile={isMobile}
+                ></HeaterModeSelector>
+                <HeaterModeSelector
+                  label="Chauffage 2"
+                  heaterIndex={1}
+                  initialMode={heatersStatus?.getHeaterList()[1]}
+                  onModeChange={onModeChange}
+                  isMobile={isMobile}
+                ></HeaterModeSelector>
+                <HeaterModeSelector
+                  label="Chauffage 3"
+                  heaterIndex={2}
+                  initialMode={heatersStatus?.getHeaterList()[2]}
+                  onModeChange={onModeChange}
+                  isMobile={isMobile}
+                ></HeaterModeSelector>
+                <HeaterModeSelector
+                  label="Chauffage 4"
+                  heaterIndex={3}
+                  initialMode={heatersStatus?.getHeaterList()[3]}
+                  onModeChange={onModeChange}
+                  isMobile={isMobile}
+                ></HeaterModeSelector>
+              </Col>
+            </Row>
           </LoadableCard>
         </Col>
         <Col xl={10} xs={24}>

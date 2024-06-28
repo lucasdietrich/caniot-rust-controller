@@ -10,8 +10,8 @@ use crate::{
 
 #[derive(Default, Debug)]
 enum Door {
-    #[default]
     Open,
+    #[default]
     Closed,
     Opening(Option<Instant>), // Some() is the time the door started opening, None if the door stopped opening
     Closing(Option<Instant>), // Some() is the time the door started closing, None if the door stopped closing
@@ -87,11 +87,20 @@ impl ExpirableTrait<u64> for Door {
     }
 }
 
-#[derive(Default)]
 pub struct GarageController {
     left_door: Door,   // RL1, IN3
     right_door: Door,  // RL2, IN4
     gate_closed: bool, // IN2
+}
+
+impl Default for GarageController {
+    fn default() -> Self {
+        Self {
+            left_door: Door::default(),
+            right_door: Door::default(),
+            gate_closed: true,
+        }
+    }
 }
 
 impl Behavior for GarageController {

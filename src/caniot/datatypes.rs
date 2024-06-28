@@ -208,3 +208,12 @@ pub enum HeatingMode {
     Stop = 6,
     // unused
 }
+
+impl HeatingMode {
+    pub fn heater_on(&self) -> bool {
+        match self {
+            HeatingMode::None | HeatingMode::Stop => false,
+            _ => true,
+        }
+    }
+}

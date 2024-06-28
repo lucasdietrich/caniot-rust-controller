@@ -6,7 +6,7 @@ format:
 	cargo fmt
 
 build: ui
-	cargo build --features "emu"
+	cargo build --features "emu","emu-delay"
 
 clippy:
 	cargo clippy -- -D warnings

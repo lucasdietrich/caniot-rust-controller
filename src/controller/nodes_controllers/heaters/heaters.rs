@@ -1,7 +1,7 @@
 use crate::{
     caniot::{self, BoardClassTelemetry, HeatingMode, Response},
     controller::{
-        ActionResultTrait, ActionTrait, ActionVerdict, DeviceControllerInfos,
+        alert::DeviceAlert, ActionResultTrait, ActionTrait, ActionVerdict, DeviceControllerInfos,
         DeviceControllerTrait, ProcessContext, Verdict,
     },
 };
@@ -89,5 +89,13 @@ impl DeviceControllerTrait for HeatersController {
         };
 
         Ok(Verdict::default())
+    }
+
+    fn get_alert(&self) -> Option<DeviceAlert> {
+        if self.status.heaters.iter().any(|&mode| mode.heater_on()) {
+            Some(DeviceAlert::new_notification("Heaters are on"))
+        } else {
+            None
+        }
     }
 }
