@@ -35,7 +35,7 @@ impl DeviceControllerTrait for HeatersController {
     type Action = HeaterAction;
 
     fn get_infos(&self) -> DeviceControllerInfos {
-        DeviceControllerInfos::new("Heaters Controller")
+        DeviceControllerInfos::new("heaters", Some("Chauffage lucas"), Some("heaters"))
     }
 
     fn handle_action(
@@ -93,7 +93,10 @@ impl DeviceControllerTrait for HeatersController {
 
     fn get_alert(&self) -> Option<DeviceAlert> {
         if self.status.heaters.iter().any(|&mode| mode.heater_on()) {
-            Some(DeviceAlert::new_notification("Heaters are on"))
+            Some(
+                DeviceAlert::new_notification("Chauffage allumé")
+                    .with_description("Au moins un chauffage est allumé"),
+            )
         } else {
             None
         }

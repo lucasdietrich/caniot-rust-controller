@@ -36,6 +36,19 @@ class DevicesStore extends EventEmitter {
     });
   };
 
+  getDevicesWithActiveAlert = (callbackFunc: (resp: DevicesList) => void) => {
+    this.client.getDevicesWithActiveAlert(new Empty(), null, (err, resp) => {
+      if (err !== null) {
+        HandleError(err);
+        return;
+      }
+
+      HandleSuccess("DevicesStore::GetDevicesWithActiveAlert succeeded");
+
+      callbackFunc(resp);
+    });
+  };
+
   get = (req: DeviceId, callbackFunc: (resp: Device) => void) => {
     this.client.get(req, null, (err, resp) => {
       if (err !== null) {

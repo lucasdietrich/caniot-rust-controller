@@ -10,7 +10,7 @@ use tokio::sync::oneshot::Sender;
 use crate::bus::{CanInterfaceError, CanInterfaceTrait};
 use crate::caniot::{self, Frame, RequestData};
 use crate::caniot::{DeviceId, Request};
-use crate::controller::handle::ControllerMessage;
+use crate::controller::handle::{ControllerMessage, DeviceFilter};
 use crate::controller::{
     ActionVerdict, Device, DeviceAction, DeviceActionResult, DeviceError, DeviceInfos,
     PendingAction, ProcessContext, Verdict,
@@ -411,14 +411,12 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
         Ok(())
     }
 
-    fn get_devices_infos(&self, did: Option<DeviceId>) -> Vec<DeviceInfos> {
+    fn get_devices_infos(&self, filter: DeviceFilter) -> Vec<DeviceInfos> {
+        let filter_function = filter.get_filter_function();
         self.devices
             .iter()
-            .filter(|(device_did, _device)| match did {
-                Some(ref did) => &did == device_did,
-                None => true,
-            })
-            .map(|(_did, device)| device.into())
+            .filter(|(_, device)| filter_function(device))
+            .map(|(_, device)| device.into())
             .collect()
     }
 
@@ -522,8 +520,8 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
             ControllerMessage::GetControllerStats { respond_to } => {
                 let _ = respond_to.send((self.stats, self.iface.get_stats()));
             }
-            ControllerMessage::GetDevices { did, respond_to } => {
-                let _ = respond_to.send(self.get_devices_infos(did));
+            ControllerMessage::GetDevices { filter, respond_to } => {
+                let _ = respond_to.send(self.get_devices_infos(filter));
             }
             ControllerMessage::Query {
                 query,

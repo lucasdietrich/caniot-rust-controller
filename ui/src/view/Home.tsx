@@ -1,22 +1,6 @@
-import {
-  Row,
-  Col,
-  Card,
-  Button,
-  List,
-  Typography,
-  Statistic,
-  Badge,
-  Divider,
-  Alert,
-  Space,
-} from "antd";
-import Hello from "../components/HelloComponent";
-import HelloCard from "./HelloCard";
-import ListLabelledItem from "../components/ListLabelledItem";
-import DeviceDetailsCard from "../components/DeviceDetailsCard";
+import { Row, Col, Statistic } from "antd";
 import { useEffect, useState } from "react";
-import { Device } from "@caniot-controller/caniot-api-grpc-web/api/ng_devices_pb";
+import { Device, DevicesList } from "@caniot-controller/caniot-api-grpc-web/api/ng_devices_pb";
 import devicesStore from "../store/DevicesStore";
 import { DeviceId } from "@caniot-controller/caniot-api-grpc-web/api/common_pb";
 import GarageDoorsStatus from "../components/GarageDoorsStatus";
@@ -43,6 +27,9 @@ function Home({ refreshInterval = 5000, isMobile = false }: HomeProps) {
   const [infosLoading, setInfosLoading] = useState(true);
   const [infos, setInfos] = useState<Infos | undefined>(undefined);
 
+  const [devicesWithAlert, setDevicesWithAlert] = useState<DevicesList | undefined>(undefined);
+  const [devicesWithAlertLoading, setDevicesWithAlertLoading] = useState(true);
+
   const [garageDevice, setGarageDevice] = useState<Device | undefined>(undefined);
   const [garageState, setGarageState] = useState<GarageStatus | undefined>(undefined);
   const [garageLoading, setGarageLoading] = useState(true);
@@ -65,6 +52,11 @@ function Home({ refreshInterval = 5000, isMobile = false }: HomeProps) {
     setHeatersLoading(true);
     setOutdoorAlarmsLoading(true);
     setGarageLoading(true);
+
+    devicesStore.getDevicesWithActiveAlert((devices: DevicesList) => {
+      setDevicesWithAlert(devices);
+      setDevicesWithAlertLoading(false);
+    });
 
     internalStore.getInfos((resp: Infos) => {
       setInfos(resp);
@@ -103,11 +95,7 @@ function Home({ refreshInterval = 5000, isMobile = false }: HomeProps) {
       status={garageDevice !== undefined}
       bordered={false}
     >
-      <GarageDoorsStatus
-        height="100px"
-        garageState={garageState}
-        alert={garageDevice?.getActiveAlert()}
-      />
+      <GarageDoorsStatus height="100px" garageState={garageState} />
     </LoadableCard>
   );
 
@@ -139,10 +127,20 @@ function Home({ refreshInterval = 5000, isMobile = false }: HomeProps) {
   );
 
   const devicesActiveAlerts = (
-    <LoadableCard title="Alertes actives" loading={false} bordered={false}>
-      <DeviceAlert alert={garageDevice?.getActiveAlert()} />
-      <DeviceAlert alert={heatersDevice?.getActiveAlert()} />
-      <DeviceAlert alert={outdoorAlarmsDevice?.getActiveAlert()} />
+    <LoadableCard title="Alertes actives" loading={devicesWithAlertLoading} bordered={false}>
+      {devicesWithAlert && devicesWithAlert.getDevicesList().length ? (
+        devicesWithAlert
+          .getDevicesList()
+          .map((device) => (
+            <DeviceAlert
+              alert={device.getActiveAlert()}
+              navigateToController={"devices/" + device.getUiViewName()}
+              closable={false}
+            />
+          ))
+      ) : (
+        <p>Aucune alerte active</p>
+      )}
     </LoadableCard>
   );
 

@@ -25,7 +25,7 @@ impl TryFrom<DeviceAlert> for Event {
 
     fn try_from(alert: DeviceAlert) -> Result<Self, Self::Error> {
         Ok(Event {
-            event_type: EventType::DeviceAlert(alert.string),
+            event_type: EventType::DeviceAlert(alert.name),
             severity: match alert.alert_type {
                 DeviceAlertType::Ok => EventSeverity::Info,
                 DeviceAlertType::Notification => EventSeverity::Info,

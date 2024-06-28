@@ -21,6 +21,9 @@ pub struct DeviceInfos {
 
     // current alert
     pub active_alert: Option<DeviceAlert>,
+
+    // ui view name
+    pub ui_view_name: Option<String>,
 }
 
 impl Into<DeviceInfos> for &Device {
@@ -29,10 +32,14 @@ impl Into<DeviceInfos> for &Device {
         let mut controller_name = None;
         let mut active_alert = None;
         let mut controller_attached = false;
+        let mut ui_view_name = None;
         if let Some(controller) = &self.controller {
             controller_attached = true;
-            controller_name = controller.wrapper_get_infos().name;
+
+            let infos = controller.wrapper_get_infos();
+            controller_name = infos.display_name;
             active_alert = controller.wrapper_get_alert();
+            ui_view_name = infos.ui_view_name;
         }
 
         DeviceInfos {
@@ -46,6 +53,7 @@ impl Into<DeviceInfos> for &Device {
             board_temperature: self.measures.and_then(|m| m.get_board_temperature()),
             outside_temperature: self.measures.and_then(|m| m.get_outside_temperature()),
             active_alert,
+            ui_view_name,
         }
     }
 }

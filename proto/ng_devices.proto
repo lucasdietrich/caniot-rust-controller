@@ -10,6 +10,8 @@ service CaniotDevicesService {
   rpc GetList(google.protobuf.Empty) returns (DevicesList) {}
   rpc Get(DeviceId) returns (Device) {}
 
+  rpc GetDevicesWithActiveAlert(google.protobuf.Empty) returns (DevicesList) {}
+
   // Action on device
   rpc PerformAction(Action) returns (ActionResult) {}
 
@@ -69,6 +71,7 @@ message DeviceAlert {
   string message = 1;
   DeviceAlertType alert_type = 2;
   google.protobuf.Timestamp timestamp = 3;
+  optional string description = 4;
 }
 
 message Device {
@@ -94,6 +97,9 @@ message Device {
   optional float outside_temp = 21;
 
   optional DeviceAlert active_alert = 30;
+
+  // UI specific
+  optional string ui_view_name = 40;
 }
 
 message DevicesList { repeated Device devices = 1; }

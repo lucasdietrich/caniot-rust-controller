@@ -4,6 +4,7 @@ use crate::{
     caniot::{self, Response, Xps},
     controller::{
         alarms::{actions::SirenAction, types::OutdoorAlarmCommand},
+        alert::DeviceAlert,
         ActionResultTrait, ActionTrait, ActionVerdict, DeviceControllerInfos,
         DeviceControllerTrait, DeviceError, ProcessContext, Verdict,
     },
@@ -80,7 +81,19 @@ impl DeviceControllerTrait for AlarmController {
     type Action = Action;
 
     fn get_infos(&self) -> DeviceControllerInfos {
-        DeviceControllerInfos::new("Outdoor Alarm Controller")
+        DeviceControllerInfos::new(
+            "outdoor_alarm",
+            Some("Controleur d'alarme extérieure"),
+            Some("alarms"),
+        )
+    }
+
+    fn get_alert(&self) -> Option<DeviceAlert> {
+        if self.alarm.is_armed() {
+            Some(DeviceAlert::new_ok("Alarme extérieure activée"))
+        } else {
+            None
+        }
     }
 
     fn handle_action(

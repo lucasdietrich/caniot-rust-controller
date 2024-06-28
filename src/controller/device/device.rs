@@ -14,6 +14,7 @@ use crate::{
 
 use super::{
     actions::{DeviceAction, DeviceActionResult},
+    alert::DeviceAlert,
     context::ProcessContext,
     traits::ActionWrapperTrait,
     verdict::{ActionVerdict, Verdict},
@@ -237,6 +238,14 @@ impl Device {
             inner.wrapper_process(ctx)
         } else {
             Ok(Verdict::default())
+        }
+    }
+
+    pub fn get_alert(&self) -> Option<DeviceAlert> {
+        if let Some(inner) = self.controller.as_ref() {
+            inner.wrapper_get_alert()
+        } else {
+            None
         }
     }
 }
