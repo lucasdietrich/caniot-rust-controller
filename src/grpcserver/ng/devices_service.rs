@@ -3,11 +3,13 @@ use tonic::{Request, Response, Result, Status};
 use crate::{
     caniot as ct,
     controller::{
+        alert::{DeviceAlert, DeviceAlertType},
         auto_attach::{DEVICE_GARAGE_DID, DEVICE_HEATERS_DID, DEVICE_OUTDOOR_ALARM_DID},
         DeviceAction, DeviceActionResult, DeviceInfos,
     },
     grpcserver::datetime_to_prost_timestamp,
     shared::SharedHandle,
+    utils::emulated_delay_async,
 };
 
 use super::model::{
@@ -25,6 +27,7 @@ pub struct NgDevices {
 
 impl NgDevices {
     async fn get_device_by_did(&self, did: ct::DeviceId) -> Result<Response<m::Device>, Status> {
+        emulated_delay_async().await;
         if let Some(ref infos) = self.shared.controller_handle.get_device_infos(did).await {
             Ok(Response::new(infos.into()))
         } else {
@@ -73,6 +76,22 @@ impl Into<m::device::Measures> for ct::classes::BoardClassTelemetry {
     }
 }
 
+impl Into<m::DeviceAlert> for &DeviceAlert {
+    fn into(self) -> m::DeviceAlert {
+        m::DeviceAlert {
+            message: self.string.clone(),
+            timestamp: Some(datetime_to_prost_timestamp(&self.timestamp)),
+            alert_type: match self.alert_type {
+                DeviceAlertType::Ok => m::DeviceAlertType::Ok as i32,
+                DeviceAlertType::Notification => m::DeviceAlertType::Notification as i32,
+                DeviceAlertType::Warning => m::DeviceAlertType::Warning as i32,
+                DeviceAlertType::Error => m::DeviceAlertType::Inerror as i32,
+                DeviceAlertType::Inhibitted => m::DeviceAlertType::Inhibitted as i32,
+            },
+        }
+    }
+}
+
 impl Into<m::Device> for &DeviceInfos {
     fn into(self) -> m::Device {
         m::Device {
@@ -96,6 +115,7 @@ impl Into<m::Device> for &DeviceInfos {
             board_temp: self.board_temperature,
             outside_temp: self.outside_temperature,
             measures: self.measures.map(|m| m.into()),
+            active_alert: self.active_alert.as_ref().map(|a| a.into()),
             ..Default::default()
         }
     }

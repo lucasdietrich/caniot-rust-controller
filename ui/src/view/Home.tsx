@@ -1,4 +1,16 @@
-import { Row, Col, Card, Button, List, Typography, Statistic, Badge, Divider } from "antd";
+import {
+  Row,
+  Col,
+  Card,
+  Button,
+  List,
+  Typography,
+  Statistic,
+  Badge,
+  Divider,
+  Alert,
+  Space,
+} from "antd";
 import Hello from "../components/HelloComponent";
 import HelloCard from "./HelloCard";
 import ListLabelledItem from "../components/ListLabelledItem";
@@ -13,14 +25,16 @@ import { useNavigate } from "react-router-dom";
 import { Status as GarageStatus } from "@caniot-controller/caniot-api-grpc-web/api/ng_garage_pb";
 import garageStore from "../store/GarageStore";
 import DeviceMetricsWidget from "../components/DeviceMetricsWidget";
+import DeviceAlert from "../components/DeviceAlert";
 
 const { Countdown } = Statistic;
 
 interface HomeProps {
-  isMobile: boolean;
+  refreshInterval?: number;
+  isMobile?: boolean;
 }
 
-function Home({ isMobile }: HomeProps) {
+function Home({ refreshInterval = 5000, isMobile = false }: HomeProps) {
   const [garageDevice, setGarageDevice] = useState<Device | undefined>(undefined);
   const [garageState, setGarageState] = useState<GarageStatus | undefined>(undefined);
   const [garageLoading, setGarageLoading] = useState(true);
@@ -31,16 +45,17 @@ function Home({ isMobile }: HomeProps) {
   const [outdoorAlarmsDevice, setOutdoorAlarmsDevice] = useState<Device | undefined>(undefined);
   const [outdoorAlarmsLoading, setOutdoorAlarmsLoading] = useState(true);
 
-  const [demoDevice, setdemoDevice] = useState<Device | undefined>(undefined);
+  const [time, setTime] = useState(Date.now());
+
   const navigate = useNavigate();
 
   useEffect(() => {
     let did = new DeviceId();
     did.setDid(0);
 
-    devicesStore.get(did, (resp: Device) => {
-      setdemoDevice(resp);
-    });
+    setHeatersLoading(true);
+    setOutdoorAlarmsLoading(true);
+    setGarageLoading(true);
 
     devicesStore.getGarageDevice((resp: Device) => {
       setGarageDevice(resp);
@@ -59,7 +74,12 @@ function Home({ isMobile }: HomeProps) {
       setOutdoorAlarmsDevice(resp);
       setOutdoorAlarmsLoading(false);
     });
-  }, []);
+
+    const intervalRefresh = setInterval(() => setTime(Date.now()), refreshInterval);
+    return () => {
+      clearInterval(intervalRefresh);
+    };
+  }, [time]);
 
   let garageDoorsStatusWidget = (
     <LoadableCard
@@ -67,8 +87,13 @@ function Home({ isMobile }: HomeProps) {
       onGoto={() => navigate("/devices/garage")}
       loading={garageLoading}
       status={garageDevice !== undefined}
+      bordered={false}
     >
-      <GarageDoorsStatus height="100px" garageState={garageState} />
+      <GarageDoorsStatus
+        height="100px"
+        garageState={garageState}
+        alert={garageDevice?.getActiveAlert()}
+      />
     </LoadableCard>
   );
 
@@ -114,9 +139,7 @@ function Home({ isMobile }: HomeProps) {
         <Col xs={12} md={8} xl={6} style={{ marginBottom: 8 }}>
           {garageDoorsStatusWidget}
         </Col>
-        <Col xs={24} xl={12} style={{ marginBottom: 8 }}>
-          <HelloCard user_name="Lucas" />
-        </Col>
+
         <Col xs={24} xl={12}>
           <Card title="Firmware" bordered={false}>
             <List>
@@ -127,15 +150,6 @@ function Home({ isMobile }: HomeProps) {
               </ListLabelledItem>
             </List>
           </Card>
-        </Col>
-      </Row>
-
-      <Row gutter={16} style={{ paddingTop: 20 }}>
-        <Col xs={24} xl={12}>
-          <HelloCard user_name="Tom" />
-        </Col>
-        <Col xs={24} xl={12}>
-          <DeviceDetailsCard title="Demo" device={demoDevice} />
         </Col>
       </Row>
     </>

@@ -29,6 +29,7 @@ function GarageDoorsView({ refreshInterval = 5000, isMobile = false }: IGarageDo
   const [time, setTime] = useState(Date.now());
 
   useEffect(() => {
+    setLoading(true);
     devicesStore.getGarageDevice((resp: Device) => {
       setGarageDevice(resp);
       garageStore.getState((resp: Status) => {
@@ -74,6 +75,7 @@ function GarageDoorsView({ refreshInterval = 5000, isMobile = false }: IGarageDo
         >
           <GarageDoorsStatus
             garageState={garageState}
+            alert={garageDevice?.getActiveAlert()}
             onLeftDoorClick={onLeftDoorClick}
             onRightDoorClick={onRightDoorClick}
           ></GarageDoorsStatus>

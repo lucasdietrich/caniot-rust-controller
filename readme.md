@@ -129,6 +129,10 @@ device_temperature{medium="CAN",mac="1",device="HeatersController",sensor="EXTER
 - Add alert when an action has been sent to a device
 - TODO: select the menu item depending on the current route: `const url = window.location.href;` ?
 - notification: Fix "showProgress" and "pause on hover and progress"
+- Push notifications on devices without developping a mobile app
+  - https://www.pushbullet.com/
+  - https://pushover.net/
+- AWS amazon https://aws.amazon.com/fr/sns/
 
 ### Evaluate `react-media` for responsive design
 

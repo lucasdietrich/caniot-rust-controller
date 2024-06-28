@@ -13,9 +13,11 @@ default = []
 # feature for emulated can interface and devices
 can-tunnel = []
 experimental = []
-emu = []
+emu = ["emu-delay"]
 grpc-can-iface-server = ["can-tunnel", "dep:tokio-stream", "dep:async-stream"]
 grpc-can-iface-client = ["can-tunnel", "dep:async-stream"]
+
+emu-delay = []
 
 [dependencies]
 # Asynchronous runtime and features

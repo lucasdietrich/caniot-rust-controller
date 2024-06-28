@@ -3,7 +3,7 @@ use chrono::{DateTime, Utc};
 use crate::{
     caniot::Xps,
     controller::{
-        ActionResultTrait, ActionTrait, ActionVerdict, DeviceControllerInfos,
+        alert::DeviceAlert, ActionResultTrait, ActionTrait, ActionVerdict, DeviceControllerInfos,
         DeviceControllerTrait, DeviceError, Verdict,
     },
 };
@@ -60,7 +60,7 @@ impl Into<class0::Command> for &GarageDoorCommand {
 pub struct GarageDoorStatus {
     pub left_door_status: DoorState,
     pub right_door_status: DoorState,
-    pub gate_open: bool,
+    pub gate_closed: bool,
 }
 
 impl From<&class0::Telemetry> for GarageDoorStatus {
@@ -68,7 +68,7 @@ impl From<&class0::Telemetry> for GarageDoorStatus {
         Self {
             left_door_status: payload.in3.into(),
             right_door_status: payload.in4.into(),
-            gate_open: payload.in2,
+            gate_closed: payload.in2,
         }
     }
 }
@@ -183,5 +183,15 @@ impl DeviceControllerTrait for GarageController {
         }
 
         Ok(Verdict::None)
+    }
+
+    fn get_alert(&self) -> Option<DeviceAlert> {
+        self.status.and_then(|s| {
+            if s.left_door_status.is_open() || s.right_door_status.is_open() || !s.gate_closed {
+                Some(DeviceAlert::new_warning("Garage doors not closed"))
+            } else {
+                None
+            }
+        })
     }
 }
