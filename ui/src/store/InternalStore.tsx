@@ -2,10 +2,13 @@ import { notification } from "antd";
 import EventEmitter from "events";
 import { HandleError, HandleSuccess, getApiUrl } from "./helpers";
 import {
+  FirmwareInfos,
   HelloRequest,
   HelloResponse,
+  Infos,
   PartialSettings,
   Settings,
+  SoftwareInfos,
 } from "@caniot-controller/caniot-api-grpc-web/api/ng_internal_pb";
 
 import { Empty } from "google-protobuf/google/protobuf/empty_pb";
@@ -66,6 +69,45 @@ class InternalStore extends EventEmitter {
       }
 
       HandleSuccess("InternalStore::ResetSettings succeeded");
+
+      callbackFunc(resp);
+    });
+  };
+
+  getSoftwareInfos = (callbackFunc: (resp: SoftwareInfos) => void) => {
+    this.client.getSoftwareInfos(new Empty(), null, (err, resp) => {
+      if (err !== null) {
+        HandleError(err);
+        return;
+      }
+
+      HandleSuccess("InternalStore::GetSoftwareInfos succeeded");
+
+      callbackFunc(resp);
+    });
+  };
+
+  getFirmwareInfos = (callbackFunc: (resp: FirmwareInfos) => void) => {
+    this.client.getFirmwareInfos(new Empty(), null, (err, resp) => {
+      if (err !== null) {
+        HandleError(err);
+        return;
+      }
+
+      HandleSuccess("InternalStore::GetFirmwareInfos succeeded");
+
+      callbackFunc(resp);
+    });
+  };
+
+  getInfos = (callbackFunc: (resp: Infos) => void) => {
+    this.client.getInfos(new Empty(), null, (err, resp) => {
+      if (err !== null) {
+        HandleError(err);
+        return;
+      }
+
+      HandleSuccess("InternalStore::GetInfos succeeded");
 
       callbackFunc(resp);
     });

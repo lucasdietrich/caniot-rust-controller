@@ -11,6 +11,11 @@ service InternalService {
   rpc GetSettings(google.protobuf.Empty) returns (Settings) {}
   rpc SetSettings(PartialSettings) returns (Settings) {}
   rpc ResetSettings(google.protobuf.Empty) returns (Settings) {}
+
+  rpc GetSoftwareInfos(google.protobuf.Empty) returns (SoftwareInfos) {}
+  rpc GetFirmwareInfos(google.protobuf.Empty) returns (FirmwareInfos) {}
+
+  rpc GetInfos(google.protobuf.Empty) returns (Infos) {}
 }
 
 message PartialSettings {
@@ -31,4 +36,29 @@ message HelloResponse {
   map<string, uint32> map = 3;
   repeated string strings = 4;
   bytes bytes = 12;
+}
+
+message SoftwareBuildInfos {
+  string version = 1;
+  string commit = 2;
+  google.protobuf.Timestamp build_date = 3;
+}
+
+message SoftwareInfos {
+  optional SoftwareBuildInfos build = 1;
+  google.protobuf.Timestamp start_date = 2;
+  google.protobuf.Timestamp update_date = 3;
+}
+
+message FirmwareBuildInfos {
+  string distro = 1;
+  string distro_version = 2;
+  optional google.protobuf.Timestamp build_date = 3;
+}
+
+message FirmwareInfos { FirmwareBuildInfos build = 1; }
+
+message Infos {
+  optional SoftwareInfos software = 1;
+  optional FirmwareInfos firmware = 2;
 }

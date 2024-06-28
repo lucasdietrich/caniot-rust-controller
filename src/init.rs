@@ -5,6 +5,8 @@ use tokio::sync::{broadcast, RwLock};
 use tokio::{self};
 
 use crate::database::Database;
+use crate::internal::firmware::FirmwareInfos;
+use crate::internal::software::SoftwareInfos;
 use crate::shared::Shared;
 use crate::{bus, config, controller, logger, webserver};
 
@@ -28,6 +30,9 @@ fn get_tokio_rt() -> tokio::runtime::Runtime {
 }
 
 pub fn run_controller() {
+    let firmware_infos = FirmwareInfos::default();
+    let software_infos = SoftwareInfos::default();
+
     logger::init_logger();
 
     // Parse command line arguments
@@ -62,6 +67,8 @@ pub fn run_controller() {
         &database_handle,
         &config,
         notify_shutdown.clone(),
+        firmware_infos,
+        software_infos,
     ));
 
     rt.spawn(async move {

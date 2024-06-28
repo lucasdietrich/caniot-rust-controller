@@ -1,6 +1,6 @@
 use std::{collections::HashMap, time::SystemTime};
 
-use log::debug;
+use log::{debug, warn};
 use tonic::{Request, Response, Status};
 
 use super::model::internal::{
@@ -8,11 +8,63 @@ use super::model::internal::{
     internal_service_server::{InternalService, InternalServiceServer},
 };
 
-use crate::{grpcserver::systemtime_to_prost_timestamp, shared::SharedHandle};
+use crate::{
+    grpcserver::{datetime_to_prost_timestamp, systemtime_to_prost_timestamp},
+    internal::{
+        firmware::{FirmwareBuildInfos, FirmwareInfos},
+        software::{SoftwareBuildInfos, SoftwareInfos},
+    },
+    shared::SharedHandle,
+};
 
 #[derive(Debug)]
 pub struct NgInternal {
     pub shared: SharedHandle,
+}
+
+impl Into<Option<m::SoftwareBuildInfos>> for &SoftwareBuildInfos {
+    fn into(self) -> Option<m::SoftwareBuildInfos> {
+        if self.is_complete() {
+            Some(m::SoftwareBuildInfos {
+                version: self.version.to_owned().unwrap(),
+                commit: self.get_commit_hash_and_dirty().unwrap(),
+                build_date: Some(datetime_to_prost_timestamp(&self.build_date.unwrap())),
+            })
+        } else {
+            warn!("SoftwareBuildInfos is not complete");
+            None
+        }
+    }
+}
+
+impl Into<m::SoftwareInfos> for &SoftwareInfos {
+    fn into(self) -> m::SoftwareInfos {
+        m::SoftwareInfos {
+            build: (&self.build).into(),
+            start_date: Some(datetime_to_prost_timestamp(&self.start_date)),
+            update_date: None,
+        }
+    }
+}
+
+impl Into<m::FirmwareBuildInfos> for &FirmwareBuildInfos {
+    fn into(self) -> m::FirmwareBuildInfos {
+        m::FirmwareBuildInfos {
+            distro: self.distro.to_owned(),
+            distro_version: self.distro_version.to_owned(),
+            build_date: self
+                .build_date
+                .map(|ref dt| datetime_to_prost_timestamp(dt)),
+        }
+    }
+}
+
+impl Into<m::FirmwareInfos> for &FirmwareInfos {
+    fn into(self) -> m::FirmwareInfos {
+        m::FirmwareInfos {
+            build: Some((&self.build).into()),
+        }
+    }
 }
 
 #[tonic::async_trait]
@@ -99,6 +151,27 @@ impl InternalService for NgInternal {
         };
 
         Ok(Response::new(response))
+    }
+
+    async fn get_software_infos(
+        &self,
+        _request: Request<()>,
+    ) -> Result<Response<m::SoftwareInfos>, Status> {
+        Ok(Response::new((&self.shared.software_infos).into()))
+    }
+
+    async fn get_firmware_infos(
+        &self,
+        _request: Request<()>,
+    ) -> Result<Response<m::FirmwareInfos>, Status> {
+        Ok(Response::new((&self.shared.firmware_infos).into()))
+    }
+
+    async fn get_infos(&self, _request: Request<()>) -> Result<Response<m::Infos>, Status> {
+        Ok(Response::new(m::Infos {
+            software: Some((&self.shared.software_infos).into()),
+            firmware: Some((&self.shared.firmware_infos).into()),
+        }))
     }
 }
 

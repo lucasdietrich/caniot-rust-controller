@@ -7,6 +7,8 @@ use serde::Serialize;
 use crate::config::AppConfig;
 use crate::controller::ControllerHandle;
 use crate::database::Database;
+use crate::internal::firmware::FirmwareInfos;
+use crate::internal::software::SoftwareInfos;
 
 pub type SharedHandle = Arc<Shared>;
 
@@ -28,6 +30,12 @@ pub struct Shared {
     /// Used to signal the asynchronous task to shutdown
     /// The task subscribes to this channel
     pub notify_shutdown: broadcast::Sender<()>,
+
+    // Firmware infos
+    pub firmware_infos: FirmwareInfos,
+
+    // Software infos
+    pub software_infos: SoftwareInfos,
 }
 
 #[derive(Serialize, Debug, Clone, Copy)]
@@ -40,6 +48,8 @@ impl Shared {
         db_handle: &Arc<RwLock<Database>>,
         config: &AppConfig,
         notify_shutdown: broadcast::Sender<()>,
+        firmware_infos: FirmwareInfos,
+        software_infos: SoftwareInfos,
     ) -> Self {
         Shared {
             rt: rt_handle.clone(),
@@ -47,6 +57,8 @@ impl Shared {
             db: db_handle.clone(),
             config: config.clone(),
             notify_shutdown,
+            firmware_infos,
+            software_infos,
         }
     }
 }

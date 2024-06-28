@@ -26,6 +26,10 @@ import { Status as GarageStatus } from "@caniot-controller/caniot-api-grpc-web/a
 import garageStore from "../store/GarageStore";
 import DeviceMetricsWidget from "../components/DeviceMetricsWidget";
 import DeviceAlert from "../components/DeviceAlert";
+import SoftwareInfosCard from "../components/SoftwareInfosCard";
+import { Infos, SoftwareInfos } from "@caniot-controller/caniot-api-grpc-web/api/ng_internal_pb";
+import internalStore from "../store/InternalStore";
+import FirmwareInfosCard from "../components/FirmwareInfosCard";
 
 const { Countdown } = Statistic;
 
@@ -35,6 +39,9 @@ interface HomeProps {
 }
 
 function Home({ refreshInterval = 5000, isMobile = false }: HomeProps) {
+  const [infosLoading, setInfosLoading] = useState(true);
+  const [infos, setInfos] = useState<Infos | undefined>(undefined);
+
   const [garageDevice, setGarageDevice] = useState<Device | undefined>(undefined);
   const [garageState, setGarageState] = useState<GarageStatus | undefined>(undefined);
   const [garageLoading, setGarageLoading] = useState(true);
@@ -53,9 +60,15 @@ function Home({ refreshInterval = 5000, isMobile = false }: HomeProps) {
     let did = new DeviceId();
     did.setDid(0);
 
+    setInfosLoading(true);
     setHeatersLoading(true);
     setOutdoorAlarmsLoading(true);
     setGarageLoading(true);
+
+    internalStore.getInfos((resp: Infos) => {
+      setInfos(resp);
+      setInfosLoading(false);
+    });
 
     devicesStore.getGarageDevice((resp: Device) => {
       setGarageDevice(resp);
@@ -140,16 +153,11 @@ function Home({ refreshInterval = 5000, isMobile = false }: HomeProps) {
           {garageDoorsStatusWidget}
         </Col>
 
-        <Col xs={24} xl={12}>
-          <Card title="Firmware" bordered={false}>
-            <List>
-              <ListLabelledItem label="Firmware version">v0.1.0-beta</ListLabelledItem>
-              <ListLabelledItem label="Firmware data">04/10/2021 12:00:00</ListLabelledItem>
-              <ListLabelledItem label="Firmware status">
-                <Typography.Text type="success">Running</Typography.Text>
-              </ListLabelledItem>
-            </List>
-          </Card>
+        <Col xs={24} xl={12} style={{ marginBottom: 8 }}>
+          <SoftwareInfosCard infos={infos?.getSoftware()} />
+        </Col>
+        <Col xs={24} xl={12} style={{ marginBottom: 8 }}>
+          <FirmwareInfosCard infos={infos?.getFirmware()} />
         </Col>
       </Row>
     </>
