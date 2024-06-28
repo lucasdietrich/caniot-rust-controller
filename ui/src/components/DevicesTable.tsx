@@ -109,7 +109,7 @@ function DevicesTable({ devicesList }: IDevicesTableProps) {
       title: "Controller",
       dataIndex: "controller",
       key: "controller",
-      render: (controller) => <span>{controller || "N/A"}</span>,
+      render: (controller) => <span>{controller ?? "N/A"}</span>,
     },
     {
       title: "Last seen",
@@ -138,7 +138,7 @@ function DevicesTable({ devicesList }: IDevicesTableProps) {
       title: "Temp In",
       dataIndex: "temp_in",
       key: "temp_in",
-      render: (temp_in) => <span>{temp_in?.toFixed(2) || "N/A"} °C</span>,
+      render: (temp_in) => <span>{temp_in?.toFixed(2) ?? "N/A"} °C</span>,
     },
     {
       title: "Action",
