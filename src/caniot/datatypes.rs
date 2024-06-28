@@ -88,9 +88,15 @@ impl Temperature {
         }
     }
 
-    pub fn random() -> Self {
-        let rand = rand::random::<u16>() % 1001;
+    pub fn random_full_range() -> Self {
+        let rand = rand::random::<u16>() % Self::VALUE_U10_MAX_VALID;
         Temperature::from_raw_u10(rand)
+    }
+
+    pub fn random_range(min: f32, max: f32) -> Self {
+        let rand = rand::random::<u16>() % Self::VALUE_U10_MAX_VALID;
+        let val = min + (max - min) * (rand as f32 / Self::VALUE_U10_MAX_VALID as f32);
+        Temperature::from_celsius(val)
     }
 
     pub fn invalid() -> Self {

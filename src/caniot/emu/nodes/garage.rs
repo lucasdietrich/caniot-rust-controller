@@ -138,9 +138,9 @@ impl Behavior for GarageController {
             telemetry.in3 = self.left_door.is_open();
             telemetry.in4 = self.right_door.is_open();
 
-            telemetry.temp_in = Temperature::random();
+            telemetry.temp_in = Temperature::random_full_range();
             telemetry.temp_out = [
-                Temperature::random(),
+                Temperature::random_full_range(),
                 Temperature::INVALID,
                 Temperature::INVALID,
             ];

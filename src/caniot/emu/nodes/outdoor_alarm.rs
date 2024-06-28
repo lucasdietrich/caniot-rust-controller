@@ -75,9 +75,9 @@ impl Behavior for OutdoorAlarmController {
             telemetry.poc2 = self.lights[1].pulse_pending();
             telemetry.rl1 = self.siren.get_state();
             telemetry.prl1 = self.siren.pulse_pending();
-            telemetry.temp_in = Temperature::random();
+            telemetry.temp_in = Temperature::random_full_range();
             telemetry.temp_out = [
-                Temperature::random(),
+                Temperature::random_full_range(),
                 Temperature::INVALID,
                 Temperature::INVALID,
             ];
