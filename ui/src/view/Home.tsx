@@ -30,6 +30,7 @@ import SoftwareInfosCard from "../components/SoftwareInfosCard";
 import { Infos, SoftwareInfos } from "@caniot-controller/caniot-api-grpc-web/api/ng_internal_pb";
 import internalStore from "../store/InternalStore";
 import FirmwareInfosCard from "../components/FirmwareInfosCard";
+import ControllerStatsCard from "../components/ControllerStatsCard";
 
 const { Countdown } = Statistic;
 
@@ -94,7 +95,7 @@ function Home({ refreshInterval = 5000, isMobile = false }: HomeProps) {
     };
   }, [time]);
 
-  let garageDoorsStatusWidget = (
+  const garageDoorsStatusWidget = (
     <LoadableCard
       title="Garage"
       onGoto={() => navigate("/devices/garage")}
@@ -110,7 +111,7 @@ function Home({ refreshInterval = 5000, isMobile = false }: HomeProps) {
     </LoadableCard>
   );
 
-  let garageDoorsMetricsWidget = (
+  const garageDoorsMetricsWidget = (
     <DeviceMetricsWidget
       title="Garage"
       loading={garageLoading}
@@ -119,7 +120,7 @@ function Home({ refreshInterval = 5000, isMobile = false }: HomeProps) {
     />
   );
 
-  let heatersMetricsWidget = (
+  const heatersMetricsWidget = (
     <DeviceMetricsWidget
       title="Chauffage"
       loading={heatersLoading}
@@ -128,7 +129,7 @@ function Home({ refreshInterval = 5000, isMobile = false }: HomeProps) {
     />
   );
 
-  let outdoorAlarmsMetricsWidget = (
+  const outdoorAlarmsMetricsWidget = (
     <DeviceMetricsWidget
       title="Alarme extérieure"
       loading={outdoorAlarmsLoading}
@@ -137,9 +138,20 @@ function Home({ refreshInterval = 5000, isMobile = false }: HomeProps) {
     />
   );
 
+  const devicesActiveAlerts = (
+    <LoadableCard title="Alertes actives" loading={false} bordered={false}>
+      <DeviceAlert alert={garageDevice?.getActiveAlert()} />
+      <DeviceAlert alert={heatersDevice?.getActiveAlert()} />
+      <DeviceAlert alert={outdoorAlarmsDevice?.getActiveAlert()} />
+    </LoadableCard>
+  );
+
   return (
     <>
       <Row gutter={16}>
+        <Col xs={24} md={12} xl={12} style={{ marginBottom: 8 }}>
+          {devicesActiveAlerts}
+        </Col>
         <Col xs={12} md={8} xl={6} style={{ marginBottom: 8 }}>
           {outdoorAlarmsMetricsWidget}
         </Col>
@@ -158,6 +170,9 @@ function Home({ refreshInterval = 5000, isMobile = false }: HomeProps) {
         </Col>
         <Col xs={24} xl={12} style={{ marginBottom: 8 }}>
           <FirmwareInfosCard infos={infos?.getFirmware()} />
+        </Col>
+        <Col xs={24} xl={12} style={{ marginBottom: 8 }}>
+          <ControllerStatsCard stats={infos?.getControllerStats()} />
         </Col>
       </Row>
     </>

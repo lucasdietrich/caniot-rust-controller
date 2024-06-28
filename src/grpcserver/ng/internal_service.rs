@@ -9,6 +9,7 @@ use super::model::internal::{
 };
 
 use crate::{
+    controller::ControllerStats,
     grpcserver::{datetime_to_prost_timestamp, systemtime_to_prost_timestamp},
     internal::{
         firmware::{FirmwareBuildInfos, FirmwareInfos},
@@ -63,6 +64,21 @@ impl Into<m::FirmwareInfos> for &FirmwareInfos {
     fn into(self) -> m::FirmwareInfos {
         m::FirmwareInfos {
             build: Some((&self.build).into()),
+        }
+    }
+}
+
+impl Into<m::ControllerStats> for &ControllerStats {
+    fn into(self) -> m::ControllerStats {
+        m::ControllerStats {
+            iface_rx: self.iface_rx as u32,
+            iface_tx: self.iface_tx as u32,
+            iface_err: self.iface_err as u32,
+            iface_malformed: self.iface_malformed as u32,
+            pq_pushed: self.pq_pushed as u32,
+            pq_answered: self.pq_answered as u32,
+            pq_timeout: self.pq_timeout as u32,
+            api_rx: self.api_rx as u32,
         }
     }
 }
@@ -171,7 +187,19 @@ impl InternalService for NgInternal {
         Ok(Response::new(m::Infos {
             software: Some((&self.shared.software_infos).into()),
             firmware: Some((&self.shared.firmware_infos).into()),
+            controller_stats: Some(
+                (&self.shared.controller_handle.get_controller_stats().await.0).into(),
+            ),
         }))
+    }
+
+    async fn get_controller_stats(
+        &self,
+        _request: Request<()>,
+    ) -> Result<Response<m::ControllerStats>, Status> {
+        Ok(Response::new(
+            (&self.shared.controller_handle.get_controller_stats().await.0).into(),
+        ))
     }
 }
 

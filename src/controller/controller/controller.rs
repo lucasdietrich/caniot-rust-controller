@@ -43,10 +43,20 @@ const CHANNEL_SIZE: usize = 10;
 
 #[derive(Serialize, Debug, Clone, Copy, Default)]
 pub struct ControllerStats {
-    pub rx: usize,
-    pub tx: usize,
-    pub err: usize,
-    pub malformed: usize,
+    // can interface
+    pub iface_rx: usize,
+    pub iface_tx: usize,
+    pub iface_err: usize,
+    pub iface_malformed: usize,
+    // dropped ?
+
+    // Pending queries
+    pub pq_pushed: usize,
+    pub pq_timeout: usize,
+    pub pq_answered: usize,
+
+    // API
+    pub api_rx: usize,
 }
 
 #[derive(Error, Debug)]
@@ -155,7 +165,7 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
         let can_frame = request.into();
 
         iface.send(can_frame).await?;
-        stats.tx += 1;
+        stats.iface_tx += 1;
         Ok(())
     }
 
@@ -206,6 +216,7 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
                 timeout_ms,
                 super::pending_query::PendingQueryTenant::Query(sender),
             ));
+            self.stats.pq_pushed += 1;
         }
     }
 
@@ -213,7 +224,7 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
         &mut self,
         frame: caniot::Response,
     ) -> Result<(), ControllerError> {
-        self.stats.rx += 1;
+        self.stats.iface_rx += 1;
         // TODO if multiple actions are pending, only the first one will be answered
         // For the other, the channel sender will be dropped and the response will be lost
         let mut answered_pending_action: Option<PendingAction> = None;
@@ -226,6 +237,7 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
 
         // if a frame can answer multiple pending queries, remove all of them
         for pq in self.pending_queries.drain(..pivot) {
+            self.stats.pq_answered += 1;
             if let Some(pq_tenant) = pq.end_with_frame(frame.clone()) {
                 match pq_tenant {
                     PendingQueryTenant::Action(pending_action) => {
@@ -299,6 +311,7 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
 
         // send timeout to all timed out queries
         for pq in timed_out_queries {
+            self.stats.pq_timeout += 1;
             warn!(
                 "Pending query {} timed out after {} ms",
                 pq.query, pq.timeout_ms
@@ -369,7 +382,7 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
                             }
                         },
                         Err(err) => {
-                            self.stats.malformed += 1;
+                            self.stats.iface_malformed += 1;
                             error!("Failed to convert into CANIOT frame {}", err)
                         },
                     }
@@ -461,6 +474,7 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
                         pending_action::PendingAction::new(action, respond_to),
                     ),
                 ));
+                self.stats.pq_pushed += 1;
             }
             Err(err) => {
                 let _ = respond_to.send(Err(err));
@@ -503,6 +517,7 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
         &mut self,
         message: ControllerMessage,
     ) -> Result<(), ControllerError> {
+        self.stats.api_rx += 1;
         match message {
             ControllerMessage::GetControllerStats { respond_to } => {
                 let _ = respond_to.send((self.stats, self.iface.get_stats()));

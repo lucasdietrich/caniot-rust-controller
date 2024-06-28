@@ -16,19 +16,19 @@ function SoftwareInfosCard({ infos }: SoftwareInfosCardProps) {
           <Typography.Text type="success">Running</Typography.Text>
         </ListLabelledItem>
         <ListLabelledItem label="Version">
-          {infos?.getBuild()?.getVersion() || "N/A"}
+          {infos?.getBuild()?.getVersion() ?? "N/A"}
         </ListLabelledItem>
         <ListLabelledItem label="Build date">
-          {infos?.getBuild()?.getBuildDate()?.toDate().toLocaleString() || "N/A"}
+          {infos?.getBuild()?.getBuildDate()?.toDate().toLocaleString() ?? "N/A"}
         </ListLabelledItem>
         <ListLabelledItem label="Build commit">
-          {infos?.getBuild()?.getCommit() || "N/A"}
+          {infos?.getBuild()?.getCommit() ?? "N/A"}
         </ListLabelledItem>
         <ListLabelledItem label="Dernier lancement">
-          {infos?.getStartDate()?.toDate().toLocaleString() || "N/A"}
+          {infos?.getStartDate()?.toDate().toLocaleString() ?? "N/A"}
         </ListLabelledItem>
         <ListLabelledItem label="Derrière mise à jour">
-          {infos?.getUpdateDate()?.toDate().toLocaleString() || "Jamais"}
+          {infos?.getUpdateDate()?.toDate().toLocaleString() ?? "Jamais"}
         </ListLabelledItem>
       </List>
     </LoadableCard>

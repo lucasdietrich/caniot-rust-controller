@@ -12,6 +12,8 @@ service InternalService {
   rpc SetSettings(PartialSettings) returns (Settings) {}
   rpc ResetSettings(google.protobuf.Empty) returns (Settings) {}
 
+  rpc GetControllerStats(google.protobuf.Empty) returns (ControllerStats) {}
+
   rpc GetSoftwareInfos(google.protobuf.Empty) returns (SoftwareInfos) {}
   rpc GetFirmwareInfos(google.protobuf.Empty) returns (FirmwareInfos) {}
 
@@ -61,4 +63,18 @@ message FirmwareInfos { FirmwareBuildInfos build = 1; }
 message Infos {
   optional SoftwareInfos software = 1;
   optional FirmwareInfos firmware = 2;
+  optional ControllerStats controller_stats = 3;
+}
+
+message ControllerStats {
+  uint32 iface_rx = 1;
+  uint32 iface_tx = 2;
+  uint32 iface_err = 3;
+  uint32 iface_malformed = 4;
+
+  uint32 pq_pushed = 10;
+  uint32 pq_answered = 11;
+  uint32 pq_timeout = 12;
+
+  uint32 api_rx = 20;
 }

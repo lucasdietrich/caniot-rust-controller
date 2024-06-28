@@ -2,6 +2,7 @@ import { notification } from "antd";
 import EventEmitter from "events";
 import { HandleError, HandleSuccess, getApiUrl } from "./helpers";
 import {
+  ControllerStats,
   FirmwareInfos,
   HelloRequest,
   HelloResponse,
@@ -95,6 +96,19 @@ class InternalStore extends EventEmitter {
       }
 
       HandleSuccess("InternalStore::GetFirmwareInfos succeeded");
+
+      callbackFunc(resp);
+    });
+  };
+
+  getControllerStats = (callbackFunc: (resp: ControllerStats) => void) => {
+    this.client.getControllerStats(new Empty(), null, (err, resp) => {
+      if (err !== null) {
+        HandleError(err);
+        return;
+      }
+
+      HandleSuccess("InternalStore::GetControllerStats succeeded");
 
       callbackFunc(resp);
     });
