@@ -216,9 +216,9 @@ impl Behavior for Class0Behavior {
             telemetry.rl1 = self.rl1;
             telemetry.rl2 = self.rl2;
 
-            telemetry.temp_in = Temperature::random();
+            telemetry.temp_in = Temperature::random_full_range();
             telemetry.temp_out = [
-                Temperature::random(),
+                Temperature::random_full_range(),
                 Temperature::INVALID,
                 Temperature::INVALID,
             ];
@@ -261,9 +261,9 @@ impl Behavior for Class1Behavior {
                 *io = rand::random();
             }
 
-            telemetry.temp_in = Temperature::random();
+            telemetry.temp_in = Temperature::random_full_range();
             telemetry.temp_out = [
-                Temperature::random(),
+                Temperature::random_full_range(),
                 Temperature::INVALID,
                 Temperature::INVALID,
             ];
