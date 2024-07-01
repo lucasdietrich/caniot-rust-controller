@@ -46,4 +46,12 @@ where
     async fn recv_poll(&mut self) -> Option<CanDataFrame>;
 
     fn get_stats(&self) -> CanStats;
+
+    // Allow to perform alternatives operations on the interface (e.g. send emulated events, change filters, inhibit, etc.)
+    fn ioctl(&mut self, _cmd: u32, _arg: u32) -> Result<(), CanInterfaceError> {
+        error!("ioctl not implemented");
+        Ok(())
+    }
 }
+
+pub const CAN_IOCTL_SEND_EMU_EVENT: u32 = 0xFFFF_0001;

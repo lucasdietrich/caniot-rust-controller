@@ -13,6 +13,10 @@ impl OutdoorAlarmCommand {
         })
     }
 
+    pub fn has_effect(&self) -> bool {
+        self.0.has_effect()
+    }
+
     pub fn set_siren(&mut self, cmd: Xps) {
         self.0.crl1 = cmd;
     }

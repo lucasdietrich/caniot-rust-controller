@@ -12,6 +12,7 @@ import { Settings } from "@caniot-controller/caniot-api-grpc-web/api/ng_internal
 import { LuSiren } from "react-icons/lu";
 import { MdOutlineGarage } from "react-icons/md";
 import { LiaTemperatureLowSolid } from "react-icons/lia";
+import { ImLab } from "react-icons/im";
 
 interface IMenuProps {
   isMobile?: boolean;
@@ -74,6 +75,12 @@ function AppMenu({ isMobile = false, uiDebugMode = false }: IMenuProps) {
           key: "measures",
           icon: <PercentageOutlined />,
           label: <Link to="/sensors">Mesures</Link>,
+          title: titleTooltipEnable,
+        },
+        {
+          key: "emulation",
+          icon: <ImLab />,
+          label: <Link to="/emulation">Simulation</Link>,
           title: titleTooltipEnable,
         },
       ],

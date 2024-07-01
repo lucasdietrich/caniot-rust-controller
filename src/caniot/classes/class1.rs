@@ -150,7 +150,12 @@ pub struct Command {
     pub ios: [Xps; CLASS1_IO_COUNT],
 }
 
-impl<'a> ClassCommandTrait for Command {}
+impl<'a> ClassCommandTrait for Command {
+    fn has_effect(&self) -> bool {
+        self.ios.iter().any(|&x| x != Xps::None)
+    }
+}
+
 impl Into<Payload<ClCd>> for Command {
     fn into(self) -> Payload<ClCd> {
         let mut payload = vec![0; 7];

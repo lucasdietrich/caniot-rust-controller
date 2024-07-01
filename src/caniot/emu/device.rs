@@ -2,6 +2,7 @@ use std::time::{Duration, Instant};
 
 use crate::{
     caniot::{self, Attribute, DeviceId, Endpoint, ErrorCode, Payload},
+    grpcserver::EmuEvent,
     utils::expirable::{ttl, ExpirableTrait},
 };
 
@@ -16,6 +17,9 @@ pub struct Device {
 
     start_time: Instant,             // ms
     last_telemetry: Option<Instant>, // ms
+
+    // Flag to request an immediate process of the device
+    process_requested: bool,
 
     // Ordered list of behaviors the device implements
     pub(super) behavior: Vec<Box<dyn Behavior>>,
@@ -35,6 +39,7 @@ impl Device {
             telemetry_endpoint: Endpoint::BoardControl,
             start_time: Instant::now(),
             last_telemetry: None,
+            process_requested: false,
             behavior: vec![Box::new(board_behavior)],
         }
     }
@@ -220,7 +225,8 @@ impl Device {
                     }
                 }
             }
-        } else if self.behavior.expired() {
+        } else if self.behavior.expired() || self.process_requested {
+            self.process_requested = false;
             let endpoints: Vec<caniot::Endpoint> = self
                 .behavior
                 .iter_mut()
@@ -262,5 +268,11 @@ impl Device {
             device_id: self.did,
             data,
         })
+    }
+
+    pub fn handle_emu_event(&mut self, event: EmuEvent) {
+        for behavior in self.behavior.iter_mut() {
+            self.process_requested |= behavior.on_emu_event(event);
+        }
     }
 }

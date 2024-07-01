@@ -1,5 +1,6 @@
 use crate::{
     caniot::{self, class0::Class0, class1::Class1, AsPayload, SysCtrl, Temperature},
+    grpcserver::EmuEvent,
     utils::expirable::ExpirableTrait,
 };
 
@@ -46,6 +47,11 @@ pub trait Behavior: Send + Sync {
     // time in milliseconds
     fn get_remaining_to_event_ms(&self) -> Option<u64> {
         None
+    }
+
+    // Called when an emulated event is received, return true if the device should be processed immediately after
+    fn on_emu_event(&mut self, _event: EmuEvent) -> bool {
+        false
     }
 }
 

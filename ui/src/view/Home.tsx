@@ -133,6 +133,7 @@ function Home({ refreshInterval = 5000, isMobile = false }: HomeProps) {
           .getDevicesList()
           .map((device) => (
             <DeviceAlert
+              key={device.getDid()}
               alert={device.getActiveAlert()}
               navigateToController={"devices/" + device.getUiViewName()}
               closable={false}
@@ -145,35 +146,33 @@ function Home({ refreshInterval = 5000, isMobile = false }: HomeProps) {
   );
 
   return (
-    <>
-      <Row gutter={16}>
-        <Col xs={24} md={12} xl={12} style={{ marginBottom: 8 }}>
-          {devicesActiveAlerts}
-        </Col>
-        <Col xs={12} md={8} xl={6} style={{ marginBottom: 8 }}>
-          {outdoorAlarmsMetricsWidget}
-        </Col>
-        <Col xs={12} sm={12} md={8} xl={6} style={{ marginBottom: 8 }}>
-          {garageDoorsMetricsWidget}
-        </Col>
-        <Col xs={12} md={8} xl={6} style={{ marginBottom: 8 }}>
-          {heatersMetricsWidget}
-        </Col>
-        <Col xs={12} md={8} xl={6} style={{ marginBottom: 8 }}>
-          {garageDoorsStatusWidget}
-        </Col>
+    <Row gutter={16}>
+      <Col xs={24} md={12} xl={12} style={{ marginBottom: 8 }}>
+        {devicesActiveAlerts}
+      </Col>
+      <Col xs={12} md={8} xl={6} style={{ marginBottom: 8 }}>
+        {outdoorAlarmsMetricsWidget}
+      </Col>
+      <Col xs={12} sm={12} md={8} xl={6} style={{ marginBottom: 8 }}>
+        {garageDoorsMetricsWidget}
+      </Col>
+      <Col xs={12} md={8} xl={6} style={{ marginBottom: 8 }}>
+        {heatersMetricsWidget}
+      </Col>
+      <Col xs={12} md={8} xl={6} style={{ marginBottom: 8 }}>
+        {garageDoorsStatusWidget}
+      </Col>
 
-        <Col xs={24} xl={12} style={{ marginBottom: 8 }}>
-          <SoftwareInfosCard infos={infos?.getSoftware()} />
-        </Col>
-        <Col xs={24} xl={12} style={{ marginBottom: 8 }}>
-          <FirmwareInfosCard infos={infos?.getFirmware()} />
-        </Col>
-        <Col xs={24} xl={12} style={{ marginBottom: 8 }}>
-          <ControllerStatsCard stats={infos?.getControllerStats()} />
-        </Col>
-      </Row>
-    </>
+      <Col xs={24} xl={12} style={{ marginBottom: 8 }}>
+        <SoftwareInfosCard infos={infos?.getSoftware()} />
+      </Col>
+      <Col xs={24} xl={12} style={{ marginBottom: 8 }}>
+        <FirmwareInfosCard infos={infos?.getFirmware()} />
+      </Col>
+      <Col xs={24} xl={12} style={{ marginBottom: 8 }}>
+        <ControllerStatsCard stats={infos?.getControllerStats()} />
+      </Col>
+    </Row>
   );
 }
 

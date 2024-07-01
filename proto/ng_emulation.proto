@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package ng.emulation;
+
+import "google/protobuf/empty.proto";
+
+service EmulationService {
+  rpc Get(google.protobuf.Empty) returns (Status) {}
+  rpc Set(Req) returns (Status) {}
+}
+
+message Status { bool feature_enabled = 1; }
+
+enum EmuEvent {
+  OUTDOOR_ALARM_CLEAR = 0;
+  OUTDOOR_ALARM_PRESENCE = 1;
+  OUTDOOR_ALARM_SABOTAGE = 2;
+}
+
+message Req { EmuEvent event = 1; }

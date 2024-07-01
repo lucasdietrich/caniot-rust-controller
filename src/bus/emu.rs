@@ -1,8 +1,11 @@
 use std::time::Duration;
 
-use crate::caniot::{
-    self,
-    emu::{self, emu_pool2_realistic_add_devices_to_iface},
+use crate::{
+    caniot::{
+        self,
+        emu::{self, emu_pool2_realistic_add_devices_to_iface},
+    },
+    grpcserver::EmuEvent,
 };
 
 use socketcan::CanDataFrame;
@@ -19,6 +22,18 @@ pub struct CanInterface {
 impl CanInterface {
     pub fn add_device(&mut self, device: emu::Device) {
         self.devices.push(device);
+    }
+
+    fn send_emu_event(&mut self, event: EmuEvent) {
+        for device in self.devices.iter_mut() {
+            device.handle_emu_event(event);
+
+            // Process the device immediately after having send the emulated event
+            // If a response is generated, it will be added to the to_recv_msgq
+            if let Some(req) = device.process(None) {
+                self.to_recv_msgq.push(req.into());
+            }
+        }
     }
 }
 
@@ -85,5 +100,19 @@ impl CanInterfaceTrait for CanInterface {
 
     fn get_stats(&self) -> CanStats {
         self.stats
+    }
+
+    fn ioctl(&mut self, cmd: u32, arg: u32) -> Result<(), CanInterfaceError> {
+        match cmd {
+            super::CAN_IOCTL_SEND_EMU_EVENT => {
+                let event = EmuEvent::try_from(arg as i32).unwrap_or_default();
+                self.send_emu_event(event)
+            }
+            cmd => {
+                error!("Unsupported ioctl command {}", cmd);
+            }
+        }
+
+        Ok(())
     }
 }

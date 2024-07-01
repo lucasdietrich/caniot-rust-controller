@@ -8,6 +8,7 @@ use crate::{
         emu::helpers::EmuXps,
         AsPayload, BoardClassCommand, Temperature,
     },
+    grpcserver::EmuEvent,
     utils::expirable::ExpirableTrait,
 };
 
@@ -92,9 +93,7 @@ impl Behavior for OutdoorAlarmController {
         None
     }
 
-    fn on_write_attribute(&mut self, _key: u16, _value: u32) -> Option<ct::ErrorCode> {
-        None
-    }
+    fn on_write_attribute(&mut self, key: u16, value: u32) -> Option<ct::ErrorCode> {}
 
     fn get_remaining_to_event_ms(&self) -> Option<u64> {
         [&self.lights[0], &self.lights[1], &self.siren]
@@ -104,10 +103,15 @@ impl Behavior for OutdoorAlarmController {
     }
 
     fn process(&mut self) -> Option<ct::Endpoint> {
+        // TODO improve this
         if self.lights[0].pulse_process().is_some()
             || self.lights[1].pulse_process().is_some()
             || self.siren.pulse_process().is_some()
         {
+            Some(ct::Endpoint::BoardControl)
+        } else if self.presence_sensors.iter().any(|&s| s) {
+            Some(ct::Endpoint::BoardControl)
+        } else if self.sabotage {
             Some(ct::Endpoint::BoardControl)
         } else {
             None
@@ -116,5 +120,25 @@ impl Behavior for OutdoorAlarmController {
 
     fn set_did(&mut self, _did: &ct::DeviceId) {
         // Do nothing
+    }
+
+    fn on_emu_event(&mut self, event: EmuEvent) -> bool {
+        match event {
+            EmuEvent::OutdoorAlarmClear => {
+                self.presence_sensors[0] = false;
+                self.presence_sensors[1] = false;
+                self.sabotage = false;
+            }
+            EmuEvent::OutdoorAlarmPresence => {
+                self.presence_sensors[0] = true;
+                self.presence_sensors[1] = true;
+            }
+            EmuEvent::OutdoorAlarmSabotage => {
+                self.sabotage = true;
+            }
+            _ => return false,
+        }
+
+        true
     }
 }

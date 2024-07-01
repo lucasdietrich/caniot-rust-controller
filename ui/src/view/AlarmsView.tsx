@@ -129,120 +129,109 @@ function AlarmsView({ refreshInterval = 5000, isMobile = false }: IAlarmsViewPro
   const outdoorAlarmSouthLight = outdoorAlarmState?.getDevice()?.getSouthLight();
 
   return (
-    <>
-      <Row gutter={16}>
-        <Col xl={14} xs={24} style={{ marginBottom: 16 }}>
-          <LoadableCard
-            title="Alarme extérieure"
-            status={undefined}
-            loading={loading}
-            onRefresh={() => {
-              setLoading(true);
-              setTime(Date.now());
-            }}
-          >
-            {outdoorSirenActive && (
-              // todo list detectors active
-              <Alert message={"Sirène extérieure active"} type="warning" showIcon />
-            )}
+    <Row gutter={16}>
+      <Col xl={14} xs={24} style={{ marginBottom: 16 }}>
+        <LoadableCard
+          title="Alarme extérieure"
+          status={undefined}
+          loading={loading}
+          onRefresh={() => {
+            setLoading(true);
+            setTime(Date.now());
+          }}
+        >
+          {outdoorSirenActive && (
+            // todo list detectors active
+            <Alert message={"Sirène extérieure active"} type="warning" showIcon />
+          )}
 
-            <List>
-              <List.Item>
-                <span style={{ fontWeight: "bold" }}>Lumières</span>
-              </List.Item>
+          <List>
+            <List.Item>
+              <span style={{ fontWeight: "bold" }}>Lumières</span>
+            </List.Item>
 
-              <ListGridItem label="Lumières" description="Lumières extérieures" isMobile={isMobile}>
-                <TwoStatesSelector
-                  disabledIfValueUndefined={false}
-                  onStateChange={onAllLightChange}
-                />
-              </ListGridItem>
+            <ListGridItem label="Lumières" description="Lumières extérieures" isMobile={isMobile}>
+              <TwoStatesSelector
+                disabledIfValueUndefined={false}
+                onStateChange={onAllLightChange}
+              />
+            </ListGridItem>
 
-              <ListGridItem
-                label={
-                  <Badge
-                    status={outdoorAlarmSouthLight ? "success" : "default"}
-                    text="Lum ext Sud"
-                  />
-                }
-                description="Lumière extérieure Sud"
-                isMobile={isMobile}
-              >
-                <TwoStatesSelector
-                  value={outdoorAlarmSouthLight}
-                  onStateChange={onSouthLightChange}
-                />
-              </ListGridItem>
+            <ListGridItem
+              label={
+                <Badge status={outdoorAlarmSouthLight ? "success" : "default"} text="Lum ext Sud" />
+              }
+              description="Lumière extérieure Sud"
+              isMobile={isMobile}
+            >
+              <TwoStatesSelector
+                value={outdoorAlarmSouthLight}
+                onStateChange={onSouthLightChange}
+              />
+            </ListGridItem>
 
-              <ListGridItem
-                label={
-                  <Badge
-                    status={outdoorAlarmEastLight ? "success" : "default"}
-                    text="Lum ext Est"
-                  />
-                }
-                description="Lumière extérieure Est"
-                isMobile={isMobile}
-              >
-                <TwoStatesSelector
-                  value={outdoorAlarmEastLight}
-                  onStateChange={onEastLightChange}
-                />
-              </ListGridItem>
-
-              <List.Item>
-                <span style={{ fontWeight: "bold" }}>Alarme</span>
-              </List.Item>
-
-              <ListGridItem
-                label="Sirène extérieure"
-                description="Sirène extérieure active"
-                isMobile={isMobile}
-              >
-                {outdoorSirenActive ? (
-                  <Button
-                    type="default"
-                    loading={outdoorSirenActive && sirenForceOffRequested}
-                    danger
-                    onClick={onSirenForceOff}
-                  >
-                    Désactiver
-                  </Button>
-                ) : (
-                  <Tag icon={<MinusCircleOutlined />} color="default">
-                    Sirène inactive
-                  </Tag>
-                )}
-              </ListGridItem>
-
-              <ListGridItem
-                label={
-                  <Badge
-                    status={outdoorAlarmEnabled ? "success" : "default"}
-                    text="Alarme extérieure"
-                  />
-                }
-                description="Active/désactive l'alarme extérieure"
-                isMobile={isMobile}
-              >
-                <TwoStatesSelector
-                  value={outdoorAlarmEnabled}
-                  toggleButton={false}
-                  onStateChange={onAlarmChange}
-                />
-              </ListGridItem>
-            </List>
+            <ListGridItem
+              label={
+                <Badge status={outdoorAlarmEastLight ? "success" : "default"} text="Lum ext Est" />
+              }
+              description="Lumière extérieure Est"
+              isMobile={isMobile}
+            >
+              <TwoStatesSelector value={outdoorAlarmEastLight} onStateChange={onEastLightChange} />
+            </ListGridItem>
 
             <List.Item>
-              <span style={{ fontWeight: "bold" }}>Alarme programmée</span>
+              <span style={{ fontWeight: "bold" }}>Alarme</span>
             </List.Item>
-          </LoadableCard>
-        </Col>
-        <Col xl={10} xs={24}>
-          <DeviceDetailsCard title="Alarme extérieure" device={outdoorAlarmDevice} />
-        </Col>
-      </Row>
-    </>
+
+            <ListGridItem
+              label="Sirène extérieure"
+              description="Sirène extérieure active"
+              isMobile={isMobile}
+            >
+              {outdoorSirenActive ? (
+                <Button
+                  type="default"
+                  loading={outdoorSirenActive && sirenForceOffRequested}
+                  danger
+                  onClick={onSirenForceOff}
+                >
+                  Désactiver
+                </Button>
+              ) : (
+                <Tag icon={<MinusCircleOutlined />} color="default">
+                  Sirène inactive
+                </Tag>
+              )}
+            </ListGridItem>
+
+            <ListGridItem
+              label={
+                <Badge
+                  status={outdoorAlarmEnabled ? "success" : "default"}
+                  text="Alarme extérieure"
+                />
+              }
+              description="Active/désactive l'alarme extérieure"
+              isMobile={isMobile}
+            >
+              <TwoStatesSelector
+                value={outdoorAlarmEnabled}
+                toggleButton={false}
+                onStateChange={onAlarmChange}
+              />
+            </ListGridItem>
+          </List>
+
+          <List.Item>
+            <span style={{ fontWeight: "bold" }}>Alarme programmée</span>
+          </List.Item>
+        </LoadableCard>
+      </Col>
+      <Col xl={10} xs={24}>
+        <DeviceDetailsCard title="Alarme extérieure" device={outdoorAlarmDevice} />
+      </Col>
+    </Row>
   );
 }
 

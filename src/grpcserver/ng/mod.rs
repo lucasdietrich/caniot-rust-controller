@@ -3,6 +3,7 @@ pub mod alarms_service;
 pub mod can_iface_service;
 pub mod controller_service;
 pub mod devices_service;
+pub mod emu_service;
 pub mod garage_service;
 pub mod heaters_service;
 pub mod helpers;
@@ -13,6 +14,7 @@ pub use alarms_service::*;
 pub use can_iface_service::*;
 pub use controller_service::*;
 pub use devices_service::*;
+pub use emu_service::*;
 pub use garage_service::*;
 pub use heaters_service::*;
 pub use internal_service::*;
@@ -47,8 +49,14 @@ mod model {
         tonic::include_proto!("ng.devices");
     }
 
+    pub mod emulation {
+        tonic::include_proto!("ng.emulation");
+    }
+
     #[cfg(any(feature = "grpc-can-iface-server", feature = "grpc-can-iface-client"))]
     pub mod can_iface {
         tonic::include_proto!("ng.can_iface");
     }
 }
+
+pub use model::emulation::EmuEvent;
