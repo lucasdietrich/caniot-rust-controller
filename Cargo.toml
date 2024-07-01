@@ -1,6 +1,6 @@
 [package]
 name = "caniot-controller"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 description = "CANIOT Rust Controller"
 homepage = "https://github.com/lucasdietrich/caniot-rust-controller.git"
@@ -24,7 +24,7 @@ emu-delay = []
 tokio = { version = "1.38.0", features = ["net"] }
 tokio-stream = { version = "0.1.15", optional = true }
 async-std = "1.12"
-async-trait = "0.1.74"
+async-trait = "0.1"
 async-stream = { version = "0.3.5", optional = true }
 futures = "0.3"
 futures-util = "0.3"
@@ -37,7 +37,7 @@ socketcan = { git = "https://github.com/socketcan-rs/socketcan-rs.git", rev = "c
 embedded-can = "0.4"
 
 # grpc
-tonic = "0.11"
+tonic = "0.11.0"
 tonic-web = "0.11"
 prost = "0.12"
 prost-types = "0.12"
@@ -46,24 +46,24 @@ prost-types = "0.12"
 sqlx = { version = "0.7.4", features = ["runtime-tokio", "macros", "postgres"] }
 
 # Webserver
-rocket = { version = "0.5.0-rc.1", features = ["json"] }
+rocket = { version = "0.5.1", features = ["json"] }
 
 # cli
-clap = { version = "4.5.4", features = ["derive"] }
+clap = { version = "4.5.8", features = ["derive"] }
 
 # serialization
-serde = { version = "1.0.188", features = ["derive"] }
-toml = "0.8.0"
+serde = { version = "1.0.203", features = ["derive"] }
+toml = "0.8"
 
 # logging
 env_logger = "0.10.2"
-log = "0.4.21"
+log = "0.4.22"
 
 # utils
 num = "0.4"
 num-derive = "0.4"
 num-traits = "0.2"
-thiserror = "1.0.61"
+thiserror = "1.0"
 itertools = "0.13"
 rand = "0.8"
 chrono = { version = "0.4", features = ["serde"] }
@@ -73,29 +73,29 @@ as-any = "0.3"
 [build-dependencies]
 tonic-build = { version = "0.11.0", features = ["prost"] }
 
-# [profile.release]
-# opt-level = 3
-# lto = false
-# codegen-units = 1
-# debug = false
-# strip = false            # "debuginfo"
-# debug-assertions = false
-# overflow-checks = false
-# panic = 'abort'          # might be 'abort'
-# incremental = false
-# rpath = false
-
 [profile.release]
-opt-level = "z"
+opt-level = 3
 lto = false
-codegen-units = 256
+codegen-units = 1
 debug = false
-strip = false           # "debuginfo"
-debug-assertions = true
-overflow-checks = true
-panic = 'abort'
-incremental = true
+strip = false            # "debuginfo"
+debug-assertions = false
+overflow-checks = false
+panic = 'abort'          # might be 'abort'
+incremental = false
 rpath = false
+
+# [profile.release]
+# opt-level = "z"
+# lto = false
+# codegen-units = 256
+# debug = false
+# strip = false           # "debuginfo"
+# debug-assertions = true
+# overflow-checks = true
+# panic = 'abort'
+# incremental = true
+# rpath = false
 
 [profile.dev]
 opt-level = 0

@@ -21,15 +21,17 @@ import {
   Settings,
 } from "@caniot-controller/caniot-api-grpc-web/api/ng_internal_pb";
 import internalStore from "./store/InternalStore";
+import sessionStore from "./store/SessionStore";
 
 const { Content, Sider } = Layout;
 
 const MobileMaxSize = 700;
 
 const App: React.FC = () => {
-  const [width, setWidth] = useState<number>(window.innerWidth);
   const [settings, setSettings] = useState<Settings | undefined>(undefined);
-  const [darkMode, setDarkMode] = useState(true);
+  const [width, setWidth] = useState<number>(window.innerWidth);
+  const [UIDarkMode, setUIDarkMode] = useState(false);
+  const [UIDebugMode, setUIDebugMode] = useState(false);
 
   function handleWindowSizeChange() {
     setWidth(window.innerWidth);
@@ -40,10 +42,11 @@ const App: React.FC = () => {
   useEffect(() => {
     window.addEventListener("resize", handleWindowSizeChange);
 
+    setUIDarkMode(sessionStore.getUIDarkMode() || false);
+    setUIDebugMode(sessionStore.getUIDebugMode() || false);
+
     internalStore.getSettings((resp) => {
       setSettings(resp);
-      setDarkMode(resp.getDarkMode());
-      console.log("Loaded settings", resp.toObject());
     });
 
     return () => {
@@ -52,26 +55,18 @@ const App: React.FC = () => {
   }, []);
 
   const onDarkModeChange = (checked: boolean) => {
-    let newSettings = new PartialSettings();
-    newSettings.setDarkMode(checked);
-    internalStore.setSettings(newSettings, (resp) => {
-      setSettings(resp);
-      setDarkMode(resp.getDarkMode());
-    });
+    setUIDarkMode(checked);
+    sessionStore.setUIDarkMode(checked);
   };
 
   const onDebugModeChange = (checked: boolean) => {
-    let newSettings = new PartialSettings();
-    newSettings.setDebugMode(checked);
-    internalStore.setSettings(newSettings, (resp) => {
-      setSettings(resp);
-    });
+    setUIDebugMode(checked);
+    sessionStore.setUIDebugMode(checked);
   };
 
   const onSettingsReset = () => {
     internalStore.resetSettings((resp) => {
       setSettings(resp);
-      setDarkMode(resp.getDarkMode());
     });
   };
 
@@ -86,7 +81,7 @@ const App: React.FC = () => {
     <ConfigProvider
       // change sizeXS
       theme={{
-        algorithm: darkMode ? theme.darkAlgorithm : theme.defaultAlgorithm,
+        algorithm: UIDarkMode ? theme.darkAlgorithm : theme.defaultAlgorithm,
         token: {
           // sizeXS: SizeXS,
         },
@@ -105,7 +100,7 @@ const App: React.FC = () => {
           collapsedWidth={SiderMobileWidth}
           width={SiderWidth}
         >
-          <AppMenu settings={settings} isMobile={isMobile} />
+          <AppMenu isMobile={isMobile} uiDebugMode={UIDebugMode} />
         </Sider>
         <Layout
           style={{
@@ -126,7 +121,7 @@ const App: React.FC = () => {
               <Route path="/" element={<Home isMobile={isMobile} />} />
               <Route path="/devices" element={<DevicesView />} />
               <Route path="/about" element={<About />} />
-              {settings?.getDebugMode() && <Route path="/debug" element={<Debug />} />}
+              {UIDebugMode && <Route path="/debug" element={<Debug />} />}
               <Route path="/devices/heaters" element={<HeatersView isMobile={isMobile} />} />
               <Route path="/devices/garage" element={<GarageDoorsView refreshInterval={1000} />} />
               <Route path="/devices/alarms" element={<AlarmsView isMobile={isMobile} />} />
@@ -135,6 +130,8 @@ const App: React.FC = () => {
                 element={
                   <SettingsView
                     settings={settings}
+                    UIDarkMode={UIDarkMode}
+                    UIDebugMode={UIDebugMode}
                     setDarkMode={onDarkModeChange}
                     setDebugMode={onDebugModeChange}
                     setSettingsReset={onSettingsReset}
