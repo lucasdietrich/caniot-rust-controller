@@ -20,15 +20,9 @@ service InternalService {
   rpc GetInfos(google.protobuf.Empty) returns (Infos) {}
 }
 
-message PartialSettings {
-  optional bool dark_mode = 1;
-  optional bool debug_mode = 2;
-}
+message PartialSettings { optional bool debug_mode = 2; }
 
-message Settings {
-  bool dark_mode = 1;
-  bool debug_mode = 2;
-}
+message Settings { bool debug_mode = 2; }
 
 message HelloRequest { string name = 1; }
 

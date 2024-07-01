@@ -91,11 +91,9 @@ impl InternalService for NgInternal {
 
         debug!("Reading settings");
 
-        let dark_mode = settings.read("dark_mode").await.unwrap_or(true);
         let debug_mode = settings.read("debug_mode").await.unwrap_or(false);
 
         Ok(Response::new(m::Settings {
-            dark_mode: dark_mode,
             debug_mode: debug_mode,
         }))
     }
@@ -111,10 +109,6 @@ impl InternalService for NgInternal {
         debug!("Writing settings");
 
         let mut success = true;
-
-        if let Some(dark_mode) = partial_settings.dark_mode {
-            success &= settings.set("dark_mode", &dark_mode).await.is_ok();
-        }
 
         if let Some(debug_mode) = partial_settings.debug_mode {
             success &= settings.set("debug_mode", &debug_mode).await.is_ok();
@@ -134,7 +128,6 @@ impl InternalService for NgInternal {
         debug!("Resetting settings");
 
         let mut success = true;
-        success &= settings.set("dark_mode", &true).await.is_ok();
         success &= settings.set("debug_mode", &false).await.is_ok();
 
         if success {

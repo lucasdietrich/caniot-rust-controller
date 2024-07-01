@@ -13,6 +13,9 @@ import ListGridItem from "../components/ListGridItem";
 interface ISettingsProps {
   settings?: Settings;
 
+  UIDarkMode?: boolean;
+  UIDebugMode?: boolean;
+
   setDarkMode?: (darkMode: boolean) => void;
   setDebugMode?: (debugMode: boolean) => void;
   setSettingsReset?: () => void;
@@ -20,25 +23,13 @@ interface ISettingsProps {
 
 function SettingsView({
   settings,
+  UIDarkMode = false,
+  UIDebugMode = false,
   setDarkMode = () => {},
   setDebugMode = () => {},
   setSettingsReset = () => {},
 }: ISettingsProps) {
   const loading = settings === undefined;
-
-  const onDebugModeChange = (checked: boolean) => {
-    // let newSettings = new Settings();
-    // newSettings.setDebugMode(checked);
-    // updateSettings(newSettings);
-    setDebugMode(checked);
-  };
-
-  const onDarkModeChange = (checked: boolean) => {
-    // let newSettings = new Settings();
-    // newSettings.setDarkMode(checked);
-    // updateSettings(newSettings);
-    setDarkMode(checked);
-  };
 
   return (
     <Row gutter={24}>
@@ -47,14 +38,17 @@ function SettingsView({
         <LoadableCard title="Settings" loading={loading}>
           <List>
             <List.Item>
-              <span style={{ fontWeight: "bold" }}>Général</span>
+              <span style={{ fontWeight: "bold" }}>Général (UI)</span>
             </List.Item>
             <ListGridItem label="Debug" description="Active le mode de debug">
-              <Switch checked={settings?.getDebugMode()} onChange={onDebugModeChange} />
+              <Switch checked={UIDebugMode} onChange={setDebugMode} />
             </ListGridItem>
             <ListGridItem label="Mode nuit" description="Active le dark mode">
-              <Switch checked={settings?.getDarkMode()} onChange={onDarkModeChange} />
+              <Switch checked={UIDarkMode} onChange={setDarkMode} />
             </ListGridItem>
+            <List.Item>
+              <span style={{ fontWeight: "bold" }}>Général (contrôleur)</span>
+            </List.Item>
             <ListGridItem
               label="Actif si"
               description="Temps jusqu'auquel un capteur est considéré actif"

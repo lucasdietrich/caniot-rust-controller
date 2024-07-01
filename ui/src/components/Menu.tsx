@@ -14,11 +14,11 @@ import { MdOutlineGarage } from "react-icons/md";
 import { LiaTemperatureLowSolid } from "react-icons/lia";
 
 interface IMenuProps {
-  settings?: Settings;
   isMobile?: boolean;
+  uiDebugMode?: boolean;
 }
 
-function AppMenu({ settings, isMobile = false }: IMenuProps) {
+function AppMenu({ isMobile = false, uiDebugMode = false }: IMenuProps) {
   // Disable the tooltip for now
   const titleTooltipEnable = "";
 
@@ -55,7 +55,7 @@ function AppMenu({ settings, isMobile = false }: IMenuProps) {
     },
   ];
 
-  if (settings?.getDebugMode()) {
+  if (uiDebugMode) {
     menuItems.push({
       key: "misc",
       icon: <PlusOutlined />,
