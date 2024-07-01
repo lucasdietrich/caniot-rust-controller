@@ -8,6 +8,12 @@ format:
 build: ui
 	cargo build --features "emu","emu-delay"
 
+test:
+	cargo test
+
+test_emu:
+	cargo test --features "emu"
+
 clippy:
 	cargo clippy -- -D warnings
 

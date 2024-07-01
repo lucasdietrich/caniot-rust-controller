@@ -104,6 +104,8 @@ Run with
 - Try to get rid of the `handle_action_result()` method, find a way to merge it with `handle_action()`
 - Allow to use a remote controller as a can interface (Hardware in the loop), using the GRPC API
 - Compute stats based on measures (today min, max, last and a curve showing the trend)
+- treat the case where the process() function of a device controller sends a frame for which the response trigger a new process() call, leading to a infinite loop
+- improve call of process() in emulated devices
 
 ```
 device_temperature{medium="CAN",mac="16",device="GarageDoorController",sensor="EMBEDDED",room="",collector="pycaniotcontroller"} 19.00

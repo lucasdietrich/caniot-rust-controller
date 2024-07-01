@@ -7,8 +7,8 @@ use tokio::sync::{mpsc, oneshot};
 
 use crate::{
     bus::CanStats,
-    caniot::{self as ct},
-    caniot::{self, DeviceId},
+    caniot::{self as ct, DeviceId},
+    grpcserver::EmuEvent,
 };
 use serde::Serialize;
 
@@ -44,12 +44,12 @@ pub enum ControllerMessage {
         respond_to: oneshot::Sender<Vec<DeviceInfos>>,
     },
     Query {
-        query: caniot::Request,
+        query: ct::Request,
         timeout_ms: Option<u32>,
 
         // If Some, the controller will respond to the sender with the result of the query.
         // If None, the controller will send the query and not wait for a response.
-        respond_to: Option<oneshot::Sender<Result<caniot::Response, ControllerError>>>,
+        respond_to: Option<oneshot::Sender<Result<ct::Response, ControllerError>>>,
     },
     DeviceAction {
         did: Option<DeviceId>,
@@ -63,6 +63,8 @@ pub enum ControllerMessage {
         tx_queue: mpsc::Receiver<CanDataFrame>, // Messages to sent to the bus
         respond_to: oneshot::Sender<Result<(), ControllerError>>,
     },
+    #[cfg(feature = "emu")]
+    EmulationEvent { event: EmuEvent },
 }
 
 #[derive(Debug, Clone)]
@@ -72,7 +74,7 @@ pub struct ControllerHandle {
 
 #[derive(Debug, Clone, Serialize)]
 pub struct DeviceStatsEntry {
-    pub did: caniot::DeviceId,
+    pub did: ct::DeviceId,
     pub last_seen: Option<DateTime<Utc>>,
     pub stats: DeviceStats,
 }
@@ -187,5 +189,14 @@ impl ControllerHandle {
             _ => panic!("Unexpected DeviceActionResult variant"),
         }
         // Err(ControllerError::NotImplemented)
+    }
+
+    #[cfg(feature = "emu")]
+    pub async fn send_emulation_event(&self, event: EmuEvent) {
+        debug!("Sending emulation event to controller: {:?}", event);
+        self.sender
+            .send(ControllerMessage::EmulationEvent { event })
+            .await
+            .expect("Failed to send emulation event to controller");
     }
 }

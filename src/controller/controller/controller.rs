@@ -7,7 +7,7 @@ use itertools::{partition, Itertools};
 use socketcan::CanDataFrame;
 use tokio::sync::oneshot::Sender;
 
-use crate::bus::{CanInterfaceError, CanInterfaceTrait};
+use crate::bus::{CanInterfaceError, CanInterfaceTrait, CAN_IOCTL_SEND_EMU_EVENT};
 use crate::caniot::{self, Frame, RequestData};
 use crate::caniot::{DeviceId, Request};
 use crate::controller::handle::{ControllerMessage, DeviceFilter};
@@ -555,6 +555,10 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
                     .map_err(Into::into);
                 let _ = respond_to.send(result);
             }
+            #[cfg(feature = "emu")]
+            ControllerMessage::EmulationEvent { event } => self
+                .iface
+                .ioctl(CAN_IOCTL_SEND_EMU_EVENT, Into::<i32>::into(event) as u32)?,
         }
 
         Ok(())

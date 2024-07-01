@@ -22,6 +22,7 @@ import {
 } from "@caniot-controller/caniot-api-grpc-web/api/ng_internal_pb";
 import internalStore from "./store/InternalStore";
 import sessionStore from "./store/SessionStore";
+import EmulationView from "./view/EmulationView";
 
 const { Content, Sider } = Layout;
 
@@ -139,6 +140,7 @@ const App: React.FC = () => {
                 }
               />
               <Route path="/demo" element={<DemoView />} />
+              <Route path="/emulation" element={<EmulationView isMobile={isMobile} />} />
               <Route path="*" element={<NoMatch />} />
             </Routes>
           </Content>

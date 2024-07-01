@@ -123,7 +123,14 @@ pub struct Command {
     pub crl2: Xps,
 }
 
-impl ClassCommandTrait for Command {}
+impl ClassCommandTrait for Command {
+    fn has_effect(&self) -> bool {
+        self.coc1 != Xps::None
+            || self.coc2 != Xps::None
+            || self.crl1 != Xps::None
+            || self.crl2 != Xps::None
+    }
+}
 
 impl Into<Payload<ClCd>> for Command {
     fn into(self) -> Payload<ClCd> {

@@ -43,4 +43,7 @@ pub trait ClassCommandTrait: AsPayload<ClCd> + Default + Clone {
             payload: self.to_payload().into(),
         }
     }
+
+    // Returns whether the command actually does something, i.e. sending the command has an effect on the device.
+    fn has_effect(&self) -> bool;
 }
