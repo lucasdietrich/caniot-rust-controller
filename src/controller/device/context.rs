@@ -5,13 +5,20 @@ use chrono::{DateTime, Utc};
 #[derive(Clone, Default, Debug)]
 pub struct ProcessContext {
     // Received frame timestamp
-    // pub received_at: DateTime<Utc>,
+    pub received_at: DateTime<Utc>,
 
     // Time to wait before processing the device again
     pub next_process: Option<Duration>,
 }
 
 impl ProcessContext {
+    pub fn new(received_at: DateTime<Utc>) -> Self {
+        ProcessContext {
+            received_at,
+            ..Default::default()
+        }
+    }
+
     pub fn reset(&mut self) {
         self.next_process = None;
     }

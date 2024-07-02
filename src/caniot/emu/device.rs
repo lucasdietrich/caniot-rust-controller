@@ -1,5 +1,7 @@
 use std::time::{Duration, Instant};
 
+use chrono::Utc;
+
 use crate::{
     caniot::{self, Attribute, DeviceId, Endpoint, ErrorCode, Payload},
     grpcserver::EmuRequest,
@@ -267,6 +269,7 @@ impl Device {
         .map(|data| caniot::Response {
             device_id: self.did,
             data,
+            timestamp: Utc::now(),
         })
     }
 

@@ -22,31 +22,19 @@ pub fn build_command_request_data(endpoint: Endpoint, payload: Vec<u8>) -> Reque
 }
 
 pub fn build_telemetry_request(device_id: DeviceId, endpoint: Endpoint) -> Request {
-    Request {
-        device_id,
-        data: build_telemetry_request_data(endpoint),
-    }
+    Request::new(device_id, build_telemetry_request_data(endpoint))
 }
 
 pub fn build_attribute_read_request(device_id: DeviceId, key: u16) -> Request {
-    Request {
-        device_id,
-        data: build_attribute_read_request_data(key),
-    }
+    Request::new(device_id, build_attribute_read_request_data(key))
 }
 
 pub fn build_attribute_write_request(device_id: DeviceId, key: u16, value: u32) -> Request {
-    Request {
-        device_id,
-        data: build_attribute_write_request_data(key, value),
-    }
+    Request::new(device_id, build_attribute_write_request_data(key, value))
 }
 
 pub fn build_command_request(device_id: DeviceId, endpoint: Endpoint, payload: Vec<u8>) -> Request {
-    Request {
-        device_id,
-        data: build_command_request_data(endpoint, payload),
-    }
+    Request::new(device_id, build_command_request_data(endpoint, payload))
 }
 
 #[derive(Debug, Clone)]

@@ -1,6 +1,7 @@
 use core::fmt;
 use std::fmt::Debug;
 
+use chrono::{DateTime, Utc};
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 
@@ -138,6 +139,9 @@ where
 {
     pub device_id: DeviceId,
     pub data: T,
+
+    // Optional timestamp for the frame
+    pub timestamp: DateTime<Utc>,
 }
 
 impl<T> Frame<T>
@@ -145,7 +149,11 @@ where
     T: Serialize + Clone,
 {
     pub fn new(device_id: DeviceId, data: T) -> Self {
-        Self { device_id, data }
+        Self {
+            device_id,
+            data,
+            timestamp: Utc::now(),
+        }
     }
 
     pub fn into_data(self) -> T {
@@ -441,6 +449,7 @@ impl TryFrom<CanDataFrame> for Frame<ResponseData> {
         Ok(Frame {
             device_id: id.device_id,
             data,
+            timestamp: Utc::now(),
         })
     }
 }
@@ -490,6 +499,7 @@ impl TryFrom<CanDataFrame> for Frame<RequestData> {
         Ok(Frame {
             device_id: id.device_id,
             data,
+            timestamp: Utc::now(),
         })
     }
 }

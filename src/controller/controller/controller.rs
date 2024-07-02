@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use std::time::Duration;
 
+use chrono::Utc;
 use itertools::{partition, Itertools};
 
 use socketcan::CanDataFrame;
@@ -271,7 +272,7 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
         let device_did = frame.device_id;
         let device = Self::device_get_or_create(&mut self.devices, device_did);
 
-        let mut device_context = ProcessContext::default();
+        let mut device_context = ProcessContext::new(frame.timestamp);
 
         // Let the device handle the frame
         let verdict = device.handle_frame(&frame.data, &None, &mut device_context)?;
@@ -376,6 +377,7 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
                     match caniot::Response::try_from(frame) {
                         Ok(frame) => {
                             info!("RX {}", frame);
+
                             let result = self.handle_caniot_frame(frame).await;
                             if let Err(err) = result {
                                 error!("Failed to handle CANIOT frame {}", err);
