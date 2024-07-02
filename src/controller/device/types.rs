@@ -18,4 +18,6 @@ pub enum DeviceError {
     AlreadyPendingAction,
     #[error("Protocol error")]
     ProtocolError(#[from] caniot::ProtocolError),
+    #[error("Action rejected {0}")]
+    ActionRejected(String),
 }

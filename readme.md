@@ -106,6 +106,8 @@ Run with
 - Compute stats based on measures (today min, max, last and a curve showing the trend)
 - treat the case where the process() function of a device controller sends a frame for which the response trigger a new process() call, leading to a infinite loop
 - improve call of process() in emulated devices
+- event/log system
+- timestamp received can frames
 
 ```
 device_temperature{medium="CAN",mac="16",device="GarageDoorController",sensor="EMBEDDED",room="",collector="pycaniotcontroller"} 19.00

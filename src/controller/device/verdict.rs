@@ -16,6 +16,7 @@ pub enum Verdict {
 pub enum ActionVerdict<A: ActionTrait> {
     ActionResult(A::Result),
     ActionPendingOn(RequestData),
+    ActionRejected(String), // Reason for rejection
 }
 
 impl ActionVerdict<DeviceAction> {
@@ -28,6 +29,7 @@ impl ActionVerdict<DeviceAction> {
             ActionVerdictWrapper::PendingActionOnRequest(request) => {
                 ActionVerdict::ActionPendingOn(request)
             }
+            ActionVerdictWrapper::ActionRejected(reason) => ActionVerdict::ActionRejected(reason),
         }
     }
 }
@@ -50,6 +52,7 @@ impl<A> ActionResultTrait for ActionVerdict<A> where A: ActionTrait {}
 pub enum ActionVerdictWrapper {
     ActionResult(Box<dyn ActionResultTrait>),
     PendingActionOnRequest(RequestData),
+    ActionRejected(String),
 }
 
 impl<A> From<ActionVerdict<A>> for ActionVerdictWrapper
@@ -64,6 +67,7 @@ where
             ActionVerdict::ActionPendingOn(request) => {
                 ActionVerdictWrapper::PendingActionOnRequest(request)
             }
+            ActionVerdict::ActionRejected(reason) => ActionVerdictWrapper::ActionRejected(reason),
         }
     }
 }

@@ -32,12 +32,12 @@ impl NgAlarms {
     fn alarms_state_to_proto(&self, state: &AlarmControllerState) -> m::OutdoorAlarmState {
         m::OutdoorAlarmState {
             device: Some(m::OutdoorAlarmDeviceState {
-                east_light: state.device.lights[0],
-                south_light: state.device.lights[1],
-                east_detector: state.device.detectors[0],
-                south_detector: state.device.detectors[1],
-                siren_active: state.device.siren,
-                sabotage: state.device.sabotage,
+                east_light: state.ios.lights[0],
+                south_light: state.ios.lights[1],
+                east_detector: state.ios.detectors[0],
+                south_detector: state.ios.detectors[1],
+                siren_active: state.ios.siren,
+                sabotage: state.ios.sabotage,
             }),
             enabled: state.alarm_enabled,
             ..Default::default()

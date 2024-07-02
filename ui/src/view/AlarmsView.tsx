@@ -15,6 +15,7 @@ import {
 } from "@caniot-controller/caniot-api-grpc-web/api/ng_alarms_pb";
 import alarmsStore from "../store/AlarmsStore";
 import { MinusCircleOutlined, SyncOutlined } from "@ant-design/icons";
+import DeviceAlert from "../components/DeviceAlert";
 
 interface IAlarmsViewProps {
   refreshInterval?: number;
@@ -53,13 +54,20 @@ function AlarmsView({ refreshInterval = 5000, isMobile = false }: IAlarmsViewPro
   }
 
   const sendAlarmCommand = (command: OutdoorAlarmCommand) => {
-    alarmsStore.sendOutdoorAlarmCommand(command, (resp) => {
-      setOutdoorAlarmState(resp);
-      devicesStore.getOutdoorAlarmDevice((resp: Device) => {
-        setOutdoorAlarmDevice(resp);
+    alarmsStore.sendOutdoorAlarmCommand(
+      command,
+      (resp) => {
+        setOutdoorAlarmState(resp);
+        devicesStore.getOutdoorAlarmDevice((resp: Device) => {
+          setOutdoorAlarmDevice(resp);
+          setLoading(false);
+          setSirenForceOffRequested(false);
+        });
+      },
+      (err) => {
         setLoading(false);
-      });
-    });
+      }
+    );
   };
 
   const handleLightAction = (light: Light, tsCmd: TwoStateCommand) => {
@@ -140,10 +148,7 @@ function AlarmsView({ refreshInterval = 5000, isMobile = false }: IAlarmsViewPro
             setTime(Date.now());
           }}
         >
-          {outdoorSirenActive && (
-            // todo list detectors active
-            <Alert message={"Sirène extérieure active"} type="warning" showIcon />
-          )}
+          <DeviceAlert alert={outdoorAlarmDevice?.getActiveAlert()} />
 
           <List>
             <List.Item>

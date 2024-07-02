@@ -12,8 +12,8 @@ use crate::{
     utils::expirable::ExpirableTrait,
 };
 
-const LIGHTS_PULSE_DURATION: Duration = Duration::from_secs(20);
-const SIREN_PULSE_DURATION: Duration = Duration::from_secs(10);
+const LIGHTS_PULSE_DURATION: Duration = Duration::from_secs(30);
+const SIREN_PULSE_DURATION: Duration = Duration::from_secs(20);
 
 #[derive(Default)]
 pub struct OutdoorAlarmController {
@@ -83,6 +83,10 @@ impl Behavior for OutdoorAlarmController {
                 Temperature::INVALID,
             ];
 
+            // Reset detector after sending telemetry as it is a one-shot event
+            self.presence_sensors[0] = false;
+            self.presence_sensors[1] = false;
+
             Some(telemetry.to_raw_vec())
         } else {
             None
@@ -98,18 +102,11 @@ impl Behavior for OutdoorAlarmController {
 
     fn process(&mut self) -> Option<ct::Endpoint> {
         // TODO improve this
-        if self.lights[0].pulse_process().is_some()
-            || self.lights[1].pulse_process().is_some()
-            || self.siren.pulse_process().is_some()
-        {
-            Some(ct::Endpoint::BoardControl)
-        } else if self.presence_sensors.iter().any(|&s| s) {
-            Some(ct::Endpoint::BoardControl)
-        } else if self.sabotage {
-            Some(ct::Endpoint::BoardControl)
-        } else {
-            None
-        }
+        self.lights[0].pulse_process();
+        self.lights[1].pulse_process();
+        self.siren.pulse_process();
+
+        Some(ct::Endpoint::BoardControl)
     }
 
     fn set_did(&mut self, _did: &ct::DeviceId) {

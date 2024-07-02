@@ -25,13 +25,16 @@ impl EmulationService for NgEmulation {
     }
 
     async fn set(&self, req: Request<m::Req>) -> Result<Response<m::Status>, Status> {
-        let req = req.into_inner();
-        let event = m::EmuRequest::try_from(req.event).unwrap_or_default();
-        self.shared
-            .controller_handle
-            .clone()
-            .send_emulation_event(event)
-            .await;
+        #[cfg(feature = "emu")]
+        {
+            let req = req.into_inner();
+            let event = m::EmuRequest::try_from(req.event).unwrap_or_default();
+            self.shared
+                .controller_handle
+                .clone()
+                .send_emulation_event(event)
+                .await;
+        }
 
         Ok(Response::new(get_status()))
     }

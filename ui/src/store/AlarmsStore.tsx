@@ -8,6 +8,7 @@ import {
   OutdoorAlarmCommand,
   OutdoorAlarmState,
 } from "@caniot-controller/caniot-api-grpc-web/api/ng_alarms_pb";
+import { RpcError } from "grpc-web";
 
 class AlarmsStore extends EventEmitter {
   client: AlarmsServiceClient;
@@ -32,10 +33,12 @@ class AlarmsStore extends EventEmitter {
 
   sendOutdoorAlarmCommand = (
     req: OutdoorAlarmCommand,
-    callbackFunc: (resp: OutdoorAlarmState) => void
+    callbackFunc: (resp: OutdoorAlarmState) => void,
+    errCallbackFunc: (err: RpcError) => void
   ) => {
     this.client.sendOutdoorAlarmCommand(req, null, (err, resp) => {
       if (err !== null) {
+        errCallbackFunc(err);
         HandleError(err);
         return;
       }

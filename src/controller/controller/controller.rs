@@ -495,16 +495,18 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
         match device.handle_action(&action, &mut device_context) {
             Ok(verdict) => {
                 device.schedule_next_process_in(device_context.next_process);
-                let did = device.did;
-                let result_or_pending = match verdict {
+                match verdict {
                     ActionVerdict::ActionPendingOn(request) => {
-                        let request = Request::new(did, request);
-                        ActionResultOrPending::Pending(action, request)
+                        let request = Request::new(device.did, request);
+                        Ok(ActionResultOrPending::Pending(action, request))
                     }
-                    ActionVerdict::ActionResult(result) => ActionResultOrPending::Result(result),
-                };
-
-                Ok(result_or_pending)
+                    ActionVerdict::ActionResult(result) => {
+                        Ok(ActionResultOrPending::Result(result))
+                    }
+                    ActionVerdict::ActionRejected(reason) => {
+                        Err(DeviceError::ActionRejected(reason))
+                    }
+                }
             }
             Err(err) => Err(err),
         }

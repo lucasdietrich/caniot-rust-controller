@@ -1,6 +1,7 @@
-use chrono::{DateTime, Duration, NaiveTime, Timelike, Utc};
-use log::{debug, info, warn};
+use chrono::{DateTime, Duration, Local, NaiveTime, Timelike, Utc};
+use log::{debug, info, kv::Value, warn};
 
+use super::actions::{Action, AlarmEnable};
 use crate::{
     caniot::{self, traits::ClassCommandTrait, RequestData, Response, Xps},
     controller::{
@@ -9,25 +10,42 @@ use crate::{
         ActionResultTrait, ActionTrait, ActionVerdict, DeviceControllerInfos,
         DeviceControllerTrait, DeviceError, ProcessContext, Verdict,
     },
+    utils::monitorable::{MonitorableResultTrait, MonitorableTrait, ValueMonitor},
 };
-
-use super::actions::{Action, AlarmEnable};
 
 #[derive(Debug, Clone, Default)]
 pub struct AlarmContext {
-    pub state: AlarmEnable,
+    pub state: ValueMonitor<AlarmEnable>,
 
-    pub last_siren_activation: Option<DateTime<Utc>>,
+    pub last_siren_activation: Option<DateTime<Local>>,
     pub siren_triggered_count: u32,
+
+    pub south_detector: ValueMonitor<bool>,
+    pub east_detector: ValueMonitor<bool>,
+    pub sabotage: ValueMonitor<bool>,
 }
 
 impl AlarmContext {
-    pub fn set_enable(&mut self, state: &AlarmEnable) {
-        self.state = state.clone();
+    pub fn set_enable(&mut self, state: &AlarmEnable) -> Option<AlarmEnable> {
+        self.state.update(state.clone())
     }
 
     pub fn is_armed(&self) -> bool {
-        matches!(self.state, AlarmEnable::Armed)
+        matches!(self.state.as_ref(), AlarmEnable::Armed)
+    }
+}
+
+impl MonitorableResultTrait for Option<AlarmEnable> {
+    fn has_changed(&self) -> bool {
+        self.is_some()
+    }
+
+    fn is_falling(&self) -> bool {
+        matches!(self, Some(AlarmEnable::Armed))
+    }
+
+    fn is_rising(&self) -> bool {
+        matches!(self, Some(AlarmEnable::Disarmed))
     }
 }
 
@@ -39,7 +57,7 @@ pub struct NightLightsContext {
     pub auto: bool,
 
     // Range of time where the lights are automatically turned on
-    pub auto_range: [NaiveTime; 2], // Start, stop
+    pub auto_range: [NaiveTime; 2], // lower bound, upper bound
 
     // Desired duration for the lights to stay on when presence is detected
     pub desired_duration: Duration,
@@ -69,26 +87,24 @@ impl NightLightsContext {
             return false;
         }
 
-        let start = self.auto_range[0];
-        let stop = self.auto_range[1];
-
-        if start < stop {
-            now >= &start && now < &stop
+        let [lower_b, upper_b] = self.auto_range;
+        if lower_b < upper_b {
+            now >= &lower_b && now < &upper_b
         } else {
-            now >= &start || now < &stop
+            now >= &lower_b || now < &upper_b
         }
     }
 }
 
 #[derive(Debug, Clone, Default)]
-pub struct DeviceState {
+pub struct DeviceIOState {
     pub siren: bool,          // true if siren is on
     pub detectors: [bool; 2], // east, south (true if presence detected)
     pub lights: [bool; 2],    // east, south (true if lights are on)
     pub sabotage: bool,       // false if sabotage detected
 }
 
-impl DeviceState {
+impl DeviceIOState {
     pub fn is_siren_on(&self) -> bool {
         self.siren
     }
@@ -104,7 +120,7 @@ impl DeviceState {
 
 #[derive(Debug, Clone, Default)]
 pub struct AlarmController {
-    pub device: DeviceState,
+    pub ios: DeviceIOState,
 
     pub alarm: AlarmContext,
     pub night_lights: NightLightsContext,
@@ -112,7 +128,7 @@ pub struct AlarmController {
 
 #[derive(Debug, Clone)]
 pub struct AlarmControllerState {
-    pub device: DeviceState,
+    pub ios: DeviceIOState,
 
     pub alarm_enabled: bool,
 }
@@ -129,47 +145,60 @@ impl AlarmController {
     /// Returns:
     ///
     /// Returns `request_data` if a request should be sent to the device.
-    pub fn update_state(&mut self, new_state: &DeviceState) -> Option<RequestData> {
-        self.device = new_state.clone();
+    pub fn update_state(&mut self, new_state: DeviceIOState) -> Option<RequestData> {
+        self.ios = new_state;
+
         let mut command = OutdoorAlarmCommand::default();
 
-        if self.device.is_presence_detected() {
+        let (south_detector_result, east_detector_result, sabotage_result) = (
+            self.alarm.south_detector.update(self.ios.detectors[0]),
+            self.alarm.east_detector.update(self.ios.detectors[1]),
+            self.alarm.sabotage.update(self.ios.sabotage),
+        );
+
+        let now = Local::now();
+        let mut trigger_siren = false;
+
+        let detector_triggered =
+            south_detector_result.is_rising() || east_detector_result.is_rising();
+        let sabotage_triggered = sabotage_result.is_rising();
+
+        if detector_triggered {
             info!("Presence detected");
-
-            let now = Utc::now();
-
             if self.night_lights.is_active(&now.time()) {
                 info!("Lights turned on");
                 command.set_east_light(Xps::PulseOn);
                 command.set_south_light(Xps::PulseOn);
             }
-
             if self.alarm.is_armed() {
                 warn!("Presence detected while alarm is armed, activating siren");
-                command.set_siren(Xps::PulseOn);
-                command.set_east_light(Xps::PulseOn);
-                command.set_south_light(Xps::PulseOn);
-                self.alarm.last_siren_activation = Some(now);
-                self.alarm.siren_triggered_count += 1;
+                trigger_siren = true;
             }
-        } else if self.device.is_sabotage_detected() {
-            warn!("Sabotage detected on the outdoor alarm");
-            let mut command = OutdoorAlarmCommand::default();
-            command.set_siren(Xps::PulseOn);
         }
 
-        // If command has an actual effect, send it to the device
-        if command.has_effect() {
-            Some(command.into_request())
-        } else {
-            None
+        if sabotage_triggered {
+            warn!("Sabotage detected on the outdoor alarm");
+            if self.alarm.is_armed() {
+                warn!("Sabotage detected while alarm is armed, activating siren");
+                trigger_siren = true;
+            }
         }
+
+        if trigger_siren {
+            command.set_siren(Xps::PulseOn);
+            command.set_east_light(Xps::PulseOn);
+            command.set_south_light(Xps::PulseOn);
+            self.alarm.last_siren_activation = Some(now);
+            self.alarm.siren_triggered_count += 1;
+        }
+
+        command.has_effect().then(|| command.into_request())
     }
 
     /// Returns the current state of the device.
     pub fn get_state(&self) -> AlarmControllerState {
         AlarmControllerState {
-            device: self.device.clone(),
+            ios: self.ios.clone(),
             alarm_enabled: self.alarm.is_armed(),
         }
     }
@@ -187,8 +216,16 @@ impl DeviceControllerTrait for AlarmController {
     }
 
     fn get_alert(&self) -> Option<DeviceAlert> {
-        if self.alarm.is_armed() {
-            Some(DeviceAlert::new_ok("Alarme extérieure activée"))
+        if self.ios.is_siren_on() {
+            Some(DeviceAlert::new_warning(
+                "Sirene d'alarme extérieure active",
+            ))
+        } else if *self.alarm.sabotage {
+            Some(DeviceAlert::new_error(
+                "Sabotage d'alarme (extérieure) détecté",
+            ))
+        } else if self.alarm.is_armed() {
+            Some(DeviceAlert::new_ok("Alarme extérieure active"))
         } else {
             None
         }
@@ -199,12 +236,22 @@ impl DeviceControllerTrait for AlarmController {
         action: &Self::Action,
         _ctx: &mut ProcessContext,
     ) -> Result<ActionVerdict<Self::Action>, DeviceError> {
-        debug!("Handling action: {:?}", action);
-
         match action {
             Action::GetStatus => {}
             Action::SetAlarm(state) => {
-                self.alarm.set_enable(state);
+                let set_alarm_result = self.alarm.set_enable(state);
+                if set_alarm_result.is_falling() {
+                    let mut command = OutdoorAlarmCommand::default();
+                    command.set_siren(Xps::Reset);
+                    return Ok(ActionVerdict::ActionPendingOn(command.into_request()));
+                } else if set_alarm_result.is_rising() {
+                    if self.ios.sabotage {
+                        self.alarm.set_enable(&AlarmEnable::Disarmed);
+                        return Ok(ActionVerdict::ActionRejected(
+                            "Cannot arm alarm while sabotage detected".to_string(),
+                        ));
+                    }
+                }
             }
             Action::SetLights(action) => {
                 let mut command = OutdoorAlarmCommand::default();
@@ -234,24 +281,21 @@ impl DeviceControllerTrait for AlarmController {
         _frame: &caniot::ResponseData,
         as_class_blc: &Option<crate::caniot::BoardClassTelemetry>,
         ctx: &mut ProcessContext,
-    ) -> Result<crate::controller::Verdict, DeviceError> {
-        match as_class_blc {
-            Some(caniot::BoardClassTelemetry::Class0(telemetry)) => {
-                let new_state = DeviceState {
-                    siren: telemetry.rl1,
-                    detectors: [telemetry.in1, telemetry.in2],
-                    lights: [telemetry.oc1, telemetry.oc2],
-                    sabotage: telemetry.in4,
-                };
+    ) -> Result<Verdict, DeviceError> {
+        if let Some(caniot::BoardClassTelemetry::Class0(telemetry)) = as_class_blc {
+            let new_state = DeviceIOState {
+                siren: telemetry.rl1,
+                detectors: [telemetry.in1, telemetry.in2],
+                lights: [telemetry.oc1, telemetry.oc2],
+                sabotage: telemetry.in4,
+            };
 
-                if let Some(req) = self.update_state(&new_state) {
-                    Ok(Verdict::Request(req))
-                } else {
-                    Ok(Verdict::default())
-                }
-            }
-            _ => Ok(Verdict::default()),
+            return Ok(self
+                .update_state(new_state)
+                .map(Verdict::Request)
+                .unwrap_or_default());
         }
+        Ok(Verdict::default())
     }
 
     fn handle_action_result(

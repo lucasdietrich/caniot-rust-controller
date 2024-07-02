@@ -11,6 +11,7 @@ pub fn init_logger() {
     modules.insert("caniot_rust_controller", log::LevelFilter::Debug);
     modules.insert("hyper", log::LevelFilter::Info);
     modules.insert("sqlx", log::LevelFilter::Info);
+    modules.insert("caniot_controller::utils::emu", log::LevelFilter::Error);
 
     let mut builder = env_logger::builder();
 

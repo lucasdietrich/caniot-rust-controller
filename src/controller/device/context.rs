@@ -1,7 +1,12 @@
 use std::time::Duration;
 
+use chrono::{DateTime, Utc};
+
 #[derive(Clone, Default, Debug)]
 pub struct ProcessContext {
+    // Received frame timestamp
+    // pub received_at: DateTime<Utc>,
+
     // Time to wait before processing the device again
     pub next_process: Option<Duration>,
 }
