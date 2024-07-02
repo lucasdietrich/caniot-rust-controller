@@ -1,4 +1,4 @@
-use crate::caniot::{self, Response, ResponseData};
+use crate::caniot::{self, Response};
 
 use super::{ActionResultTrait, ActionTrait, ActionWrapperTrait};
 

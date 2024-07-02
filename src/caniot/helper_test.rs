@@ -1,10 +1,15 @@
+use chrono::Utc;
+
 use super::*;
 #[test]
 fn test_response_match_any_attribute_query() {
+    let timestamp = Utc::now();
+
     // attribute
     let query = Request {
         device_id: DeviceId::try_from_u8(1).unwrap(),
         data: RequestData::AttributeRead { key: 0x0100 },
+        timestamp,
     };
 
     let response = Response {
@@ -13,6 +18,7 @@ fn test_response_match_any_attribute_query() {
             key: 0x0100,
             value: 0x12345678,
         },
+        timestamp,
     };
     assert!(is_response_to(&query, &response).is_valid_response());
 
@@ -22,6 +28,7 @@ fn test_response_match_any_attribute_query() {
             source: ErrorSource::Attribute(Some(0x0100)),
             error: None,
         },
+        timestamp,
     };
     assert!(is_response_to(&query, &response).is_response_error());
 
@@ -31,6 +38,7 @@ fn test_response_match_any_attribute_query() {
             source: ErrorSource::Attribute(None),
             error: None,
         },
+        timestamp,
     };
     assert!(is_response_to(&query, &response).is_response_error());
 
@@ -40,6 +48,7 @@ fn test_response_match_any_attribute_query() {
             source: ErrorSource::Telemetry(Endpoint::BoardControl, None),
             error: None,
         },
+        timestamp,
     };
     let is_response = is_response_to(&query, &response);
     assert!(is_response.is_error() && !is_response.is_response());
@@ -50,6 +59,7 @@ fn test_response_match_any_attribute_query() {
         data: RequestData::Telemetry {
             endpoint: Endpoint::Application2,
         },
+        timestamp,
     };
 
     let response = Response {
@@ -58,6 +68,7 @@ fn test_response_match_any_attribute_query() {
             endpoint: Endpoint::Application2,
             payload: Payload::new_empty(),
         },
+        timestamp,
     };
     assert!(is_response_to(&query, &response).is_valid_response());
 
@@ -67,6 +78,7 @@ fn test_response_match_any_attribute_query() {
             endpoint: Endpoint::Application1,
             payload: Payload::new_empty(),
         },
+        timestamp,
     };
     let m = is_response_to(&query, &response);
     assert!(!m.is_error() && !m.is_response());
@@ -77,6 +89,7 @@ fn test_response_match_any_attribute_query() {
             source: ErrorSource::Telemetry(Endpoint::Application2, None),
             error: None,
         },
+        timestamp,
     };
     assert!(is_response_to(&query, &response).is_response_error());
 
@@ -86,6 +99,7 @@ fn test_response_match_any_attribute_query() {
             source: ErrorSource::Telemetry(Endpoint::BoardControl, None),
             error: None,
         },
+        timestamp,
     };
     let m = is_response_to(&query, &response);
     assert!(m.is_error() && !m.is_response());

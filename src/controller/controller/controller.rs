@@ -2,10 +2,8 @@ use std::collections::HashMap;
 
 use std::time::Duration;
 
-use chrono::Utc;
-use itertools::{partition, Itertools};
+use itertools::partition;
 
-use socketcan::CanDataFrame;
 use tokio::sync::oneshot::Sender;
 
 use crate::bus::{CanInterfaceError, CanInterfaceTrait, CAN_IOCTL_SEND_EMU_EVENT};

@@ -1,6 +1,7 @@
+#[cfg(feature = "emu-delay")]
 use std::time::Duration;
-use tokio::time::sleep;
 
+#[cfg(feature = "emu-delay")]
 const EMU_DELAY_MS: u64 = 200;
 
 pub async fn emulated_delay_async() {

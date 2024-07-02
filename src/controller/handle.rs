@@ -1,8 +1,8 @@
-use std::{default, ops::Deref};
+use std::ops::Deref;
 
 use as_any::Downcast;
 use chrono::{DateTime, Utc};
-use socketcan::CanDataFrame;
+
 use tokio::sync::{mpsc, oneshot};
 
 use crate::{

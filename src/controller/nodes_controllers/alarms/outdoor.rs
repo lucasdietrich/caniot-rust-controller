@@ -1,5 +1,5 @@
-use chrono::{DateTime, Duration, Local, NaiveTime, Timelike, Utc};
-use log::{debug, info, kv::Value, warn};
+use chrono::{DateTime, Duration, Local, NaiveTime};
+use log::{info, warn};
 
 use super::actions::{Action, AlarmEnable};
 use crate::{
@@ -10,7 +10,7 @@ use crate::{
         ActionResultTrait, ActionTrait, ActionVerdict, DeviceControllerInfos,
         DeviceControllerTrait, DeviceError, ProcessContext, Verdict,
     },
-    utils::monitorable::{MonitorableResultTrait, MonitorableTrait, ValueMonitor},
+    utils::monitorable::{MonitorableResultTrait, ValueMonitor},
 };
 
 #[derive(Debug, Clone, Default)]
@@ -107,14 +107,6 @@ pub struct DeviceIOState {
 impl DeviceIOState {
     pub fn is_siren_on(&self) -> bool {
         self.siren
-    }
-
-    pub fn is_presence_detected(&self) -> bool {
-        self.detectors.iter().any(|&d| d)
-    }
-
-    pub fn is_sabotage_detected(&self) -> bool {
-        self.sabotage
     }
 }
 
@@ -280,7 +272,7 @@ impl DeviceControllerTrait for AlarmController {
         &mut self,
         _frame: &caniot::ResponseData,
         as_class_blc: &Option<crate::caniot::BoardClassTelemetry>,
-        ctx: &mut ProcessContext,
+        _ctx: &mut ProcessContext,
     ) -> Result<Verdict, DeviceError> {
         if let Some(caniot::BoardClassTelemetry::Class0(telemetry)) = as_class_blc {
             let new_state = DeviceIOState {

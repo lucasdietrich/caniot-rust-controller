@@ -5,7 +5,7 @@ use std::time::{Duration, Instant};
 
 use crate::{
     caniot::{
-        self, classes, BoardClassTelemetry, DeviceId, Endpoint, Frame, Response, ResponseData,
+        self, classes, BoardClassTelemetry, DeviceId, Endpoint, Response, ResponseData,
         SysCtrl, TSP,
     },
     controller::ActionTrait,
@@ -182,7 +182,7 @@ impl Device {
             DeviceAction::Reset => Ok(DeviceActionResult::ResetSent),
             DeviceAction::ResetSettings => Ok(DeviceActionResult::ResetSettingsSent),
             DeviceAction::InhibitControl(_inhibit) => Ok(DeviceActionResult::InhibitControlSent),
-            DeviceAction::Ping(endpoint) => Ok(DeviceActionResult::Pong(completed_by)),
+            DeviceAction::Ping(_endpoint) => Ok(DeviceActionResult::Pong(completed_by)),
             DeviceAction::Inner(inner_action) => {
                 if let Some(inner_device) = self.controller.as_ref() {
                     let result = inner_device

@@ -1,7 +1,6 @@
 use caniot_controller::caniot::{
     class0::{self, Class0},
-    class1::Class1,
-    BoardClassCommand, ClCd, DeviceId, Frame, Payload, RequestData, SysCtrl, Xps,
+    BoardClassCommand, DeviceId, Frame, RequestData, SysCtrl, Xps,
 };
 
 fn main() {
