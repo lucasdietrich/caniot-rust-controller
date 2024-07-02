@@ -5,7 +5,7 @@ use crate::{
         self,
         emu::{self, emu_pool2_realistic_add_devices_to_iface},
     },
-    grpcserver::EmuEvent,
+    grpcserver::EmuRequest,
 };
 
 use socketcan::CanDataFrame;
@@ -24,9 +24,9 @@ impl CanInterface {
         self.devices.push(device);
     }
 
-    fn send_emu_event(&mut self, event: EmuEvent) {
+    fn send_emu_request(&mut self, event: EmuRequest) {
         for device in self.devices.iter_mut() {
-            device.handle_emu_event(event);
+            device.handle_emu_request(event);
 
             // Process the device immediately after having send the emulated event
             // If a response is generated, it will be added to the to_recv_msgq
@@ -105,8 +105,8 @@ impl CanInterfaceTrait for CanInterface {
     fn ioctl(&mut self, cmd: u32, arg: u32) -> Result<(), CanInterfaceError> {
         match cmd {
             super::CAN_IOCTL_SEND_EMU_EVENT => {
-                let event = EmuEvent::try_from(arg as i32).unwrap_or_default();
-                self.send_emu_event(event)
+                let event = EmuRequest::try_from(arg as i32).unwrap_or_default();
+                self.send_emu_request(event)
             }
             cmd => {
                 error!("Unsupported ioctl command {}", cmd);

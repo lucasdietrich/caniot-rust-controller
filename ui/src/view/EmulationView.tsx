@@ -3,7 +3,11 @@ import React, { useEffect } from "react";
 import LoadableCard from "../components/LoadableCard";
 import ListLabelledItem from "../components/ListLabelledItem";
 import emulationStore from "../store/EmulationStore";
-import { EmuEvent, Req, Status } from "@caniot-controller/caniot-api-grpc-web/api/ng_emulation_pb";
+import {
+  EmuRequest,
+  Req,
+  Status,
+} from "@caniot-controller/caniot-api-grpc-web/api/ng_emulation_pb";
 import ListGridItem from "../components/ListGridItem";
 
 interface IEmulationViewProps {
@@ -19,7 +23,7 @@ function EmulationView({ isMobile = false }: IEmulationViewProps) {
     });
   }, []);
 
-  const sendEmulationEvent = (event: EmuEvent) => {
+  const sendEmulationEvent = (event: EmuRequest) => {
     return () => {
       const req = new Req();
       req.setEvent(event);
@@ -43,7 +47,10 @@ function EmulationView({ isMobile = false }: IEmulationViewProps) {
               description="Simule une présence au niveau des détecteurs"
               isMobile={isMobile}
             >
-              <Button type="primary" onClick={sendEmulationEvent(EmuEvent.OUTDOOR_ALARM_PRESENCE)}>
+              <Button
+                type="primary"
+                onClick={sendEmulationEvent(EmuRequest.OUTDOOR_ALARM_PRESENCE)}
+              >
                 Simuler présence
               </Button>
             </ListGridItem>
@@ -52,7 +59,10 @@ function EmulationView({ isMobile = false }: IEmulationViewProps) {
               description="Simule le sabotage des détecteurs"
               isMobile={isMobile}
             >
-              <Button type="primary" onClick={sendEmulationEvent(EmuEvent.OUTDOOR_ALARM_SABOTAGE)}>
+              <Button
+                type="primary"
+                onClick={sendEmulationEvent(EmuRequest.OUTDOOR_ALARM_SABOTAGE)}
+              >
                 Simuler sabotage
               </Button>
             </ListGridItem>
@@ -61,7 +71,7 @@ function EmulationView({ isMobile = false }: IEmulationViewProps) {
               description="Simule le retour à la normale des détecteurs"
               isMobile={isMobile}
             >
-              <Button type="primary" onClick={sendEmulationEvent(EmuEvent.OUTDOOR_ALARM_CLEAR)}>
+              <Button type="primary" onClick={sendEmulationEvent(EmuRequest.OUTDOOR_ALARM_CLEAR)}>
                 Retour à la normale
               </Button>
             </ListGridItem>

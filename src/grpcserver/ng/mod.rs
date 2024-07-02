@@ -59,4 +59,4 @@ mod model {
     }
 }
 
-pub use model::emulation::EmuEvent;
+pub use model::emulation::EmuRequest;

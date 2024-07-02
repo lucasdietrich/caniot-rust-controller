@@ -8,7 +8,7 @@ use tokio::sync::{mpsc, oneshot};
 use crate::{
     bus::CanStats,
     caniot::{self as ct, DeviceId},
-    grpcserver::EmuEvent,
+    grpcserver::EmuRequest,
 };
 use serde::Serialize;
 
@@ -64,7 +64,7 @@ pub enum ControllerMessage {
         respond_to: oneshot::Sender<Result<(), ControllerError>>,
     },
     #[cfg(feature = "emu")]
-    EmulationEvent { event: EmuEvent },
+    EmulationEvent { event: EmuRequest },
 }
 
 #[derive(Debug, Clone)]
@@ -192,7 +192,7 @@ impl ControllerHandle {
     }
 
     #[cfg(feature = "emu")]
-    pub async fn send_emulation_event(&self, event: EmuEvent) {
+    pub async fn send_emulation_event(&self, event: EmuRequest) {
         debug!("Sending emulation event to controller: {:?}", event);
         self.sender
             .send(ControllerMessage::EmulationEvent { event })

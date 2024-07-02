@@ -11,10 +11,10 @@ service EmulationService {
 
 message Status { bool feature_enabled = 1; }
 
-enum EmuEvent {
+enum EmuRequest {
   OUTDOOR_ALARM_CLEAR = 0;
   OUTDOOR_ALARM_PRESENCE = 1;
   OUTDOOR_ALARM_SABOTAGE = 2;
 }
 
-message Req { EmuEvent event = 1; }
+message Req { EmuRequest event = 1; }

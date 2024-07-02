@@ -2,7 +2,7 @@ use std::time::{Duration, Instant};
 
 use crate::{
     caniot::{self, Attribute, DeviceId, Endpoint, ErrorCode, Payload},
-    grpcserver::EmuEvent,
+    grpcserver::EmuRequest,
     utils::expirable::{ttl, ExpirableTrait},
 };
 
@@ -270,9 +270,9 @@ impl Device {
         })
     }
 
-    pub fn handle_emu_event(&mut self, event: EmuEvent) {
+    pub fn handle_emu_request(&mut self, event: EmuRequest) {
         for behavior in self.behavior.iter_mut() {
-            self.process_requested |= behavior.on_emu_event(event);
+            self.process_requested |= behavior.on_emu_request(event);
         }
     }
 }

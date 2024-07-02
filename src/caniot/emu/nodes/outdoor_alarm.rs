@@ -8,7 +8,7 @@ use crate::{
         emu::helpers::EmuXps,
         AsPayload, BoardClassCommand, Temperature,
     },
-    grpcserver::EmuEvent,
+    grpcserver::EmuRequest,
     utils::expirable::ExpirableTrait,
 };
 
@@ -89,12 +89,6 @@ impl Behavior for OutdoorAlarmController {
         }
     }
 
-    fn on_read_attribute(&mut self, _key: u16) -> Option<u32> {
-        None
-    }
-
-    fn on_write_attribute(&mut self, key: u16, value: u32) -> Option<ct::ErrorCode> {}
-
     fn get_remaining_to_event_ms(&self) -> Option<u64> {
         [&self.lights[0], &self.lights[1], &self.siren]
             .iter()
@@ -122,18 +116,18 @@ impl Behavior for OutdoorAlarmController {
         // Do nothing
     }
 
-    fn on_emu_event(&mut self, event: EmuEvent) -> bool {
+    fn on_emu_request(&mut self, event: EmuRequest) -> bool {
         match event {
-            EmuEvent::OutdoorAlarmClear => {
+            EmuRequest::OutdoorAlarmClear => {
                 self.presence_sensors[0] = false;
                 self.presence_sensors[1] = false;
                 self.sabotage = false;
             }
-            EmuEvent::OutdoorAlarmPresence => {
+            EmuRequest::OutdoorAlarmPresence => {
                 self.presence_sensors[0] = true;
                 self.presence_sensors[1] = true;
             }
-            EmuEvent::OutdoorAlarmSabotage => {
+            EmuRequest::OutdoorAlarmSabotage => {
                 self.sabotage = true;
             }
             _ => return false,
