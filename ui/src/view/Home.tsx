@@ -133,7 +133,7 @@ function Home({ refreshInterval = 5000, isMobile = false }: HomeProps) {
           .getDevicesList()
           .map((device) => (
             <DeviceAlert
-              key={device.getDid()}
+              key={device.getDid()?.getDid()}
               alert={device.getActiveAlert()}
               navigateToController={"devices/" + device.getUiViewName()}
               closable={false}
