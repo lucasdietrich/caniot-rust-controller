@@ -92,7 +92,12 @@ impl DeviceControllerTrait for HeatersController {
     }
 
     fn get_alert(&self) -> Option<DeviceAlert> {
-        if self.status.heaters.iter().any(|&mode| mode.heater_on()) {
+        if !self.status.power_status {
+            Some(
+                DeviceAlert::new_warning("Chauffage non alimenté")
+                    .with_description("Pas de présence tension sur le chauffage"),
+            )
+        } else if self.status.heaters.iter().any(|&mode| mode.heater_on()) {
             Some(
                 DeviceAlert::new_notification("Chauffage allumé")
                     .with_description("Au moins un chauffage est allumé"),

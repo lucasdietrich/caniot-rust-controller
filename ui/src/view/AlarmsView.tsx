@@ -133,7 +133,7 @@ function AlarmsView({ refreshInterval = 5000, isMobile = false }: IAlarmsViewPro
       <Col xl={14} xs={24} style={{ marginBottom: 16 }}>
         <LoadableCard
           title="Alarme extérieure"
-          status={undefined}
+          status={outdoorAlarmState !== undefined}
           loading={loading}
           onRefresh={() => {
             setLoading(true);
