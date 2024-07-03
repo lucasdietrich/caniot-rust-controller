@@ -36,6 +36,7 @@ pub struct LightsActions {
 }
 
 impl LightsActions {
+    #[allow(dead_code)]
     pub fn new(south: Option<LightAction>, east: Option<LightAction>) -> Self {
         Self {
             south: south.unwrap_or_default(),

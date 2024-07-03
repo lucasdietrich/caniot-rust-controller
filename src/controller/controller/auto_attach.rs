@@ -1,11 +1,8 @@
 // Handle device controller attachment and detachment.
 
-use crate::{
-    caniot::DeviceId,
-    controller::{
-        AlarmController, DemoController, Device, DeviceControllerWrapperTrait, GarageController,
-        HeatersController,
-    },
+use crate::controller::{
+    AlarmController, CaniotDevicesConfig, DemoController, Device, DeviceControllerWrapperTrait,
+    GarageController, HeatersController,
 };
 
 pub const DEVICE_DEMO_DID: u8 = 0;
@@ -13,20 +10,25 @@ pub const DEVICE_HEATERS_DID: u8 = 1;
 pub const DEVICE_GARAGE_DID: u8 = 0x10;
 pub const DEVICE_OUTDOOR_ALARM_DID: u8 = 0x18;
 
-pub fn device_get_controller_impl(did: &DeviceId) -> Option<Box<dyn DeviceControllerWrapperTrait>> {
-    match did.to_u8() {
-        DEVICE_DEMO_DID => Some(Box::new(DemoController::default())),
-        DEVICE_HEATERS_DID => Some(Box::new(HeatersController::default())),
-        DEVICE_GARAGE_DID => Some(Box::new(GarageController::default())),
-        DEVICE_OUTDOOR_ALARM_DID => Some(Box::new(AlarmController::default())),
-        _ => None,
-    }
-}
-
 pub fn device_attach_controller(
     device: &mut Device,
+    config: &CaniotDevicesConfig,
 ) -> Option<Box<dyn DeviceControllerWrapperTrait>> {
-    if let Some(controller) = device_get_controller_impl(&device.did) {
+    let did = device.did.to_u8();
+    let implementation: Option<Box<dyn DeviceControllerWrapperTrait>> =
+        if did == config.demo_did.unwrap_or(DEVICE_DEMO_DID) {
+            Some(Box::new(DemoController::default()))
+        } else if did == config.heaters_did.unwrap_or(DEVICE_HEATERS_DID) {
+            Some(Box::new(HeatersController::default()))
+        } else if did == config.garage_did.unwrap_or(DEVICE_GARAGE_DID) {
+            Some(Box::new(GarageController::default()))
+        } else if did == config.outdoor_alarm_did.unwrap_or(DEVICE_OUTDOOR_ALARM_DID) {
+            Some(Box::new(AlarmController::default()))
+        } else {
+            None
+        };
+
+    if let Some(controller) = implementation {
         device.controller.replace(controller)
     } else {
         None

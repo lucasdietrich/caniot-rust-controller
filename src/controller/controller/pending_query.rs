@@ -74,6 +74,7 @@ impl PendingQuery {
         self.tenant.end_with_error(error)
     }
 
+    #[allow(dead_code)]
     pub fn end(
         self,
         response: Result<caniot::Response, ControllerError>,

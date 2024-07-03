@@ -42,6 +42,8 @@ pub fn run_controller() {
     let config_file = args.config.as_deref().map(|x| x.trim());
     let config = config::load_config(config_file);
 
+    debug!("Config: {:#?}", config);
+
     let rt = get_tokio_rt();
     let rt = Arc::new(rt);
     let (notify_shutdown, _) = broadcast::channel(1);

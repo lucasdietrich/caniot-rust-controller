@@ -13,6 +13,7 @@ const PROTO_FILES: &[&str] = &[
     "proto/common.proto",
 ];
 
+#[cfg(any(feature = "grpc-can-iface-server", feature = "grpc-can-iface-client"))]
 const PROTO_CAN_IFACE: &str = "proto/ng_can_iface.proto";
 
 const DB_MIGRATION_DIR: &str = "migrations";

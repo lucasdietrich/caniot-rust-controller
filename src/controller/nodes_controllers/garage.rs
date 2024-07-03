@@ -1,5 +1,3 @@
-use chrono::{DateTime, Utc};
-
 use crate::{
     caniot::Xps,
     controller::{
@@ -127,16 +125,16 @@ impl From<bool> for DoorState {
     }
 }
 
-#[derive(Debug)]
-struct RequestedState {
-    state: DoorState,
-    date: DateTime<Utc>,
-}
+// #[derive(Debug)]
+// struct RequestedState {
+//     state: DoorState,
+//     date: DateTime<Utc>,
+// }
 
 #[derive(Debug, Default)]
 pub struct GarageController {
-    left_door_triggered: Option<RequestedState>,
-    right_door_triggered: Option<RequestedState>,
+    // left_door_triggered: Option<RequestedState>,
+    // right_door_triggered: Option<RequestedState>,
     status: Option<GarageDoorStatus>,
 }
 

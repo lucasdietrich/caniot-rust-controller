@@ -10,6 +10,7 @@ mod helpers_test;
 
 use behavior::*;
 pub use device::Device;
+#[allow(unused_imports)]
 pub use events::*;
 use nodes::*;
 pub use pools::*;

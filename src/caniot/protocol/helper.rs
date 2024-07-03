@@ -49,6 +49,7 @@ pub fn build_command_request(device_id: DeviceId, endpoint: Endpoint, payload: V
 #[derive(Debug, Clone)]
 pub struct ResponseMatch {
     is_response: bool,
+    #[allow(dead_code)]
     is_error: bool,
 }
 
@@ -64,14 +65,17 @@ impl ResponseMatch {
         self.is_response
     }
 
+    #[allow(dead_code)]
     pub fn is_error(&self) -> bool {
         self.is_error
     }
 
+    #[allow(dead_code)]
     pub fn is_valid_response(&self) -> bool {
         self.is_response && !self.is_error
     }
 
+    #[allow(dead_code)]
     pub fn is_response_error(&self) -> bool {
         self.is_response && self.is_error
     }

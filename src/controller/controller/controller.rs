@@ -11,8 +11,8 @@ use crate::caniot::{self, are_requests_concurrent, Frame, RequestData};
 use crate::caniot::{DeviceId, Request};
 use crate::controller::handle::{ControllerMessage, DeviceFilter};
 use crate::controller::{
-    ActionVerdict, Device, DeviceAction, DeviceActionResult, DeviceError, DeviceInfos,
-    PendingAction, ProcessContext, Verdict,
+    ActionVerdict, CaniotConfig, CaniotDevicesConfig, Device, DeviceAction, DeviceActionResult,
+    DeviceError, DeviceInfos, PendingAction, ProcessContext, Verdict,
 };
 use crate::shutdown::Shutdown;
 use crate::utils::expirable::{ttl, ExpirableTrait};
@@ -20,7 +20,6 @@ use crate::utils::expirable::{ttl, ExpirableTrait};
 #[cfg(feature = "can-tunnel")]
 use super::can_tunnel::CanTunnelContext;
 use super::pending_query::PendingQueryTenant;
-use super::{pending_action, CaniotConfig};
 
 use super::super::handle;
 use super::auto_attach::device_attach_controller;
@@ -31,14 +30,12 @@ use serde::Serialize;
 
 use thiserror::Error;
 use tokio::select;
-use tokio::sync::{mpsc, oneshot};
+use tokio::sync::mpsc;
 use tokio::time::sleep;
 
 const PENDING_QUERY_DEFAULT_TIMEOUT_MS: u32 = 1000; // 1s
 const ACTION_DEFAULT_TIMEOUT_MS: u32 = PENDING_QUERY_DEFAULT_TIMEOUT_MS; // 1s
-
-const CHANNEL_SIZE: usize = 10;
-// const DEVICES_COUNT: usize = 63;
+const API_CHANNEL_SIZE: u32 = 10;
 
 #[derive(Serialize, Debug, Clone, Copy, Default)]
 pub struct ControllerStats {
@@ -68,6 +65,7 @@ pub enum ControllerError {
     UnsupportedQuery,
 
     #[error("Duplicate device Error")]
+    #[allow(dead_code)]
     DuplicateDID,
 
     #[error("Duplicate pending query: response undifferentiable")]
@@ -77,6 +75,7 @@ pub enum ControllerError {
     GenericDeviceActionNeedsDID,
 
     #[error("Not implemented")]
+    #[allow(dead_code)]
     NotImplemented,
 
     #[error("Unknown device")]
@@ -138,7 +137,8 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
         config: CaniotConfig,
         shutdown: Shutdown,
     ) -> Result<Self, ControllerError> {
-        let (sender, receiver) = mpsc::channel(CHANNEL_SIZE);
+        let (sender, receiver) =
+            mpsc::channel(config.inernal_api_mpsc_size.unwrap_or(API_CHANNEL_SIZE) as usize);
 
         Ok(Self {
             iface,
@@ -172,10 +172,14 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
         Ok(())
     }
 
-    fn device_get_or_create(devices: &mut HashMap<DeviceId, Device>, did: DeviceId) -> &mut Device {
+    fn device_get_or_create<'d>(
+        devices: &'d mut HashMap<DeviceId, Device>,
+        did: DeviceId,
+        devices_config: &CaniotDevicesConfig,
+    ) -> &'d mut Device {
         devices.entry(did).or_insert_with(|| {
             let mut new_device = Device::new(did);
-            device_attach_controller(&mut new_device);
+            device_attach_controller(&mut new_device, devices_config);
             new_device
         })
     }
@@ -186,7 +190,8 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
     ) -> Result<(), ControllerError> {
         // Get or instantiate device
         let device_did = request.device_id;
-        let device = Self::device_get_or_create(&mut self.devices, device_did);
+        let device =
+            Self::device_get_or_create(&mut self.devices, device_did, &self.config.devices);
 
         // update device stats
         match request.data {
@@ -205,7 +210,11 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
         timeout_ms: Option<u32>,
         tenant: PendingQueryTenant,
     ) {
-        let timeout_ms = timeout_ms.unwrap_or(PENDING_QUERY_DEFAULT_TIMEOUT_MS);
+        let timeout_ms = timeout_ms.unwrap_or(
+            self.config
+                .pending_queries_default_timeout
+                .unwrap_or(PENDING_QUERY_DEFAULT_TIMEOUT_MS),
+        );
 
         if request.device_id == DeviceId::BROADCAST {
             error!("BROADCAST query not supported");
@@ -271,7 +280,8 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
 
         // Get or create device
         let device_did = frame.device_id;
-        let device = Self::device_get_or_create(&mut self.devices, device_did);
+        let device =
+            Self::device_get_or_create(&mut self.devices, device_did, &self.config.devices);
 
         let mut device_context = ProcessContext::new(frame.timestamp);
 
@@ -468,7 +478,13 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
                 let tenant = PendingQueryTenant::Action(PendingAction::new(action, respond_to));
                 self.send_pend_request(
                     request,
-                    Some(timeout_ms.unwrap_or(ACTION_DEFAULT_TIMEOUT_MS)),
+                    Some(
+                        timeout_ms.unwrap_or(
+                            self.config
+                                .action_default_timeout
+                                .unwrap_or(ACTION_DEFAULT_TIMEOUT_MS),
+                        ),
+                    ),
                     tenant,
                 )
                 .await;

@@ -7,6 +7,7 @@ use crate::{
 
 use super::{heaters::HeatersController, nodes, Class0Behavior, Class1Behavior, Device};
 
+#[allow(dead_code)]
 pub fn emu_pool1_add_devices_to_iface(iface: &mut CanInterface) {
     let mut dev1 = Device::new(1, Some(Duration::from_secs(5)));
     dev1.add_behavior(Box::new(super::CounterBehavior::default()));

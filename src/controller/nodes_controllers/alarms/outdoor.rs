@@ -3,7 +3,7 @@ use log::{info, warn};
 
 use super::actions::{Action, AlarmEnable};
 use crate::{
-    caniot::{self, traits::ClassCommandTrait, RequestData, Response, Xps},
+    caniot::{self, RequestData, Response, Xps},
     controller::{
         alarms::{actions::SirenAction, types::OutdoorAlarmCommand},
         alert::DeviceAlert,
@@ -78,6 +78,7 @@ impl Default for NightLightsContext {
 }
 
 impl NightLightsContext {
+    #[allow(dead_code)]
     pub fn set_auto(&mut self, state: bool) {
         self.auto = state;
     }

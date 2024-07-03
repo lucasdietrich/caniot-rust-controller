@@ -4,6 +4,7 @@ use crate::caniot::{self, class0, traits::ClassCommandTrait, Xps};
 pub struct OutdoorAlarmCommand(pub class0::Command);
 
 impl OutdoorAlarmCommand {
+    #[allow(dead_code)]
     pub fn new(south: Xps, east: Xps, siren: Xps) -> Self {
         OutdoorAlarmCommand(class0::Command {
             coc1: south,

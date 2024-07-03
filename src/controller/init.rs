@@ -20,7 +20,7 @@ pub fn init<IF: CanInterfaceTrait>(
 
     Controller::new(
         can_iface,
-        config.caniot.clone(),
+        config.caniot_controller.clone(),
         Shutdown::new(notify_shutdown.subscribe()),
     )
     .expect("Failed to create controller")

@@ -4,10 +4,10 @@ use chrono::{DateTime, Utc};
 
 use serde::Serialize;
 
+#[allow(dead_code)]
 pub const CANIOT_DEVICE_FILTER_ID: u32 = 1 << 2; /* bit 2 is 1 for response frames */
+#[allow(dead_code)]
 pub const CANIOT_DEVICE_FILTER_MASK: u32 = 1 << 2; /* bit 2 is 1 to filter frames by direction */
-
-use embedded_can::Frame as EmbeddedFrame;
 
 use super::{DeviceId, Endpoint, Type};
 

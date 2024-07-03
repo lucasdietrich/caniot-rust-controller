@@ -12,6 +12,7 @@ pub async fn emulated_delay_async() {
     }
 }
 
+#[allow(dead_code)]
 pub fn emulated_delay() {
     #[cfg(feature = "emu-delay")]
     {

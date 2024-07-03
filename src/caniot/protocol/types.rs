@@ -7,7 +7,7 @@ use thiserror::Error;
 
 use crate::caniot::DeviceId;
 
-use embedded_can::{Frame as EmbeddedFrame, Id as EmbeddedId, StandardId};
+use embedded_can::{Id as EmbeddedId, StandardId};
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, FromPrimitive)]
 pub enum Type {
@@ -94,6 +94,7 @@ impl Id {
         id
     }
 
+    #[allow(dead_code)]
     pub fn to_embedded_id(self) -> EmbeddedId {
         let std_can_id = StandardId::new(self.to_u16()).unwrap();
         EmbeddedId::Standard(std_can_id)

@@ -127,6 +127,7 @@ impl Behavior for OutdoorAlarmController {
             EmuRequest::OutdoorAlarmSabotage => {
                 self.sabotage = true;
             }
+            #[allow(unreachable_patterns)]
             _ => return false,
         }
 

@@ -19,6 +19,7 @@ impl<T> ValueMonitor<T>
 where
     T: MonitorableTrait,
 {
+    #[allow(dead_code)]
     pub fn new(value: T) -> Self {
         Self {
             value,
@@ -37,14 +38,17 @@ where
         }
     }
 
+    #[allow(dead_code)]
     pub fn get(&self) -> T {
         self.value.clone()
     }
 
+    #[allow(dead_code)]
     pub fn get_updated_count(&self) -> u64 {
         self.updates_count
     }
 
+    #[allow(dead_code)]
     pub fn into_inner(self) -> T {
         self.value
     }

@@ -68,6 +68,7 @@ impl Into<Payload<Ty>> for BoardClassTelemetry {
     }
 }
 
+#[allow(dead_code)]
 pub fn boardlc_parse_telemetry<C: Class>(
     payload: &Payload<Ty>,
 ) -> Result<C::Telemetry, <<C as Class>::Telemetry as TryFrom<&Payload<Ty>>>::Error> {

@@ -13,7 +13,7 @@ use crate::grpcserver::GrpcConfig;
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct AppConfig {
     pub can: CanConfig,
-    pub caniot: CaniotConfig,
+    pub caniot_controller: CaniotConfig,
     pub web: WebserverConfig,
     pub database: DatabaseConfig,
     pub grpc: GrpcConfig,

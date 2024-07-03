@@ -21,6 +21,7 @@ impl<C: Class> Clone for BoardClassCommand<C> {
 }
 
 impl<C: Class> BoardClassCommand<C> {
+    #[allow(dead_code)]
     pub fn new(class_payload: Option<C::Command>, sys_ctrl: Option<SysCtrl>) -> Self {
         Self {
             class_payload: class_payload.unwrap_or_default(),
@@ -28,6 +29,7 @@ impl<C: Class> BoardClassCommand<C> {
         }
     }
 
+    #[allow(dead_code)]
     pub fn into_request(self) -> RequestData {
         RequestData::Command {
             endpoint: crate::caniot::Endpoint::BoardControl,
