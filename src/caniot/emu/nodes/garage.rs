@@ -88,9 +88,9 @@ impl ExpirableTrait<u64> for Door {
 }
 
 pub struct GarageController {
-    left_door: Door,   // RL1, IN3
-    right_door: Door,  // RL2, IN4
-    gate_closed: bool, // IN2
+    left_door: Door,  // RL1, IN3
+    right_door: Door, // RL2, IN4
+    gate_open: bool,  // IN2
 }
 
 impl Default for GarageController {
@@ -98,7 +98,7 @@ impl Default for GarageController {
         Self {
             left_door: Door::default(),
             right_door: Door::default(),
-            gate_closed: true,
+            gate_open: false,
         }
     }
 }
@@ -134,7 +134,7 @@ impl Behavior for GarageController {
             let mut telemetry = class0::Telemetry::default();
 
             telemetry.in1 = true; // nc
-            telemetry.in2 = self.gate_closed;
+            telemetry.in2 = self.gate_open;
             telemetry.in3 = self.left_door.is_open();
             telemetry.in4 = self.right_door.is_open();
 

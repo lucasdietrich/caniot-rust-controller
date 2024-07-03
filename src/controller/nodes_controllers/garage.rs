@@ -58,7 +58,7 @@ impl Into<class0::Command> for &GarageDoorCommand {
 pub struct GarageDoorStatus {
     pub left_door_status: DoorState,
     pub right_door_status: DoorState,
-    pub gate_closed: bool,
+    pub gate_open: bool,
 }
 
 impl From<&class0::Telemetry> for GarageDoorStatus {
@@ -66,7 +66,7 @@ impl From<&class0::Telemetry> for GarageDoorStatus {
         Self {
             left_door_status: payload.in3.into(),
             right_door_status: payload.in4.into(),
-            gate_closed: payload.in2,
+            gate_open: payload.in2,
         }
     }
 }
@@ -185,7 +185,7 @@ impl DeviceControllerTrait for GarageController {
 
     fn get_alert(&self) -> Option<DeviceAlert> {
         self.status.and_then(|s| {
-            if s.left_door_status.is_open() || s.right_door_status.is_open() || !s.gate_closed {
+            if s.left_door_status.is_open() || s.right_door_status.is_open() || s.gate_open {
                 Some(DeviceAlert::new_warning("Porte(s) de garage ouverte(s)"))
             } else {
                 None
