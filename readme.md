@@ -59,6 +59,7 @@ Run with
 
 ## TODO (controller)
 
+- Search for `todo` or `dead_code` or `unimplemented` in the code.
 - Allow to set custom configuration file path: `./caniot-controller -c /etc/caniot/caniot-controller.toml`
 - Timestamp received CAN frames (wait for this feature of `socketcan` crate https://github.com/socketcan-rs/socketcan-rs/issues/22)
 - Improve logging: make this shorter `[2023-09-24T09:46:24.759Z INFO  caniot_rctrl::can] RX Telemetry Response (9: 1,1): ep-2 / 12 00 11 00 14 00 22 00` -> `[2023-09-24T09:46:24.759Z INFO can] RX Telemetry Response (9: 1,1): ep-2 / 12 00 11 00 14 00 22 00`
