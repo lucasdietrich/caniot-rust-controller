@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{thread, time::Duration};
 
 use super::super::Behavior;
 use crate::{
@@ -62,7 +62,7 @@ impl Behavior for OutdoorAlarmController {
     }
 
     fn on_telemetry(&mut self, endpoint: &ct::Endpoint) -> Option<Vec<u8>> {
-        // thread::sleep(Duration::from_millis(500));
+        thread::sleep(Duration::from_millis(500));
 
         if endpoint == &ct::Endpoint::BoardControl {
             let mut telemetry = class0::Telemetry::default();

@@ -65,7 +65,7 @@ impl GarageService for NgGarage {
         let result = api
             .device_action_inner(None, action, None)
             .await
-            .map_err(|e| Status::internal(format!("Error in get_state: {:?}", e)))?;
+            .map_err(|e| Status::internal(format!("Error in get_state: {} ({:?})", e, e)))?;
 
         Ok(Response::new(self.garage_status_to_proto(&result)))
     }
@@ -86,7 +86,12 @@ impl GarageService for NgGarage {
         let result = api
             .device_action_inner(None, action, None)
             .await
-            .map_err(|e| Status::internal(format!("Error in set_state: {:?} {:?}", command, e)))?;
+            .map_err(|e| {
+                Status::internal(format!(
+                    "Error in set_state: {:?}: {} ({:?})",
+                    command, e, e
+                ))
+            })?;
 
         Ok(Response::new(self.garage_status_to_proto(&result)))
     }

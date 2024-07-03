@@ -63,7 +63,6 @@ Run with
 - Timestamp received CAN frames (wait for this feature of `socketcan` crate https://github.com/socketcan-rs/socketcan-rs/issues/22)
 - Improve logging: make this shorter `[2023-09-24T09:46:24.759Z INFO  caniot_rctrl::can] RX Telemetry Response (9: 1,1): ep-2 / 12 00 11 00 14 00 22 00` -> `[2023-09-24T09:46:24.759Z INFO can] RX Telemetry Response (9: 1,1): ep-2 / 12 00 11 00 14 00 22 00`
 - Logger
-- Database
 - Offline in a dedicated thread the reception of can frame in order to precisely timestamp them.
 - Events/alarms and logger
 - Notification by email
@@ -76,9 +75,7 @@ Run with
 - Heaters: auto disable heaters on certain conditions (job days, morning, evening, temperature)
 - Add support for bluetooth devices
 - Add support for rooms associated sensors
-- read config using -c option
 - wrap all services (spawn) in a single Application structure
-- increase the number of threads in the thread pool
 - Allow to send comment to non-existing (yet) devices
 - Remove `unwrap`
   - At least change them to `expect` with a meaningful message
@@ -107,7 +104,6 @@ Run with
 - treat the case where the process() function of a device controller sends a frame for which the response trigger a new process() call, leading to a infinite loop
 - improve call of process() in emulated devices
 - event/log system
-- timestamp received can frames
 
 ```
 device_temperature{medium="CAN",mac="16",device="GarageDoorController",sensor="EMBEDDED",room="",collector="pycaniotcontroller"} 19.00

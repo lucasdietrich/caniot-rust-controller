@@ -29,7 +29,10 @@ function ControllerStatsCard({ stats }: ControllerStatsSardProps) {
         <ListLabelledItem label="Pending queries timeout">
           {stats?.getPqTimeout() ?? "N/A"}
         </ListLabelledItem>
-        <ListLabelledItem label="API RX">{stats?.getApiRx() ?? "N/A"}</ListLabelledItem>
+        <ListLabelledItem label="Duplicate pending queries dropped">
+          {stats?.getPqDuplicateDropped() ?? "N/A"}
+        </ListLabelledItem>
+        <ListLabelledItem label="Internal API calls">{stats?.getApiRx() ?? "N/A"}</ListLabelledItem>
       </List>
     </LoadableCard>
   );

@@ -1,6 +1,15 @@
-use super::{
-    DeviceId, Endpoint, ErrorSource, Payload, Request, RequestData, Response, ResponseData,
-};
+use crate::caniot::Payload;
+
+use super::{DeviceId, Endpoint, ErrorSource, Request, RequestData, Response, ResponseData, Type};
+
+pub fn format_u8_list(payload: impl AsRef<[u8]>) -> String {
+    payload
+        .as_ref()
+        .iter()
+        .map(|x| format!("{:02x}", x))
+        .collect::<Vec<String>>()
+        .join(" ")
+}
 
 pub fn build_telemetry_request_data(endpoint: Endpoint) -> RequestData {
     RequestData::Telemetry { endpoint }
@@ -68,6 +77,7 @@ impl ResponseMatch {
     }
 }
 
+// Check if the response is a response to the telemetry request
 fn response_match_any_telemetry_query(
     query_endpoint: Endpoint,
     response: &Response,
@@ -88,6 +98,7 @@ fn response_match_any_telemetry_query(
     ResponseMatch::new(is_response, is_error)
 }
 
+// Check if the response is a response to the attribute query
 fn response_match_any_attribute_query(key: u16, response: &Response) -> ResponseMatch {
     let (is_response, is_error) = match response.data {
         ResponseData::Telemetry { .. } => (false, false),
@@ -108,9 +119,10 @@ fn response_match_any_attribute_query(key: u16, response: &Response) -> Response
     ResponseMatch::new(is_response, is_error)
 }
 
+// Check if the response is a response to the given query
 pub fn is_response_to(query: &Request, response: &Response) -> ResponseMatch {
     if query.device_id != DeviceId::BROADCAST && query.device_id != response.device_id {
-        return ResponseMatch::new(false, false);
+        return ResponseMatch::new(false, matches!(response.data, ResponseData::Error { .. }));
     }
 
     match query.data {
@@ -120,5 +132,20 @@ pub fn is_response_to(query: &Request, response: &Response) -> ResponseMatch {
         RequestData::AttributeWrite { key, .. } | RequestData::AttributeRead { key } => {
             response_match_any_attribute_query(key, response)
         }
+    }
+}
+
+/// Check whether two requests are concurrent. i.e. Their response cannot be differentiated.
+///
+pub fn are_requests_concurrent(request: &Request, other: &Request) -> bool {
+    if request.device_id != other.device_id {
+        return false;
+    }
+
+    // If types are the same, compare the endpoint or key
+    match (request.get_type(), other.get_type()) {
+        (Type::Telemetry, Type::Telemetry) => request.get_endpoint() == other.get_endpoint(),
+        (Type::Attribute, Type::Attribute) => request.get_key() == other.get_key(),
+        _ => false,
     }
 }

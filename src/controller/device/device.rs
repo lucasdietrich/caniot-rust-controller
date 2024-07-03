@@ -5,8 +5,8 @@ use std::time::{Duration, Instant};
 
 use crate::{
     caniot::{
-        self, classes, BoardClassTelemetry, DeviceId, Endpoint, Response, ResponseData,
-        SysCtrl, TSP,
+        self, classes, BoardClassTelemetry, DeviceId, Endpoint, Response, ResponseData, SysCtrl,
+        TSP,
     },
     controller::ActionTrait,
     utils::expirable::ExpirableTrait,

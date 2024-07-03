@@ -7,7 +7,7 @@ use itertools::partition;
 use tokio::sync::oneshot::Sender;
 
 use crate::bus::{CanInterfaceError, CanInterfaceTrait, CAN_IOCTL_SEND_EMU_EVENT};
-use crate::caniot::{self, Frame, RequestData};
+use crate::caniot::{self, are_requests_concurrent, Frame, RequestData};
 use crate::caniot::{DeviceId, Request};
 use crate::controller::handle::{ControllerMessage, DeviceFilter};
 use crate::controller::{
@@ -34,8 +34,8 @@ use tokio::select;
 use tokio::sync::{mpsc, oneshot};
 use tokio::time::sleep;
 
-const QUERY_DEFAULT_TIMEOUT_MS: u32 = 1000; // 1s
-const ACTION_DEFAULT_TIMEOUT_MS: u32 = QUERY_DEFAULT_TIMEOUT_MS; // 1s
+const PENDING_QUERY_DEFAULT_TIMEOUT_MS: u32 = 1000; // 1s
+const ACTION_DEFAULT_TIMEOUT_MS: u32 = PENDING_QUERY_DEFAULT_TIMEOUT_MS; // 1s
 
 const CHANNEL_SIZE: usize = 10;
 // const DEVICES_COUNT: usize = 63;
@@ -53,6 +53,7 @@ pub struct ControllerStats {
     pub pq_pushed: usize,
     pub pq_timeout: usize,
     pub pq_answered: usize,
+    pub pq_duplicate_dropped: usize,
 
     // API
     pub api_rx: usize,
@@ -68,6 +69,9 @@ pub enum ControllerError {
 
     #[error("Duplicate device Error")]
     DuplicateDID,
+
+    #[error("Duplicate pending query: response undifferentiable")]
+    UndifferentiablePendingQuery,
 
     #[error("Generic device action needs a device ID")]
     GenericDeviceActionNeedsDID,
@@ -195,26 +199,34 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
         Self::iface_send_caniot_frame(&mut self.iface, &mut self.stats, request).await
     }
 
-    pub async fn query_sched(
+    async fn send_pend_request(
         &mut self,
         request: caniot::Request,
         timeout_ms: Option<u32>,
-        sender: oneshot::Sender<Result<caniot::Response, ControllerError>>,
+        tenant: PendingQueryTenant,
     ) {
-        let timeout_ms = timeout_ms.unwrap_or(QUERY_DEFAULT_TIMEOUT_MS);
+        let timeout_ms = timeout_ms.unwrap_or(PENDING_QUERY_DEFAULT_TIMEOUT_MS);
 
         if request.device_id == DeviceId::BROADCAST {
             error!("BROADCAST query not supported");
-            let _ = sender.send(Err(ControllerError::UnsupportedQuery));
+            let _ = tenant.end_with_error(ControllerError::UnsupportedQuery);
+        } else if self
+            .pending_queries
+            .iter()
+            .any(|pq| are_requests_concurrent(&pq.query, &request))
+        {
+            // Attempt to send the same query multiple times:
+            // queries for which response cannot be differentiated must not
+            // be sent as pending queries multiple times.
+            error!("Duplicate pending query: response undifferentiable, request not sent");
+            self.stats.pq_duplicate_dropped += 1;
+            tenant.end_with_error(ControllerError::UndifferentiablePendingQuery);
         } else if let Err(err) = self.send_caniot_frame(&request).await {
             error!("Failed to send CANIOT frame: {:?}", err);
-            let _ = sender.send(Err(err)); // Send None, but do not panic if receiver is dropped
+            let _ = tenant.end_with_error(err);
         } else {
-            self.pending_queries.push(PendingQuery::new(
-                request,
-                timeout_ms,
-                super::pending_query::PendingQueryTenant::Query(sender),
-            ));
+            self.pending_queries
+                .push(PendingQuery::new(request, timeout_ms, tenant));
             self.stats.pq_pushed += 1;
         }
     }
@@ -241,22 +253,13 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
                 match pq_tenant {
                     PendingQueryTenant::Action(pending_action) => {
                         if answered_pending_action.replace(pending_action).is_some() {
-                            // TODO
                             panic!(
                                 "
-                                Multiple actions pending on the same frame, \
-                                only the first one will be answered, 
-                                the channel sender of the following pendings will be dropped
-                                causing:
-
-                                thread 'tokio-runtime-worker' panicked at src/controller/handle.rs:96:24:
-                                IPC Sender dropped before response: RecvError(())
-
-                                This can be easily reproduced by delaying the reponse of an emulated device
-                                and sending the same action multiple times.
-
-                                This can be solved by make 'answered_pending_action' a Vec<PendingAction>
-                                and store all pending actions that have been answered by the frame
+                                Multiple concurrent requests pending for the same device,
+                                current implement does not support multiple pending
+                                requests with undifferentiable responses
+                                for a given device.
+                                Please refer to ControllerError::UndifferentiablePendingQuery
                                 "
                             );
                         }
@@ -462,17 +465,13 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
                 let _ = respond_to.send(Ok(result));
             }
             Ok(ActionResultOrPending::Pending(action, request)) => {
-                // TODO improve sending pending action
-                let _ = self.send_caniot_frame(&request).await;
-
-                self.pending_queries.push(PendingQuery::new(
+                let tenant = PendingQueryTenant::Action(PendingAction::new(action, respond_to));
+                self.send_pend_request(
                     request,
-                    timeout_ms.unwrap_or(ACTION_DEFAULT_TIMEOUT_MS),
-                    super::pending_query::PendingQueryTenant::Action(
-                        pending_action::PendingAction::new(action, respond_to),
-                    ),
-                ));
-                self.stats.pq_pushed += 1;
+                    Some(timeout_ms.unwrap_or(ACTION_DEFAULT_TIMEOUT_MS)),
+                    tenant,
+                )
+                .await;
             }
             Err(err) => {
                 let _ = respond_to.send(Err(err));
@@ -531,7 +530,8 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
                 respond_to,
             } => {
                 if let Some(respond_to) = respond_to {
-                    self.query_sched(query, timeout_ms, respond_to).await;
+                    let tenant = PendingQueryTenant::Query(respond_to);
+                    self.send_pend_request(query, timeout_ms, tenant).await;
                 } else {
                     let _ = self.send_caniot_frame(&query).await;
                 }

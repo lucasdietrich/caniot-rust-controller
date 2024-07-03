@@ -53,7 +53,9 @@ impl NgAlarms {
             .controller_handle
             .device_action_inner(None, action, None)
             .await
-            .map_err(|e| Status::internal(format!("Error in get_outdoor_alarm_state: {:?}", e)))?;
+            .map_err(|e| {
+                Status::internal(format!("Error in get_outdoor_alarm_state: {} ({:?})", e, e))
+            })?;
 
         Ok(Response::new(self.alarms_state_to_proto(&result)))
     }
@@ -113,7 +115,10 @@ impl AlarmsService for NgAlarms {
                 .device_action_inner(None, action, None)
                 .await
                 .map_err(|e| {
-                    Status::internal(format!("Error in send_outdoor_alarm_command: {:?}", e))
+                    Status::internal(format!(
+                        "Error in send_outdoor_alarm_command: {} ({:?})",
+                        e, e
+                    ))
                 })?;
             Ok(Response::new(self.alarms_state_to_proto(&result)))
         } else {

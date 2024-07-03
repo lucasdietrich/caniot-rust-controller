@@ -223,7 +223,7 @@ impl CaniotDevicesService for NgDevices {
             .controller_handle
             .device_action(Some(did), action, None)
             .await
-            .map_err(|e| Status::internal(format!("Error in perform_action: {:?}", e)))?;
+            .map_err(|e| Status::internal(format!("Error in perform_action: {} ({:?})", e, e)))?;
 
         let result = match result {
             DeviceActionResult::ResetSent => m::action_result::ActionResult::Reboot(()),

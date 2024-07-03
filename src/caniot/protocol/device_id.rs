@@ -3,7 +3,7 @@ use std::fmt::Debug;
 
 use serde::Serialize;
 
-use super::{traits::Class, ProtocolError};
+use crate::caniot::{traits::Class, ProtocolError};
 
 #[derive(Serialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct DeviceId {

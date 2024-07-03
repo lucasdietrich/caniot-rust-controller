@@ -35,7 +35,7 @@ impl HeatersService for NgHeaters {
         let result = api
             .device_action_inner(None, action, None)
             .await
-            .map_err(|e| Status::internal(format!("Error in get_state: {:?}", e)))?;
+            .map_err(|e| Status::internal(format!("Error in get_state: {} ({:?})", e, e)))?;
 
         Ok(Response::new(self.heater_status_to_proto(&result)))
     }
@@ -54,7 +54,7 @@ impl HeatersService for NgHeaters {
         let result = api
             .device_action_inner(None, action, None)
             .await
-            .map_err(|e| Status::internal(format!("Error in set_state: {:?}", e)))?;
+            .map_err(|e| Status::internal(format!("Error in set_state: {} ({:?})", e, e)))?;
 
         Ok(Response::new(self.heater_status_to_proto(&result)))
     }

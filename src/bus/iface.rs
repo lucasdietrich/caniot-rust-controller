@@ -54,5 +54,4 @@ where
     }
 }
 
-#[cfg(feature = "emu")]
 pub const CAN_IOCTL_SEND_EMU_EVENT: u32 = 0xFFFF_0001;
