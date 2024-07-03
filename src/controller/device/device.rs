@@ -240,7 +240,6 @@ impl Device {
     }
 
     pub fn process(&mut self, ctx: &mut ProcessContext) -> Result<Verdict, DeviceError> {
-        self.stats.process_count += 1;
         if let Some(ref mut inner) = self.controller {
             inner.wrapper_process(ctx)
         } else {
