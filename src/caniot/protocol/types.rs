@@ -117,7 +117,7 @@ impl TryFrom<EmbeddedId> for Id {
     fn try_from(value: EmbeddedId) -> Result<Self, Self::Error> {
         match value {
             EmbeddedId::Standard(id) => Ok(id.as_raw().into()),
-            EmbeddedId::Extended(_) => Err(ConversionError::NotValidId),
+            EmbeddedId::Extended(_) => Err(ConversionError::ExtendedIdNotSupported),
         }
     }
 }
@@ -128,8 +128,8 @@ pub enum ConversionError {
     NotValidResponse,
     #[error("Not a valid caniot request frame")]
     NotValidRequest,
-    #[error("Not a valid caniot id")]
-    NotValidId,
+    #[error("Extended id not supported")]
+    ExtendedIdNotSupported,
     #[error("Not a valid caniot endpoint")]
     NotValidEndpoint,
 }
