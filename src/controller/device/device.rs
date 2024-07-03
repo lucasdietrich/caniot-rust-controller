@@ -1,5 +1,6 @@
 use chrono::{DateTime, Utc};
 
+use log::warn;
 use serde::Serialize;
 use std::time::{Duration, Instant};
 
@@ -78,6 +79,10 @@ impl Device {
             .map(|t| (Utc::now() - *t).num_seconds() as u32)
     }
 
+    pub fn is_seen(&self) -> bool {
+        self.last_seen.is_some()
+    }
+
     pub fn mark_processed(&mut self) {
         self.last_process = Some(Instant::now());
     }
@@ -99,6 +104,7 @@ impl Device {
     }
 
     pub fn time_to_next_process(&self) -> Option<Duration> {
+        // If device has never been processed, process it a first time
         if self.last_process.is_none() {
             return Some(Duration::from_secs(0));
         } else if let Some(next_process) = self.next_requested_process {
@@ -234,6 +240,7 @@ impl Device {
     }
 
     pub fn process(&mut self, ctx: &mut ProcessContext) -> Result<Verdict, DeviceError> {
+        self.stats.process_count += 1;
         if let Some(ref mut inner) = self.controller {
             inner.wrapper_process(ctx)
         } else {
@@ -242,7 +249,11 @@ impl Device {
     }
 
     pub fn get_alert(&self) -> Option<DeviceAlert> {
-        if let Some(inner) = self.controller.as_ref() {
+        if !self.is_seen() {
+            // TODO not fully implemented for now
+            warn!("Get alert on unseen device");
+            Some(DeviceAlert::new_error("Capteur non détecté"))
+        } else if let Some(inner) = self.controller.as_ref() {
             inner.wrapper_get_alert()
         } else {
             None

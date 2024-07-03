@@ -82,6 +82,7 @@ message Device {
 
   google.protobuf.Timestamp lastSeen = 4;
   optional uint32 lastSeenFromNow = 5; // seconds
+  bool isSeen = 106;
 
   bool controller_attached = 6;
   optional string controller_name = 7;

@@ -97,6 +97,7 @@ impl Into<m::Device> for &DeviceInfos {
     fn into(self) -> m::Device {
         m::Device {
             did: Some(self.did.into()),
+            is_seen: self.is_seen,
             last_seen: self.last_seen.as_ref().map(datetime_to_prost_timestamp),
             last_seen_from_now: self.last_seen_from_now,
             controller_attached: self.controller_attached,

@@ -396,7 +396,7 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
                         },
                         Err(err) => {
                             self.stats.iface_malformed += 1;
-                            error!("Failed to convert into CANIOT frame {}", err)
+                            error!("Failed to convert into CANIOT frame: {}", err)
                         },
                     }
                 },

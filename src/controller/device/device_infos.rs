@@ -8,6 +8,7 @@ use super::{alert::DeviceAlert, Device, DeviceStats};
 #[derive(Debug, Clone, Serialize)]
 pub struct DeviceInfos {
     pub did: caniot::DeviceId,
+    pub is_seen: bool,
     pub last_seen: Option<DateTime<Utc>>,
     pub last_seen_from_now: Option<u32>, // seconds
     pub controller_attached: bool,
@@ -47,6 +48,7 @@ impl Into<DeviceInfos> for &Device {
             last_seen: self.last_seen,
             controller_attached: controller_attached,
             controller_name: controller_name,
+            is_seen: self.is_seen(),
             last_seen_from_now: self.last_seen_from_now(),
             stats: self.stats,
             measures: self.measures,

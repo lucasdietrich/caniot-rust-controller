@@ -1,16 +1,22 @@
 use crate::{
-    caniot::{self, BoardClassTelemetry, HeatingMode, Response},
+    caniot::{self, BoardClassTelemetry, Endpoint, HeatingMode, Response},
     controller::{
         alert::DeviceAlert, ActionResultTrait, ActionTrait, ActionVerdict, DeviceControllerInfos,
-        DeviceControllerTrait, ProcessContext, Verdict,
+        DeviceControllerTrait, DeviceError, ProcessContext, Verdict,
     },
 };
 
 use super::types::{HeatingControllerCommand, HeatingControllerTelemetry};
 
+pub const HEATERS_ENDPOINT: Endpoint = Endpoint::ApplicationDefault;
+
 #[derive(Debug, Default, Clone)]
 pub struct HeatersController {
     pub status: HeaterStatus,
+
+    // Monitor the number of received telemetry frames for the status endpoint "ApplicationDefault"
+    pub status_telemetry_rx_count: usize,
+    pub status_telemetry_req_sent: bool,
 }
 
 #[derive(Debug, Default, Clone)]
@@ -38,6 +44,18 @@ impl DeviceControllerTrait for HeatersController {
         DeviceControllerInfos::new("heaters", Some("Chauffage lucas"), Some("heaters"))
     }
 
+    fn process(&mut self, _ctx: &mut ProcessContext) -> Result<Verdict, DeviceError> {
+        // Request telemetry on the status endpoint a single time if no telemetry has been received yet
+        if !self.status_telemetry_req_sent && self.status_telemetry_rx_count == 0 {
+            self.status_telemetry_req_sent = true;
+            Ok(Verdict::Request(caniot::RequestData::Telemetry {
+                endpoint: HEATERS_ENDPOINT,
+            }))
+        } else {
+            Ok(Verdict::default())
+        }
+    }
+
     fn handle_action(
         &mut self,
         action: &Self::Action,
@@ -51,7 +69,7 @@ impl DeviceControllerTrait for HeatersController {
                 };
 
                 ActionVerdict::ActionPendingOn(caniot::RequestData::Command {
-                    endpoint: caniot::Endpoint::ApplicationDefault,
+                    endpoint: HEATERS_ENDPOINT,
                     payload: command.into(),
                 })
             }
@@ -76,8 +94,10 @@ impl DeviceControllerTrait for HeatersController {
     ) -> Result<Verdict, crate::controller::DeviceError> {
         match &frame {
             &caniot::ResponseData::Telemetry { endpoint, payload }
-                if endpoint == &caniot::Endpoint::ApplicationDefault =>
+                if endpoint == &HEATERS_ENDPOINT =>
             {
+                self.status_telemetry_rx_count += 1;
+
                 // interpret the payload as telemetry
                 let telemetry = HeatingControllerTelemetry::try_from(payload)?;
 
@@ -92,7 +112,12 @@ impl DeviceControllerTrait for HeatersController {
     }
 
     fn get_alert(&self) -> Option<DeviceAlert> {
-        if !self.status.power_status {
+        if self.status_telemetry_rx_count == 0 {
+            Some(
+                DeviceAlert::new_warning("Etat du chauffage inconnu")
+                    .with_description("Pas de télémesure reçue pour l'état du chauffage"),
+            )
+        } else if !self.status.power_status {
             Some(
                 DeviceAlert::new_warning("Chauffage non alimenté")
                     .with_description("Pas de présence tension sur le chauffage"),
