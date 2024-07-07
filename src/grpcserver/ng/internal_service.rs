@@ -1,5 +1,6 @@
 use std::{collections::HashMap, time::SystemTime};
 
+use chrono::Utc;
 use log::{debug, warn};
 use tonic::{Request, Response, Status};
 
@@ -42,8 +43,11 @@ impl Into<m::SoftwareInfos> for &SoftwareInfos {
     fn into(self) -> m::SoftwareInfos {
         m::SoftwareInfos {
             build: (&self.build).into(),
-            start_date: Some(datetime_to_prost_timestamp(&self.start_date)),
             update_date: None,
+            runtime: Some(m::SoftwareRuntimeInfos {
+                start_time: Some(datetime_to_prost_timestamp(&self.runtime.start_time)),
+                system_time: Some(datetime_to_prost_timestamp(&Utc::now())),
+            }),
         }
     }
 }
@@ -179,8 +183,8 @@ impl InternalService for NgInternal {
 
     async fn get_infos(&self, _request: Request<()>) -> Result<Response<m::Infos>, Status> {
         Ok(Response::new(m::Infos {
-            software: Some((&self.shared.software_infos).into()),
             firmware: Some((&self.shared.firmware_infos).into()),
+            software: Some((&self.shared.software_infos).into()),
             controller_stats: Some(
                 (&self.shared.controller_handle.get_controller_stats().await.0).into(),
             ),

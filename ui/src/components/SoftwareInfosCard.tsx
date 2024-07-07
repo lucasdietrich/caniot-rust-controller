@@ -24,11 +24,14 @@ function SoftwareInfosCard({ infos }: SoftwareInfosCardProps) {
         <ListLabelledItem label="Build commit">
           {infos?.getBuild()?.getCommit() ?? "N/A"}
         </ListLabelledItem>
-        <ListLabelledItem label="Dernier lancement">
-          {infos?.getStartDate()?.toDate().toLocaleString() ?? "N/A"}
-        </ListLabelledItem>
         <ListLabelledItem label="Derrière mise à jour">
           {infos?.getUpdateDate()?.toDate().toLocaleString() ?? "Jamais"}
+        </ListLabelledItem>
+        <ListLabelledItem label="Dernier lancement">
+          {infos?.getRuntime()?.getStartTime()?.toDate().toLocaleString() ?? "N/A"}
+        </ListLabelledItem>
+        <ListLabelledItem label="Heure système">
+          {infos?.getRuntime()?.getSystemTime()?.toDate().toLocaleString() ?? "N/A"}
         </ListLabelledItem>
       </List>
     </LoadableCard>

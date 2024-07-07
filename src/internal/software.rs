@@ -54,20 +54,37 @@ impl Default for SoftwareBuildInfos {
 }
 
 #[derive(Debug, Clone)]
+pub struct SoftwareRuntimeInfos {
+    pub start_time: DateTime<Utc>,
+}
+
+impl Default for SoftwareRuntimeInfos {
+    fn default() -> Self {
+        let now = Utc::now();
+
+        Self {
+            start_time: Utc::now(),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct SoftwareInfos {
     pub build: SoftwareBuildInfos,
-    pub start_date: DateTime<Utc>,
 
     // Last date the software has been updated
     pub update_date: Option<DateTime<Utc>>,
+
+    // Runtime infos
+    pub runtime: SoftwareRuntimeInfos,
 }
 
 impl Default for SoftwareInfos {
     fn default() -> Self {
         Self {
             build: SoftwareBuildInfos::default(),
-            start_date: Utc::now(),
             update_date: None,
+            runtime: SoftwareRuntimeInfos::default(),
         }
     }
 }

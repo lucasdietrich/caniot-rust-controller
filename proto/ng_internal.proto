@@ -40,9 +40,15 @@ message SoftwareBuildInfos {
   google.protobuf.Timestamp build_date = 3;
 }
 
+message SoftwareRuntimeInfos {
+  google.protobuf.Timestamp start_time = 1;
+  google.protobuf.Timestamp system_time = 2;
+}
+
 message SoftwareInfos {
   optional SoftwareBuildInfos build = 1;
-  google.protobuf.Timestamp start_date = 2;
+  optional SoftwareRuntimeInfos runtime = 2;
+
   google.protobuf.Timestamp update_date = 3;
 }
 

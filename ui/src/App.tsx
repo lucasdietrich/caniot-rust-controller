@@ -41,6 +41,9 @@ const App: React.FC = () => {
   const isMobile = width <= MobileMaxSize;
 
   useEffect(() => {
+    // set page title
+    document.title = "CANIOT Controller";
+
     window.addEventListener("resize", handleWindowSizeChange);
 
     setUIDarkMode(sessionStore.getUIDarkMode() || false);
@@ -125,6 +128,8 @@ const App: React.FC = () => {
               {UIDebugMode && <Route path="/debug" element={<Debug />} />}
               <Route path="/devices/heaters" element={<HeatersView isMobile={isMobile} />} />
               <Route path="/devices/garage" element={<GarageDoorsView refreshInterval={1000} />} />
+              <Route path="/garage" element={<GarageDoorsView refreshInterval={1000} />} />{" "}
+              {/* Alias to keep compat with caniot-pycontroller */}
               <Route path="/devices/alarms" element={<AlarmsView isMobile={isMobile} />} />
               <Route
                 path="/settings"
