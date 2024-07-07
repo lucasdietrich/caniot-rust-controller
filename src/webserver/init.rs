@@ -1,5 +1,6 @@
 use std::path::{Path, PathBuf};
 
+use rocket::config::Shutdown;
 use rocket::fs::NamedFile;
 use rocket::serde::{Deserialize, Serialize};
 use rocket::State;
@@ -46,7 +47,7 @@ pub async fn files(path: PathBuf, state: &State<SharedHandle>) -> Option<NamedFi
     }
 }
 
-pub fn rocket(shared: SharedHandle) -> Rocket<Build> {
+pub async fn rocket_server(shared: SharedHandle) -> Result<Rocket<rocket::Ignite>, rocket::Error> {
     let config = &shared.config.web;
 
     let config = Config {
@@ -55,6 +56,13 @@ pub fn rocket(shared: SharedHandle) -> Rocket<Build> {
         cli_colors: true,
         port: config.port,
         address: config.listen.parse().expect("Invalid address"),
+        shutdown: Shutdown {
+            ctrlc: true,
+            grace: 2,
+            mercy: 3,
+            force: true,
+            ..Default::default()
+        },
         ..Default::default()
     };
 
@@ -62,5 +70,5 @@ pub fn rocket(shared: SharedHandle) -> Rocket<Build> {
         .manage(shared)
         .mount("/", routes![files]);
 
-    rocket
+    rocket.launch().await
 }

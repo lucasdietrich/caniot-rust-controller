@@ -49,16 +49,11 @@ pub fn run_controller() {
     let (notify_shutdown, _) = broadcast::channel(1);
 
     let database = rt
-        .block_on(Database::new(&config.database.connection_string))
+        .block_on(Database::try_connect(&config.database))
         .expect("Failed to connect to database");
     rt.block_on(database.initialize_tables())
         .expect("Failed to initialize database tables");
     let database_handle = Arc::new(RwLock::new(database));
-
-    // read settings from database
-    let settings_lg = rt.block_on(database_handle.read());
-    let _settings = settings_lg.get_settings_store();
-    drop(settings_lg);
 
     let controller =
         controller::init::<bus::IFaceType>(&rt, &config, &database_handle, &notify_shutdown);
@@ -72,6 +67,10 @@ pub fn run_controller() {
         firmware_infos,
         software_infos,
     ));
+
+    let h_ctrl = rt.spawn(controller.run());
+    let h_rocket = rt.spawn(webserver::rocket_server(shared.clone()));
+    let h_grpc = rt.spawn(grpcserver::grpc_server(shared.clone()));
 
     rt.spawn(async move {
         tokio::signal::ctrl_c()
@@ -87,9 +86,6 @@ pub fn run_controller() {
         drop(notify_shutdown);
     });
 
-    let h_ctrl = rt.spawn(controller.run());
-    let h_rocket = rt.spawn(webserver::rocket(shared.clone()).launch());
-    let h_grpc = rt.spawn(grpcserver::grpc_server(shared));
-
     let _ = rt.block_on(async { tokio::join!(h_ctrl, h_rocket, h_grpc) });
+    println!("Exiting...");
 }

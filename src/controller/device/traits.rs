@@ -18,6 +18,9 @@ pub trait DeviceControllerTrait: Send + Debug + Default {
     // type Class: Class<'a>; ???
     type Action: ActionTrait;
 
+    // TODO add a config type to the trait
+    // type Config;
+
     fn handle_frame(
         &mut self,
         _frame: &caniot::ResponseData,
@@ -117,9 +120,7 @@ pub trait DeviceControllerWrapperTrait: Send + Debug {
         &self,
         _delayed_action: &Box<dyn ActionWrapperTrait>,
         _completed_by: caniot::Response,
-    ) -> Result<Box<dyn ActionResultTrait>, DeviceError> {
-        Err(DeviceError::NotImplemented)
-    }
+    ) -> Result<Box<dyn ActionResultTrait>, DeviceError>;
 
     fn wrapper_process(&mut self, ctx: &mut ProcessContext) -> Result<Verdict, DeviceError>;
 

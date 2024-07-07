@@ -12,9 +12,9 @@ use super::super::super::caniot::*;
 
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub struct GarageDoorCommand {
-    // #[crl1(PulseOn)]
+    // todo concept #[crl1(PulseOn)]
     pub left_door_activate: bool,
-    // #[crl2(PulseOn)]
+    // todo concept #[crl2(PulseOn)]
     pub right_door_activate: bool,
 }
 

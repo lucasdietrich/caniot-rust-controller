@@ -574,7 +574,7 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
                 let _ = respond_to.send(result);
             }
             #[cfg(feature = "emu")]
-            ControllerMessage::EmulationEvent { event } => self
+            ControllerMessage::EmulationRequest { event } => self
                 .iface
                 .ioctl(CAN_IOCTL_SEND_EMU_EVENT, Into::<i32>::into(event) as u32)?,
         }

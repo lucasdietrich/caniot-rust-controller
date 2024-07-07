@@ -64,7 +64,7 @@ pub enum ControllerMessage {
         respond_to: oneshot::Sender<Result<(), ControllerError>>,
     },
     #[cfg(feature = "emu")]
-    EmulationEvent { event: EmuRequest },
+    EmulationRequest { event: EmuRequest },
 }
 
 #[derive(Debug, Clone)]
@@ -192,11 +192,11 @@ impl ControllerHandle {
     }
 
     #[cfg(feature = "emu")]
-    pub async fn send_emulation_event(&self, event: EmuRequest) {
-        debug!("Sending emulation event to controller: {:?}", event);
+    pub async fn send_emulation_request(&self, event: EmuRequest) {
+        debug!("Sending emulation request to controller: {:?}", event);
         self.sender
-            .send(ControllerMessage::EmulationEvent { event })
+            .send(ControllerMessage::EmulationRequest { event })
             .await
-            .expect("Failed to send emulation event to controller");
+            .expect("Failed to send emulation request to controller");
     }
 }

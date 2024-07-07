@@ -28,11 +28,11 @@ impl EmulationService for NgEmulation {
         #[cfg(feature = "emu")]
         {
             let req = req.into_inner();
-            let event = m::EmuRequest::try_from(req.event).unwrap_or_default();
+            let emu_req = m::EmuRequest::try_from(req.event).unwrap_or_default();
             self.shared
                 .controller_handle
                 .clone()
-                .send_emulation_event(event)
+                .send_emulation_request(emu_req)
                 .await;
         }
 

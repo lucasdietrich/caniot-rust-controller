@@ -14,6 +14,7 @@ use crate::{
         },
     },
     shared::SharedHandle,
+    shutdown::Shutdown,
 };
 
 #[cfg(feature = "grpc-can-iface-server")]
@@ -55,11 +56,7 @@ pub async fn grpc_server(shared: SharedHandle) -> Result<(), GrpcServerInitError
     #[cfg(feature = "grpc-can-iface-server")]
     let ng_can_iface = get_ng_can_iface_server(shared.clone());
 
-    let mut rx: tokio::sync::broadcast::Receiver<()> = shared.notify_shutdown.subscribe();
-    let shutdown_future = async move {
-        let _ = rx.recv().await;
-        info!("gRPC server shutting down...");
-    };
+    let mut shutdown = Shutdown::new(shared.notify_shutdown.subscribe());
 
     info!("gRPC server listening on {}", addr);
 
@@ -78,7 +75,12 @@ pub async fn grpc_server(shared: SharedHandle) -> Result<(), GrpcServerInitError
     let builder = { builder.add_service(tonic_web::enable(ng_can_iface)) };
 
     // Start
-    builder.serve_with_shutdown(addr, shutdown_future).await?;
+    builder
+        .serve_with_shutdown(addr, async {
+            shutdown.recv().await;
+            info!("gRPC server shutting down...");
+        })
+        .await?;
 
     info!("gRPC server stopped");
 

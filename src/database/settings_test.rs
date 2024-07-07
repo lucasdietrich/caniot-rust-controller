@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 
 use crate::{
-    database::{db, SettingsStore},
+    database::{db, DatabaseConfig, SettingsStore},
     settings::SettingTrait,
 };
 
@@ -30,9 +30,11 @@ pub fn test_settings() {
             }
         }
 
-        let pool = db::Database::new("postgres://caniot:caniot@localhost/caniot")
-            .await
-            .unwrap();
+        let config = DatabaseConfig {
+            connection_string: "postgres://caniot:caniot@localhost/caniot".to_string(),
+            ..Default::default()
+        };
+        let pool = db::Database::try_connect(&config).await.unwrap();
         let store = pool.get_settings_store();
 
         let delete_immediate = false;
