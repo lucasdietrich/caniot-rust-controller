@@ -18,7 +18,7 @@ use crate::shutdown::Shutdown;
 use crate::utils::expirable::{ttl, ExpirableTrait};
 
 #[cfg(feature = "can-tunnel")]
-use super::can_tunnel::CanTunnelContext;
+use super::can_tunnel::CanTunnelContextServer;
 use super::pending_query::PendingQueryTenant;
 
 use super::super::handle;
@@ -114,7 +114,7 @@ enum ActionResultOrPending {
 
 pub struct Controller<IF: CanInterfaceTrait> {
     // CAN interface
-    pub iface: IF,
+    iface: IF,
 
     // Service
     pub config: CaniotConfig,
@@ -128,7 +128,7 @@ pub struct Controller<IF: CanInterfaceTrait> {
     devices: HashMap<DeviceId, Device>,
 
     #[cfg(feature = "can-tunnel")]
-    tunnel: CanTunnelContext,
+    tunnel_server: CanTunnelContextServer,
 }
 
 impl<IF: CanInterfaceTrait> Controller<IF> {
@@ -150,7 +150,7 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
             pending_queries: Vec::new(),
             devices: HashMap::new(),
             #[cfg(feature = "can-tunnel")]
-            tunnel: CanTunnelContext::default(),
+            tunnel_server: CanTunnelContextServer::default(),
         })
     }
 
@@ -367,7 +367,7 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
             let tunnel_poll_tx = {
                 #[cfg(feature = "can-tunnel")]
                 {
-                    self.tunnel.poll_tx()
+                    self.tunnel_server.poll_tx()
                 }
                 #[cfg(not(feature = "can-tunnel"))]
                 {
@@ -382,7 +382,7 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
                 Some(frame) = self.iface.recv_poll() => {
                     // Send frame to tunnel if established
                     #[cfg(feature = "can-tunnel")]
-                    self.tunnel.notify_rx(frame.clone());
+                    self.tunnel_server.notify_rx(frame.clone());
 
                     // Process the frame in the curren controller
                     match caniot::Response::try_from(frame) {
@@ -568,7 +568,7 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
                 respond_to,
             } => {
                 let result = self
-                    .tunnel
+                    .tunnel_server
                     .establish_can_tunnel(rx_queue, tx_queue)
                     .map_err(Into::into);
                 let _ = respond_to.send(result);

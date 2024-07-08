@@ -21,11 +21,11 @@ struct Tunnel {
 }
 
 #[derive(Default)]
-pub struct CanTunnelContext {
+pub struct CanTunnelContextServer {
     tunnel: Option<Tunnel>,
 }
 
-impl CanTunnelContext {
+impl CanTunnelContextServer {
     pub fn establish_can_tunnel(
         &mut self,
         rx_queue: mpsc::Sender<CanDataFrame>,
