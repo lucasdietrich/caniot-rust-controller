@@ -60,8 +60,6 @@ pub struct SoftwareRuntimeInfos {
 
 impl Default for SoftwareRuntimeInfos {
     fn default() -> Self {
-        let now = Utc::now();
-
         Self {
             start_time: Utc::now(),
         }
