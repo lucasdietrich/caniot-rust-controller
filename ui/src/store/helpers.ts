@@ -5,24 +5,48 @@
 import { notification } from "antd";
 import { RpcError } from "grpc-web";
 
+const MAX_NOTIFICATIONS = 6;
+const SUCCESS_DURATION = 2;
+const ERROR_DURATION = 5;
+const SHOW_SUCCESS = false;
+
+let notificationCount = 0;
+
 export function HandleError(e: RpcError) {
   console.log("API error: ", e);
+  console.log(e.code, e.message, e.metadata);
 
-  notification.error({
-    message: "Error",
-    description: e.message,
-    duration: 3,
-    // showProgress: true,
-  });
+  if (notificationCount < MAX_NOTIFICATIONS) {
+    notificationCount++;
+    notification.error({
+      message: e.name,
+      description: e.message,
+      duration: ERROR_DURATION,
+      showProgress: true,
+      onClose: () => {
+        notificationCount--;
+      },
+    });
+  }
 }
 
 export function HandleSuccess(message: string) {
-  // notification.success({
-  //   message: message,
-  //   duration: 3,
-  //   // showProgress: true,
-  // });
+  if (SHOW_SUCCESS) {
+    if (notificationCount < MAX_NOTIFICATIONS) {
+      notificationCount++;
+      notification.success({
+        message: message,
+        duration: SUCCESS_DURATION,
+        showProgress: true,
+        onClose: () => {
+          notificationCount--;
+        },
+      });
+    }
+  }
 }
+
+// ant-notification-notice ant-notification-notice-success ant-notification-notice-closable
 
 // http://localhost:50051
 // http://192.168.10.53:50051

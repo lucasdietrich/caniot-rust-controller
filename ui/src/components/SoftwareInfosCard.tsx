@@ -10,7 +10,7 @@ interface SoftwareInfosCardProps {
 
 function SoftwareInfosCard({ infos }: SoftwareInfosCardProps) {
   return (
-    <LoadableCard loading={!infos} title="Logiciel" bordered={false}>
+    <LoadableCard loading={infos === undefined} title="Logiciel" bordered={false}>
       <List>
         <ListLabelledItem label="Status">
           <Typography.Text type="success">Running</Typography.Text>

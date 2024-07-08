@@ -105,6 +105,10 @@ Run with
 - treat the case where the process() function of a device controller sends a frame for which the response trigger a new process() call, leading to a infinite loop
 - improve call of process() in emulated devices
 - event/log system
+- send broadcast frame on startup
+- handle broadcast pending queries
+- controller cron jobs
+- start http server if datbase is not available
 
 ```
 device_temperature{medium="CAN",mac="16",device="GarageDoorController",sensor="EMBEDDED",room="",collector="pycaniotcontroller"} 19.00

@@ -2,13 +2,16 @@ use std::time::{Duration, Instant};
 
 use super::{ControllerError, PendingAction};
 use crate::{caniot, utils::expirable::ExpirableTrait};
-use tokio::sync::oneshot;
+use tokio::sync::{mpsc, oneshot};
 
 /// Initiator of a pending query, it represents the entity that is waiting for the query to be answered
 #[derive(Debug)]
 pub enum PendingQueryTenant {
     // channel to reply to when query is answered
     Query(oneshot::Sender<Result<caniot::Response, ControllerError>>),
+
+    // channel to reply when responses are received
+    // Broadcast(mpsc::Sender<Result<caniot::Response, ControllerError>>),
 
     // The pending action the query is associated with
     Action(PendingAction),

@@ -19,6 +19,22 @@ body {
         padding-left: 4px !important;
         padding-right: 4px !important;
     }
+
+    /* Success and error notifications */
+    .ant-notification-notice {
+        display: none;
+    }
+
+    /*
+    .ant-notification-notice-message, .ant-notification-notice-description {
+        padding: 10px !important;
+        display: none;
+    }
+
+    .ant-notification-notice-message {
+        margin-bottom: 4px !important;
+    }
+    */
 }
 
 @media (min-width: 700px) {
