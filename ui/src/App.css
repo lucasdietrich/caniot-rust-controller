@@ -20,8 +20,12 @@ body {
         padding-right: 4px !important;
     }
 
-    /* Success and error notifications */
     .ant-notification-notice {
+        width: 250px !important;
+    }
+   
+    /* Success and error notifications */
+    .ant-notification-notice-success {
         display: none;
     }
 

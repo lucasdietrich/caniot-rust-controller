@@ -3,18 +3,23 @@
 // https://github.com/chirpstack/chirpstack/blob/master/LICENSE
 
 import { notification } from "antd";
-import { RpcError } from "grpc-web";
+import { RpcError, StatusCode } from "grpc-web";
 
 const MAX_NOTIFICATIONS = 6;
 const SUCCESS_DURATION = 2;
 const ERROR_DURATION = 5;
 const SHOW_SUCCESS = false;
+const SHOW_RPC_UNKNOWN_ERROR = false;
 
 let notificationCount = 0;
 
 export function HandleError(e: RpcError) {
   console.log("API error: ", e);
-  console.log(e.code, e.message, e.metadata);
+  console.log("API: ", e.code, e.message, e.metadata);
+
+  if (!SHOW_RPC_UNKNOWN_ERROR && e.code == StatusCode.UNKNOWN) {
+    return;
+  }
 
   if (notificationCount < MAX_NOTIFICATIONS) {
     notificationCount++;
