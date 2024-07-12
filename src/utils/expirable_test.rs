@@ -1,50 +1,102 @@
+use chrono::{Duration, NaiveDateTime, Utc};
+
 use crate::utils::expirable::ttl;
 
 use super::expirable::ExpirableTrait;
 
 #[derive(Debug, Default)]
-struct Expirable {
+struct DurExpirable {
     ttl: Option<u64>,
 }
 
-impl ExpirableTrait<u64> for Expirable {
-    fn ttl(&self) -> Option<u64> {
+impl ExpirableTrait<u64> for DurExpirable {
+    const ZERO: u64 = 0;
+    type Instant = u64;
+
+    fn ttl(&self, _now: &u64) -> Option<u64> {
         self.ttl
     }
 }
 
+#[derive(Debug, Default)]
+struct InstExpirable {
+    expiration_instant: Option<u64>,
+}
+
+impl ExpirableTrait<u64> for InstExpirable {
+    const ZERO: u64 = 0;
+    type Instant = u64;
+
+    fn ttl(&self, now: &u64) -> Option<u64> {
+        self.expiration_instant
+            .and_then(|exp| if exp > *now { Some(exp - now) } else { Some(0) })
+    }
+}
+
 #[test]
-fn test_expirable() {
-    let expired = Expirable { ttl: Some(0) };
-    assert!(expired.expirable());
-    assert!(expired.expired());
+fn test_duration_expirable() {
+    let now = 1;
 
-    let not_expired = Expirable { ttl: Some(1) };
-    assert!(not_expired.expirable());
-    assert!(!not_expired.expired());
+    let expired = DurExpirable { ttl: Some(0) };
+    assert!(expired.is_expirable(&now));
+    assert!(expired.is_expired(&now));
 
-    let not_expirable = Expirable { ttl: None };
-    assert!(!not_expirable.expirable());
-    assert!(!not_expirable.expired());
+    let not_expired = DurExpirable { ttl: Some(1) };
+    assert!(not_expired.is_expirable(&now));
+    assert!(!not_expired.is_expired(&now));
+
+    let not_expirable = DurExpirable { ttl: None };
+    assert!(!not_expirable.is_expirable(&now));
+    assert!(!not_expirable.is_expired(&now));
+}
+
+#[test]
+fn test_instant_expirable() {
+    let now = 1;
+
+    let expired = InstExpirable {
+        expiration_instant: Some(0),
+    };
+    assert!(expired.is_expirable(&now));
+    assert!(expired.is_expired(&now));
+
+    let not_expired = InstExpirable {
+        expiration_instant: Some(1),
+    };
+    assert!(not_expired.is_expirable(&now));
+    assert!(not_expired.is_expired(&now));
+
+    let expired = InstExpirable {
+        expiration_instant: Some(2),
+    };
+    assert!(expired.is_expirable(&now));
+    assert!(!expired.is_expired(&now));
+
+    let not_expirable = InstExpirable {
+        expiration_instant: None,
+    };
+    assert!(!not_expirable.is_expirable(&now));
+    assert!(!not_expirable.is_expired(&now));
 }
 
 #[test]
 fn test_iter_expirable() {
-    fn create_vec(durations: &[i64]) -> Vec<Expirable> {
+    fn create_vec(durations: &[i64]) -> Vec<DurExpirable> {
         durations
             .iter()
             .map(|d| {
                 let ttl = if *d < 0 { None } else { Some(*d as u64) };
-                Expirable { ttl }
+                DurExpirable { ttl }
             })
             .collect()
     }
 
     fn test_vec(durations: &[i64], expirable: bool, expired: bool, time_to_expire: Option<u64>) {
+        let now = 0;
         let vec = create_vec(durations);
-        assert_eq!(vec.iter().expirable(), expirable);
-        assert_eq!(vec.iter().expired(), expired);
-        assert_eq!(vec.iter().ttl(), time_to_expire);
+        assert_eq!(vec.iter().is_expirable(&now), expirable);
+        assert_eq!(vec.iter().is_expired(&now), expired);
+        assert_eq!(vec.iter().ttl(&now), time_to_expire);
     }
 
     // negative ttl means no expiration (transformed to None)
@@ -83,4 +135,51 @@ fn test_result_ttl() {
     assert_eq!(ttl(&[Some(2), None]), Some(2));
     assert_eq!(ttl(&[None, Some(2)]), Some(2));
     assert_eq!(ttl::<Option<u64>>(&[None, None]), None);
+}
+
+pub struct ChronoExpirable {
+    expiration_instant: Option<NaiveDateTime>,
+}
+
+impl ExpirableTrait<Duration> for ChronoExpirable {
+    const ZERO: Duration = Duration::zero();
+    type Instant = NaiveDateTime;
+
+    fn ttl(&self, now: &NaiveDateTime) -> Option<Duration> {
+        self.expiration_instant.and_then(|exp| {
+            if exp > *now {
+                Some(exp - *now)
+            } else {
+                Some(Duration::zero())
+            }
+        })
+    }
+}
+
+#[test]
+fn test_chrono_expirable() {
+    let now = Utc::now().naive_utc();
+    let now_1s = now + Duration::seconds(1);
+    let now_1m = now + Duration::minutes(1);
+    let now_1h = now + Duration::hours(1);
+    let now_1j = now + Duration::days(1);
+}
+
+pub struct StdExpirable {
+    expiration_instant: Option<std::time::Instant>,
+}
+
+impl ExpirableTrait<std::time::Duration> for StdExpirable {
+    const ZERO: std::time::Duration = std::time::Duration::ZERO;
+    type Instant = std::time::Instant;
+
+    fn ttl(&self, now: &std::time::Instant) -> Option<std::time::Duration> {
+        self.expiration_instant.and_then(|exp| {
+            if exp > *now {
+                Some(exp - *now)
+            } else {
+                Some(std::time::Duration::ZERO)
+            }
+        })
+    }
 }

@@ -105,11 +105,13 @@ impl PendingQuery {
 }
 
 impl ExpirableTrait<Duration> for PendingQuery {
-    fn ttl(&self) -> Option<Duration> {
-        let now = Instant::now();
+    const ZERO: Duration = Duration::ZERO;
+    type Instant = Instant;
+
+    fn ttl(&self, now: &Instant) -> Option<Duration> {
         let timeout_instant = self.get_timeout_instant();
-        if now < timeout_instant {
-            Some(timeout_instant - now)
+        if *now < timeout_instant {
+            Some(timeout_instant - *now)
         } else {
             None
         }

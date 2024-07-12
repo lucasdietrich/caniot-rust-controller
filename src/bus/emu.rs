@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use crate::{
     caniot::{
@@ -25,12 +25,13 @@ impl CanInterface {
     }
 
     fn send_emu_request(&mut self, event: EmuRequest) {
+        let now = Instant::now();
         for device in self.devices.iter_mut() {
             device.handle_emu_request(event);
 
             // Process the device immediately after having send the emulated event
             // If a response is generated, it will be added to the to_recv_msgq
-            if let Some(req) = device.process(None) {
+            if let Some(req) = device.process(None, &now) {
                 self.to_recv_msgq.push(req.into());
             }
         }
@@ -56,10 +57,11 @@ impl CanInterfaceTrait for CanInterface {
     async fn send(&mut self, frame: CanDataFrame) -> Result<(), CanInterfaceError> {
         self.stats.tx += 1;
 
+        let now = Instant::now();
         if let Ok(caniot_query) = caniot::Request::try_from(frame) {
             for device in self.devices.iter_mut() {
                 if device.did == caniot_query.device_id {
-                    if let Some(caniot_response) = device.process(Some(&caniot_query.data)) {
+                    if let Some(caniot_response) = device.process(Some(&caniot_query.data), &now) {
                         self.to_recv_msgq.push(caniot_response.into());
                     }
                 }
@@ -79,12 +81,14 @@ impl CanInterfaceTrait for CanInterface {
         loop {
             let mut next_telemetry: Option<Duration> = None;
 
+            let now = Instant::now();
+
             for device in self.devices.iter_mut() {
-                if let Some(caniot_response) = device.process(None) {
+                if let Some(caniot_response) = device.process(None, &now) {
                     return Some(caniot_response.into());
                 }
 
-                let device_next_telemetry = device.get_time_to_next_device_process();
+                let device_next_telemetry = device.get_time_to_next_device_process(&now);
                 if let Some(device_next_telemetry) = device_next_telemetry {
                     if device_next_telemetry <= next_telemetry.unwrap_or(device_next_telemetry) {
                         next_telemetry = Some(device_next_telemetry);

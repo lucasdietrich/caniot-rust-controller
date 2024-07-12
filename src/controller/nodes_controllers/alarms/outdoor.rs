@@ -1,4 +1,6 @@
-use chrono::{DateTime, Duration, Local, NaiveTime};
+use std::str::FromStr;
+
+use chrono::{DateTime, Duration, Local, NaiveDateTime, NaiveTime};
 use log::{info, warn};
 
 use super::actions::{Action, AlarmEnable};
@@ -7,10 +9,13 @@ use crate::{
     controller::{
         alarms::{actions::SirenAction, types::OutdoorAlarmCommand},
         alert::DeviceAlert,
-        ActionResultTrait, ActionTrait, ActionVerdict, DeviceControllerInfos,
-        DeviceControllerTrait, DeviceError, ProcessContext, Verdict,
+        ActionResultTrait, ActionTrait, ActionVerdict, DevCtrlSchedJobTrait, DeviceControllerInfos,
+        DeviceControllerTrait, DeviceError, DeviceJobImpl, ProcessContext, Verdict,
     },
-    utils::monitorable::{MonitorableResultTrait, ValueMonitor},
+    utils::{
+        monitorable::{MonitorableResultTrait, ValueMonitor},
+        Scheduling,
+    },
 };
 
 #[derive(Debug, Clone, Default)]
@@ -197,8 +202,39 @@ impl AlarmController {
     }
 }
 
+#[derive(Debug, Clone)]
+pub enum AlarmJob {
+    AlarmAutoEnable,
+    AlarmAutoDisable,
+    AutoLightsAutoEnable,
+    AutoLightsAutoDisable,
+}
+
+impl DevCtrlSchedJobTrait for AlarmJob {
+    fn get_scheduling(&self) -> Scheduling {
+        match self {
+            // AlarmJob::Test => Scheduling::OnceAt(
+            //     NaiveDateTime::from_str("2024-07-12T22:05:00.884862963").unwrap(),
+            // ),
+            AlarmJob::AlarmAutoEnable => {
+                Scheduling::Daily(NaiveTime::from_hms_opt(23, 22, 0).unwrap())
+            }
+            AlarmJob::AlarmAutoDisable => {
+                Scheduling::Daily(NaiveTime::from_hms_opt(23, 23, 0).unwrap())
+            }
+            AlarmJob::AutoLightsAutoEnable => {
+                Scheduling::Daily(NaiveTime::from_hms_opt(20, 0, 0).unwrap())
+            }
+            AlarmJob::AutoLightsAutoDisable => {
+                Scheduling::Daily(NaiveTime::from_hms_opt(6, 0, 0).unwrap())
+            }
+        }
+    }
+}
+
 impl DeviceControllerTrait for AlarmController {
     type Action = Action;
+    type SchedJob = AlarmJob;
 
     fn get_infos(&self) -> DeviceControllerInfos {
         DeviceControllerInfos::new(
@@ -222,6 +258,42 @@ impl DeviceControllerTrait for AlarmController {
         } else {
             None
         }
+    }
+
+    fn process_job(
+        &mut self,
+        job: &DeviceJobImpl<Self::SchedJob>,
+        job_timestamp: NaiveDateTime,
+        ctx: &mut ProcessContext,
+    ) -> Result<Verdict, DeviceError> {
+        println!("Processing outdoor alarm: {:?}", job);
+
+        match job {
+            // Declare jobs that should be executed when the device is added
+            DeviceJobImpl::DeviceAdd => {
+                ctx.add_job(AlarmJob::AlarmAutoEnable);
+                ctx.add_job(AlarmJob::AlarmAutoDisable);
+                ctx.add_job(AlarmJob::AutoLightsAutoEnable);
+                ctx.add_job(AlarmJob::AutoLightsAutoDisable);
+            }
+            DeviceJobImpl::Scheduled(job) => match job {
+                AlarmJob::AlarmAutoEnable => {
+                    self.alarm.set_enable(&AlarmEnable::Armed);
+                }
+                AlarmJob::AlarmAutoDisable => {
+                    self.alarm.set_enable(&AlarmEnable::Disarmed);
+                }
+                AlarmJob::AutoLightsAutoEnable => {
+                    // activate auto lights
+                }
+                AlarmJob::AutoLightsAutoDisable => {
+                    // deactivate auto lights
+                }
+            },
+            _ => {}
+        }
+
+        Ok(Verdict::default())
     }
 
     fn handle_action(

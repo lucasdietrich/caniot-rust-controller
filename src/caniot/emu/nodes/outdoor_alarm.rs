@@ -1,4 +1,7 @@
-use std::{thread, time::Duration};
+use std::{
+    thread,
+    time::{Duration, Instant},
+};
 
 use super::super::Behavior;
 use crate::{
@@ -93,18 +96,17 @@ impl Behavior for OutdoorAlarmController {
         }
     }
 
-    fn get_remaining_to_event_ms(&self) -> Option<u64> {
+    fn get_remaining_to_event(&self, now: &Instant) -> Option<Duration> {
         [&self.lights[0], &self.lights[1], &self.siren]
             .iter()
-            .ttl()
-            .map(|duration| duration.as_millis() as u64)
+            .ttl(now)
     }
 
-    fn process(&mut self) -> Option<ct::Endpoint> {
+    fn process(&mut self, now: &Instant) -> Option<ct::Endpoint> {
         // TODO improve this
-        self.lights[0].pulse_process();
-        self.lights[1].pulse_process();
-        self.siren.pulse_process();
+        self.lights[0].pulse_process(now);
+        self.lights[1].pulse_process(now);
+        self.siren.pulse_process(now);
 
         Some(ct::Endpoint::BoardControl)
     }

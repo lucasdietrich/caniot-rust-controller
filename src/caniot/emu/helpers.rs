@@ -34,20 +34,17 @@ impl EmuXps {
         self.pulse_time.is_some()
     }
 
-    pub fn pulse_expired(&self) -> bool {
+    pub fn pulse_expired(&self, now: &Instant) -> bool {
         if let Some(pulse_time) = self.pulse_time {
-            pulse_time.elapsed() >= self.pulse_duration.unwrap()
+            *now - pulse_time >= self.pulse_duration.unwrap()
         } else {
             false
         }
     }
 
-    pub fn time_to_pulse_expire(&self) -> Option<Duration> {
+    pub fn time_to_pulse_expire(&self, now: &Instant) -> Option<Duration> {
         if let Some(pulse_time) = self.pulse_time {
-            let remaining = self
-                .pulse_duration
-                .unwrap()
-                .checked_sub(pulse_time.elapsed());
+            let remaining = self.pulse_duration.unwrap().checked_sub(*now - pulse_time);
             if let Some(remaining) = remaining {
                 Some(remaining)
             } else {
@@ -58,8 +55,8 @@ impl EmuXps {
         }
     }
 
-    pub fn pulse_process(&mut self) -> Option<bool> {
-        if self.pulse_expired() {
+    pub fn pulse_process(&mut self, now: &Instant) -> Option<bool> {
+        if self.pulse_expired(now) {
             self.pulse_time = None;
             self.pin_state = self.pin_default;
             Some(self.pin_state)
@@ -109,7 +106,10 @@ impl EmuXps {
 }
 
 impl ExpirableTrait<Duration> for EmuXps {
-    fn ttl(&self) -> Option<Duration> {
-        self.time_to_pulse_expire()
+    const ZERO: Duration = Duration::ZERO;
+    type Instant = Instant;
+
+    fn ttl(&self, now: &Instant) -> Option<Duration> {
+        self.time_to_pulse_expire(now)
     }
 }

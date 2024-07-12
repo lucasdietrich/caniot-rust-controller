@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use log::debug;
 
@@ -18,8 +18,8 @@ enum Door {
 }
 
 impl Door {
-    pub const OPENNING_DURATION_MS: u128 = 10_000;
-    pub const CLOSING_DURATION_MS: u128 = 10_000;
+    pub const OPENNING_DURATION: Duration = Duration::from_millis(10_000);
+    pub const CLOSING_DURATION: Duration = Duration::from_millis(10_000);
 
     fn pulse_relay(&mut self) {
         debug!("Pulsing relay {:?}", self);
@@ -35,39 +35,39 @@ impl Door {
     }
 
     // in milliseconds, 0 if completed
-    fn get_time_to_complete_ms(&self) -> Option<u64> {
+    fn get_time_to_complete_ms(&self, now: &Instant) -> Option<Duration> {
         match self {
             Door::Opening(Some(start)) => {
-                let ellapsed = start.elapsed().as_millis();
-                if ellapsed >= Self::OPENNING_DURATION_MS {
-                    Some(0)
+                let ellapsed = *now - *start;
+                if ellapsed >= Self::OPENNING_DURATION {
+                    Some(Duration::ZERO)
                 } else {
-                    Some((Self::OPENNING_DURATION_MS - ellapsed) as u64)
+                    Some(Self::OPENNING_DURATION - ellapsed)
                 }
             }
             Door::Closing(Some(start)) => {
-                let ellapsed = start.elapsed().as_millis();
-                if ellapsed >= Self::CLOSING_DURATION_MS {
-                    Some(0)
+                let ellapsed = *now - *start;
+                if ellapsed >= Self::CLOSING_DURATION {
+                    Some(Duration::ZERO)
                 } else {
-                    Some((Self::CLOSING_DURATION_MS - ellapsed) as u64)
+                    Some(Self::CLOSING_DURATION - ellapsed)
                 }
             }
             _ => None,
         }
     }
 
-    fn update_state(&mut self) {
+    fn update_state(&mut self, now: &Instant) {
         debug!("Updating state {:?}", self);
         match self {
             Door::Opening(Some(start)) => {
-                if start.elapsed().as_millis() >= Self::OPENNING_DURATION_MS {
+                if *now - *start >= Self::OPENNING_DURATION {
                     debug!("Door opened");
                     *self = Door::Open;
                 }
             }
             Door::Closing(Some(start)) => {
-                if start.elapsed().as_millis() >= Self::CLOSING_DURATION_MS {
+                if *now - *start >= Self::CLOSING_DURATION {
                     debug!("Door closed");
                     *self = Door::Closed;
                 }
@@ -81,9 +81,12 @@ impl Door {
     }
 }
 
-impl ExpirableTrait<u64> for Door {
-    fn ttl(&self) -> Option<u64> {
-        self.get_time_to_complete_ms()
+impl ExpirableTrait<Duration> for Door {
+    const ZERO: Duration = Duration::ZERO;
+    type Instant = Instant;
+
+    fn ttl(&self, now: &Instant) -> Option<Duration> {
+        self.get_time_to_complete_ms(now)
     }
 }
 
@@ -151,13 +154,13 @@ impl Behavior for GarageController {
         }
     }
 
-    fn get_remaining_to_event_ms(&self) -> Option<u64> {
-        [&self.left_door, &self.right_door].iter().ttl()
+    fn get_remaining_to_event(&self, now: &Instant) -> Option<Duration> {
+        [&self.left_door, &self.right_door].iter().ttl(now)
     }
 
-    fn process(&mut self) -> Option<ct::Endpoint> {
-        self.left_door.update_state();
-        self.right_door.update_state();
+    fn process(&mut self, now: &Instant) -> Option<ct::Endpoint> {
+        self.left_door.update_state(now);
+        self.right_door.update_state(now);
         Some(ct::Endpoint::BoardControl)
     }
 }

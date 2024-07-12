@@ -1,15 +1,14 @@
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Duration, NaiveDateTime, NaiveTime, Utc};
 
 use log::warn;
 use serde::Serialize;
-use std::time::{Duration, Instant};
 
 use crate::{
     caniot::{
         self, classes, BoardClassTelemetry, DeviceId, Endpoint, Response, ResponseData, SysCtrl,
         TSP,
     },
-    controller::ActionTrait,
+    controller::{ActionTrait, DevCtrlSchedJobTrait},
     utils::expirable::ExpirableTrait,
 };
 
@@ -19,7 +18,7 @@ use super::{
     context::ProcessContext,
     traits::ActionWrapperTrait,
     verdict::{ActionVerdict, Verdict},
-    DeviceControllerWrapperTrait, DeviceError,
+    DeviceControllerWrapperTrait, DeviceError, DeviceJobsContext,
 };
 
 #[derive(Serialize, Debug, Clone, Copy, Default)]
@@ -48,9 +47,8 @@ pub struct Device {
     // Inner implementation
     pub controller: Option<Box<dyn DeviceControllerWrapperTrait>>,
 
-    // Internal
-    pub next_requested_process: Option<Instant>,
-    pub last_process: Option<Instant>,
+    // Scheduled process
+    jobs: DeviceJobsContext,
 
     // Last class telemetry values
     pub measures: Option<BoardClassTelemetry>,
@@ -58,19 +56,21 @@ pub struct Device {
 
 impl Device {
     pub fn new(did: DeviceId) -> Self {
+        // TODO remove/move
+        let now = Utc::now().naive_utc();
+
         Self {
             did,
             last_seen: None,
             stats: DeviceStats::default(),
             controller: None,
-            next_requested_process: None,
-            last_process: None,
             measures: None,
+            jobs: DeviceJobsContext::new(now),
         }
     }
 
-    pub fn mark_last_seen(&mut self) {
-        self.last_seen = Some(Utc::now());
+    pub fn mark_last_seen(&mut self, at: DateTime<Utc>) {
+        self.last_seen = Some(at);
     }
 
     pub fn last_seen_from_now(&self) -> Option<u32> {
@@ -81,41 +81,6 @@ impl Device {
 
     pub fn is_seen(&self) -> bool {
         self.last_seen.is_some()
-    }
-
-    pub fn mark_processed(&mut self) {
-        self.last_process = Some(Instant::now());
-    }
-
-    pub fn schedule_next_process_in(&mut self, delay: Option<Duration>) {
-        if let Some(delay) = delay {
-            self.next_requested_process = Some(Instant::now() + delay);
-        }
-    }
-
-    pub fn needs_process(&self) -> bool {
-        self.time_to_next_process()
-            .and_then(|t| Some(t.as_secs() == 0))
-            .unwrap_or(false)
-    }
-
-    pub fn next_process_time(&self) -> Option<Instant> {
-        self.next_requested_process
-    }
-
-    pub fn time_to_next_process(&self) -> Option<Duration> {
-        // If device has never been processed, process it a first time
-        if self.last_process.is_none() {
-            return Some(Duration::from_secs(0));
-        } else if let Some(next_process) = self.next_requested_process {
-            if next_process <= Instant::now() {
-                return Some(Duration::from_secs(0));
-            } else {
-                return Some(next_process - Instant::now());
-            }
-        }
-
-        None
     }
 
     /// Returns wether the inner controller can handle the action
@@ -207,7 +172,7 @@ impl Device {
         _as_class_blc: &Option<BoardClassTelemetry>,
         ctx: &mut ProcessContext,
     ) -> Result<Verdict, DeviceError> {
-        self.mark_last_seen();
+        self.mark_last_seen(ctx.frame_received_at);
 
         // Update device stats
         match frame {
@@ -239,12 +204,35 @@ impl Device {
         }
     }
 
-    pub fn process(&mut self, ctx: &mut ProcessContext) -> Result<Verdict, DeviceError> {
-        if let Some(ref mut inner) = self.controller {
-            inner.wrapper_process(ctx)
-        } else {
-            Ok(Verdict::default())
+    // Process a device job
+    // * Returns the result of the job processing if a job was processed
+    // * Returns None if no job was processed
+    pub fn process_one_job(
+        &mut self,
+        ctx: &mut ProcessContext,
+    ) -> Option<Result<Verdict, DeviceError>> {
+        if let Some(pending_job) = self.jobs.pop_pending() {
+            if let Some(ref mut inner) = self.controller {
+                let result = inner.wrapper_process_one_job(
+                    &pending_job.definition,
+                    pending_job.timestamp,
+                    ctx,
+                );
+                return Some(result);
+            } else {
+                warn!("No inner device controller to process job");
+            }
         }
+
+        None
+    }
+
+    pub fn shift_jobs(&mut self, now: &NaiveDateTime) {
+        self.jobs.shift(now);
+    }
+
+    pub fn register_new_jobs(&mut self, jobs_definitions: Vec<Box<dyn DevCtrlSchedJobTrait>>) {
+        self.jobs.register_new_jobs(jobs_definitions);
     }
 
     pub fn get_alert(&self) -> Option<DeviceAlert> {
@@ -261,7 +249,10 @@ impl Device {
 }
 
 impl ExpirableTrait<Duration> for Device {
-    fn ttl(&self) -> Option<Duration> {
-        self.time_to_next_process()
+    const ZERO: Duration = Duration::zero();
+    type Instant = NaiveDateTime;
+
+    fn ttl(&self, now: &NaiveDateTime) -> Option<Duration> {
+        self.jobs.ttl(now)
     }
 }

@@ -3,20 +3,26 @@ use std::{
     ops::Deref,
 };
 
-use crate::caniot::{self, BoardClassTelemetry, Response};
+use crate::{
+    caniot::{self, BoardClassTelemetry, Response},
+    controller::DevCtrlSchedJobTrait,
+};
 
 use as_any::{AsAny, Downcast};
+use chrono::{NaiveDateTime, Utc};
+use log::debug;
 
 use super::{
     alert::DeviceAlert,
     verdict::{ActionVerdict, ActionVerdictWrapper, Verdict},
-    DeviceError, ProcessContext,
+    DeviceError, DeviceJobImpl, DeviceJobWrapper, ProcessContext, TriggeredDeviceJob,
 };
 
 pub trait DeviceControllerTrait: Send + Debug + Default {
     // TODO
     // type Class: Class<'a>; ???
     type Action: ActionTrait;
+    type SchedJob: DevCtrlSchedJobTrait;
 
     // TODO add a config type to the trait
     // type Config;
@@ -55,7 +61,15 @@ pub trait DeviceControllerTrait: Send + Debug + Default {
         Err(DeviceError::NotImplemented)
     }
 
-    fn process(&mut self, _ctx: &mut ProcessContext) -> Result<Verdict, DeviceError> {
+    // Process device handler, called:
+    // - On startup
+    // - If requested via the process context
+    fn process_job(
+        &mut self,
+        _job: &DeviceJobImpl<Self::SchedJob>,
+        _job_timestamp: NaiveDateTime,
+        _ctx: &mut ProcessContext,
+    ) -> Result<Verdict, DeviceError> {
         Ok(Verdict::default())
     }
 
@@ -122,7 +136,12 @@ pub trait DeviceControllerWrapperTrait: Send + Debug {
         _completed_by: caniot::Response,
     ) -> Result<Box<dyn ActionResultTrait>, DeviceError>;
 
-    fn wrapper_process(&mut self, ctx: &mut ProcessContext) -> Result<Verdict, DeviceError>;
+    fn wrapper_process_one_job(
+        &mut self,
+        job: &DeviceJobWrapper,
+        job_timestamp: NaiveDateTime,
+        ctx: &mut ProcessContext,
+    ) -> Result<Verdict, DeviceError>;
 
     fn wrapper_get_infos(&self) -> DeviceControllerInfos;
 
@@ -130,10 +149,7 @@ pub trait DeviceControllerWrapperTrait: Send + Debug {
 }
 
 /// Automatically implement DeviceWrapperTrait for any DeviceTrait
-impl<T: DeviceControllerTrait> DeviceControllerWrapperTrait for T
-where
-    <T as DeviceControllerTrait>::Action: 'static,
-{
+impl<T: DeviceControllerTrait> DeviceControllerWrapperTrait for T {
     fn wrapper_can_handle_action(&self, action: &dyn ActionWrapperTrait) -> bool {
         action.is::<T::Action>()
     }
@@ -173,8 +189,24 @@ where
         }
     }
 
-    fn wrapper_process(&mut self, ctx: &mut ProcessContext) -> Result<Verdict, DeviceError> {
-        self.process(ctx)
+    fn wrapper_process_one_job(
+        &mut self,
+        job: &DeviceJobWrapper,
+        job_timestamp: NaiveDateTime,
+        ctx: &mut ProcessContext,
+    ) -> Result<Verdict, DeviceError> {
+        debug!("Processing job: {:?}", job);
+
+        let job_inner = match job {
+            DeviceJobWrapper::DeviceAdd => Ok(DeviceJobImpl::DeviceAdd),
+            DeviceJobWrapper::DeviceRemove => Ok(DeviceJobImpl::DeviceRemoved),
+            DeviceJobWrapper::Scheduled(job) => match job.deref().downcast_ref::<T::SchedJob>() {
+                Some(job) => Ok(DeviceJobImpl::Scheduled(job)),
+                None => Err(DeviceError::UnsupportedProcessType),
+            },
+        }?;
+
+        self.process_job(&job_inner, job_timestamp, ctx)
     }
 
     fn wrapper_get_infos(&self) -> DeviceControllerInfos {

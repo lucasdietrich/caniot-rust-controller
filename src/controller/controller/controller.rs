@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
+use chrono::{NaiveDateTime, Utc};
 use itertools::partition;
 
 use tokio::sync::oneshot::Sender;
@@ -295,8 +296,7 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
             }
         }
 
-        // Set next process time
-        device.schedule_next_process_in(device_context.next_process);
+        device.register_new_jobs(device_context.new_jobs);
 
         // Let the device compute the action result if any
         if let Some(mut answered_action) = answered_pending_action {
@@ -332,23 +332,37 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
         }
     }
 
-    async fn process_devices(&mut self) -> Result<(), ControllerError> {
-        // Use iterator directly to avoid unnecessary indexing and cloning
-        for (did, device) in self.devices.iter_mut() {
-            if device.needs_process() {
-                // Check if device needs processing (requested by controller)
-                let mut device_context = ProcessContext::default();
-                let verdict = device.process(&mut device_context)?;
-                device.mark_processed();
-                device.schedule_next_process_in(device_context.next_process);
+    // Process all devices expired jobs
+    async fn process_devices_jobs(&mut self, now: &NaiveDateTime) -> Result<(), ControllerError> {
+        for (did, device) in self
+            .devices
+            .iter_mut()
+            .filter(|(_, device)| device.is_expired(now))
+        {
+            // Calculate triggered jobs
+            device.shift_jobs(now);
 
-                match verdict {
-                    Verdict::None => {}
-                    Verdict::Request(request) => {
-                        let request = Request::new(*did, request);
-                        Self::iface_send_caniot_frame(&mut self.iface, &mut self.stats, &request)
+            // Process device jobs until no more jobs are available
+            loop {
+                let mut device_context = ProcessContext::default();
+
+                if let Some(verdict) = device.process_one_job(&mut device_context).transpose()? {
+                    match verdict {
+                        Verdict::None => {}
+                        Verdict::Request(request) => {
+                            let request = Request::new(*did, request);
+                            Self::iface_send_caniot_frame(
+                                &mut self.iface,
+                                &mut self.stats,
+                                &request,
+                            )
                             .await?;
+                        }
                     }
+
+                    device.register_new_jobs(device_context.new_jobs);
+                } else {
+                    break;
                 }
             }
         }
@@ -358,9 +372,15 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
 
     pub async fn run(mut self) -> Result<(), ()> {
         loop {
+            let now = Instant::now();
+            let utc_now = Utc::now().naive_utc();
             let sleep_time = ttl(&[
-                self.pending_queries.iter().ttl(),
-                self.devices.values().ttl(),
+                self.pending_queries.iter().ttl(&now),
+                self.devices.values().ttl(&utc_now).map(|chrono_duration| {
+                    chrono_duration
+                        .to_std()
+                        .expect("Failed to convert chrono duration to std duration")
+                }),
             ])
             .unwrap_or(Duration::MAX);
 
@@ -415,7 +435,7 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
 
             self.handle_pending_queries_timeout().await;
 
-            let result = self.process_devices().await;
+            let result = self.process_devices_jobs(&utc_now).await;
             if let Err(err) = result {
                 error!("Failed to process devices: {}", err);
             }
@@ -507,25 +527,22 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
         }?;
 
         let mut device_context = ProcessContext::default();
-        match device.handle_action(&action, &mut device_context) {
-            Ok(verdict) => {
-                device.schedule_next_process_in(device_context.next_process);
-                match verdict {
-                    ActionVerdict::ActionPendingOn(request) => {
-                        let request = Request::new(device.did, request);
-                        Ok(ActionResultOrPending::Pending(action, request))
-                    }
-                    ActionVerdict::ActionResult(result) => {
-                        Ok(ActionResultOrPending::Result(result))
-                    }
-                    ActionVerdict::ActionRejected(reason) => {
-                        Err(DeviceError::ActionRejected(reason))
-                    }
+        let result = match device.handle_action(&action, &mut device_context) {
+            Ok(verdict) => match verdict {
+                ActionVerdict::ActionPendingOn(request) => {
+                    let request = Request::new(device.did, request);
+                    Ok(ActionResultOrPending::Pending(action, request))
                 }
-            }
+                ActionVerdict::ActionResult(result) => Ok(ActionResultOrPending::Result(result)),
+                ActionVerdict::ActionRejected(reason) => Err(DeviceError::ActionRejected(reason)),
+            },
             Err(err) => Err(err),
         }
-        .map_err(ControllerError::from)
+        .map_err(ControllerError::from);
+
+        device.register_new_jobs(device_context.new_jobs);
+
+        result
     }
 
     pub async fn handle_api_message(

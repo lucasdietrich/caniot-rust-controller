@@ -1,8 +1,10 @@
+use chrono::NaiveDateTime;
+
 use crate::{
     caniot::{self, BoardClassTelemetry, Endpoint, HeatingMode, Response},
     controller::{
         alert::DeviceAlert, ActionResultTrait, ActionTrait, ActionVerdict, DeviceControllerInfos,
-        DeviceControllerTrait, DeviceError, ProcessContext, Verdict,
+        DeviceControllerTrait, DeviceError, DeviceJobImpl, ProcessContext, Verdict,
     },
 };
 
@@ -39,21 +41,25 @@ impl ActionResultTrait for HeaterStatus {}
 
 impl DeviceControllerTrait for HeatersController {
     type Action = HeaterAction;
+    type SchedJob = ();
 
     fn get_infos(&self) -> DeviceControllerInfos {
         DeviceControllerInfos::new("heaters", Some("Chauffage lucas"), Some("heaters"))
     }
 
-    fn process(&mut self, _ctx: &mut ProcessContext) -> Result<Verdict, DeviceError> {
-        // Request telemetry on the status endpoint a single time if no telemetry has been received yet
-        if !self.status_telemetry_req_sent && self.status_telemetry_rx_count == 0 {
-            self.status_telemetry_req_sent = true;
-            Ok(Verdict::Request(caniot::RequestData::Telemetry {
+    fn process_job(
+        &mut self,
+        job: &DeviceJobImpl<Self::SchedJob>,
+        job_timestamp: NaiveDateTime,
+        _ctx: &mut ProcessContext,
+    ) -> Result<Verdict, DeviceError> {
+        if job.is_device_add() {
+            return Ok(Verdict::Request(caniot::RequestData::Telemetry {
                 endpoint: HEATERS_ENDPOINT,
-            }))
-        } else {
-            Ok(Verdict::default())
+            }));
         }
+
+        Ok(Verdict::default())
     }
 
     fn handle_action(

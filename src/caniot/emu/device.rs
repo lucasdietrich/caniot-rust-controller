@@ -79,11 +79,10 @@ impl Device {
         }
     }
 
-    fn get_time_to_next_periodic_telemetry(&self) -> Option<Duration> {
+    fn get_time_to_next_periodic_telemetry(&self, now: &Instant) -> Option<Duration> {
         if let Some(interval) = self.telemetry_interval {
-            let now = Instant::now();
             if let Some(last_telemetry) = self.last_telemetry {
-                let elapsed = now.duration_since(last_telemetry);
+                let elapsed = *now - last_telemetry;
                 if elapsed < interval {
                     Some(interval - elapsed)
                 } else {
@@ -97,10 +96,10 @@ impl Device {
         }
     }
 
-    pub fn get_time_to_next_device_process(&self) -> Option<Duration> {
+    pub fn get_time_to_next_device_process(&self, now: &Instant) -> Option<Duration> {
         ttl(&[
-            self.behavior.ttl().map(Duration::from_millis),
-            self.get_time_to_next_periodic_telemetry(),
+            self.behavior.ttl(now),
+            self.get_time_to_next_periodic_telemetry(now),
         ])
     }
 
@@ -176,7 +175,11 @@ impl Device {
         }
     }
 
-    pub fn process(&mut self, req: Option<&caniot::RequestData>) -> Option<caniot::Response> {
+    pub fn process(
+        &mut self,
+        req: Option<&caniot::RequestData>,
+        now: &Instant,
+    ) -> Option<caniot::Response> {
         if let Some(req) = req {
             match req {
                 caniot::RequestData::AttributeRead { key } => {
@@ -227,13 +230,13 @@ impl Device {
                     }
                 }
             }
-        } else if self.behavior.expired() || self.process_requested {
+        } else if self.behavior.is_expired(now) || self.process_requested {
             self.process_requested = false;
             let endpoints: Vec<caniot::Endpoint> = self
                 .behavior
                 .iter_mut()
                 .rev()
-                .filter_map(|b| b.process())
+                .filter_map(|b| b.process(now))
                 .collect();
 
             for endpoint in endpoints {
@@ -251,7 +254,7 @@ impl Device {
                     error: Some(error),
                 }),
             }
-        } else if self.get_time_to_next_periodic_telemetry() == Some(Duration::from_secs(0)) {
+        } else if self.get_time_to_next_periodic_telemetry(now) == Some(Duration::from_secs(0)) {
             let endpoint = self.telemetry_endpoint;
             match self.handle_telemetry(&endpoint) {
                 Ok(payload) => Some(caniot::ResponseData::Telemetry {

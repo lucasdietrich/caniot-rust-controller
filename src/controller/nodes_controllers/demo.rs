@@ -1,8 +1,10 @@
+use chrono::NaiveDateTime;
+
 use crate::{
     caniot::{self, BoardClassTelemetry, Payload, RequestData},
     controller::{
         ActionResultTrait, ActionTrait, ActionVerdict, DeviceControllerInfos,
-        DeviceControllerTrait, DeviceError, ProcessContext, Verdict,
+        DeviceControllerTrait, DeviceError, DeviceJobImpl, ProcessContext, Verdict,
     },
 };
 
@@ -30,6 +32,7 @@ impl DemoController {
 
 impl DeviceControllerTrait for DemoController {
     type Action = DemoAction;
+    type SchedJob = ();
 
     fn get_infos(&self) -> DeviceControllerInfos {
         DeviceControllerInfos::new("demo", Some("Demo Controller"), None)
@@ -67,9 +70,12 @@ impl DeviceControllerTrait for DemoController {
         Ok(Verdict::default())
     }
 
-    fn process(&mut self, ctx: &mut ProcessContext) -> Result<Verdict, DeviceError> {
-        ctx.request_process_in_s(5);
-
+    fn process_job(
+        &mut self,
+        _job: &DeviceJobImpl<Self::SchedJob>,
+        _job_timestamp: NaiveDateTime,
+        _ctx: &mut ProcessContext,
+    ) -> Result<Verdict, DeviceError> {
         Ok(Verdict::default())
     }
 }

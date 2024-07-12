@@ -109,6 +109,7 @@ Run with
 - handle broadcast pending queries
 - controller cron jobs
 - start http server if datbase is not available
+- Check if usage of naive_utc() is ok ?
 
 ```
 device_temperature{medium="CAN",mac="16",device="GarageDoorController",sensor="EMBEDDED",room="",collector="pycaniotcontroller"} 19.00

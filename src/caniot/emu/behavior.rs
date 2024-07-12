@@ -1,3 +1,5 @@
+use std::time::{Duration, Instant};
+
 use crate::{
     caniot::{self, class0::Class0, class1::Class1, AsPayload, SysCtrl, Temperature},
     grpcserver::EmuRequest,
@@ -40,12 +42,12 @@ pub trait Behavior: Send + Sync {
         None
     }
 
-    fn process(&mut self) -> Option<caniot::Endpoint> {
+    fn process(&mut self, now: &Instant) -> Option<caniot::Endpoint> {
         None
     }
 
     // time in milliseconds
-    fn get_remaining_to_event_ms(&self) -> Option<u64> {
+    fn get_remaining_to_event(&self, now: &Instant) -> Option<Duration> {
         None
     }
 
@@ -55,9 +57,12 @@ pub trait Behavior: Send + Sync {
     }
 }
 
-impl ExpirableTrait<u64> for Box<dyn Behavior> {
-    fn ttl(&self) -> Option<u64> {
-        self.get_remaining_to_event_ms()
+impl ExpirableTrait<Duration> for Box<dyn Behavior> {
+    const ZERO: Duration = Duration::ZERO;
+    type Instant = Instant;
+
+    fn ttl(&self, now: &Instant) -> Option<Duration> {
+        self.get_remaining_to_event(now)
     }
 }
 
