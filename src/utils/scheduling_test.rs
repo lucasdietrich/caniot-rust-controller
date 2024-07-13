@@ -1,9 +1,4 @@
-use std::str::FromStr;
-
-use chrono::{
-    DateTime, Datelike, Duration, Local, NaiveDate, NaiveDateTime, NaiveTime, TimeZone, Utc,
-};
-use rocket::time::Date;
+use chrono::{DateTime, Duration, Local, NaiveDate, NaiveDateTime, NaiveTime, TimeZone, Utc};
 
 use super::Scheduling as Sched;
 

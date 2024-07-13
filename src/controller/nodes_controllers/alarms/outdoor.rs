@@ -1,6 +1,4 @@
-use std::str::FromStr;
-
-use chrono::{DateTime, Duration, Local, NaiveDateTime, NaiveTime, Utc};
+use chrono::{DateTime, Duration, Local, NaiveTime, Utc};
 use log::{info, warn};
 
 use super::actions::{Action, AlarmEnable};
@@ -57,12 +55,8 @@ impl MonitorableResultTrait for Option<AlarmEnable> {
 #[derive(Debug, Clone)]
 pub struct NightLightsContext {
     // Auto mode is enabled
-    //
-    // Auto mode is automatically turns on the lights when presence is detected
-    pub auto: bool,
-
-    // Range of time where the lights are automatically turned on
-    pub auto_range: [NaiveTime; 2], // lower bound, upper bound
+    // Lights turn on when presence is detected
+    pub auto_active: bool,
 
     // Desired duration for the lights to stay on when presence is detected
     pub desired_duration: Duration,
@@ -72,11 +66,7 @@ impl Default for NightLightsContext {
     fn default() -> Self {
         Self {
             // Auto mode is enabled by default
-            auto: true,
-            auto_range: [
-                NaiveTime::from_hms_opt(20, 0, 0).expect("Invalid auto lights start time"),
-                NaiveTime::from_hms_opt(6, 0, 0).expect("Invalid auto lights stop time"),
-            ],
+            auto_active: false,
             desired_duration: Duration::seconds(60),
         }
     }
@@ -84,21 +74,12 @@ impl Default for NightLightsContext {
 
 impl NightLightsContext {
     #[allow(dead_code)]
-    pub fn set_auto(&mut self, state: bool) {
-        self.auto = state;
+    pub fn set_auto_active(&mut self, state: bool) {
+        self.auto_active = state;
     }
 
-    pub fn is_active(&self, now: &NaiveTime) -> bool {
-        if !self.auto {
-            return false;
-        }
-
-        let [lower_b, upper_b] = self.auto_range;
-        if lower_b < upper_b {
-            now >= &lower_b && now < &upper_b
-        } else {
-            now >= &lower_b || now < &upper_b
-        }
+    pub fn is_active(&self) -> bool {
+        self.auto_active
     }
 }
 
@@ -163,7 +144,7 @@ impl AlarmController {
 
         if detector_triggered {
             info!("Presence detected");
-            if self.night_lights.is_active(&now.time()) {
+            if self.night_lights.is_active() {
                 info!("Lights turned on");
                 command.set_east_light(Xps::PulseOn);
                 command.set_south_light(Xps::PulseOn);
@@ -213,14 +194,11 @@ pub enum AlarmJob {
 impl DevCtrlSchedJobTrait for AlarmJob {
     fn get_scheduling(&self) -> Scheduling {
         match self {
-            // AlarmJob::Test => Scheduling::OnceAt(
-            //     NaiveDateTime::from_str("2024-07-12T22:05:00.884862963").unwrap(),
-            // ),
             AlarmJob::AlarmAutoEnable => {
-                Scheduling::Daily(NaiveTime::from_hms_opt(14, 36, 0).unwrap())
+                Scheduling::Daily(NaiveTime::from_hms_opt(0, 0, 0).unwrap())
             }
             AlarmJob::AlarmAutoDisable => {
-                Scheduling::Daily(NaiveTime::from_hms_opt(14, 37, 0).unwrap())
+                Scheduling::Daily(NaiveTime::from_hms_opt(6, 0, 0).unwrap())
             }
             AlarmJob::AutoLightsAutoEnable => {
                 Scheduling::Daily(NaiveTime::from_hms_opt(20, 0, 0).unwrap())
@@ -284,10 +262,10 @@ impl DeviceControllerTrait for AlarmController {
                     self.alarm.set_enable(&AlarmEnable::Disarmed);
                 }
                 AlarmJob::AutoLightsAutoEnable => {
-                    // activate auto lights
+                    self.night_lights.set_auto_active(true);
                 }
                 AlarmJob::AutoLightsAutoDisable => {
-                    // deactivate auto lights
+                    self.night_lights.set_auto_active(false);
                 }
             },
             _ => {}

@@ -1,7 +1,4 @@
-use chrono::{
-    Date, DateTime, Datelike, Duration, Local, NaiveDateTime, NaiveTime, TimeZone, Timelike, Utc,
-    Weekday,
-};
+use chrono::{DateTime, Duration, Local, NaiveDateTime, NaiveTime, Utc, Weekday};
 use log::debug;
 
 #[derive(Default, PartialEq, Eq, Debug, Clone, Copy)]

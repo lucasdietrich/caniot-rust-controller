@@ -9,6 +9,7 @@ pub struct ProcessContext {
 
     // New jobs to be scheduled
     pub new_jobs: Vec<Box<dyn DevCtrlSchedJobTrait>>,
+    // Add function to remove a job def
 }
 
 impl ProcessContext {
