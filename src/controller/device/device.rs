@@ -34,6 +34,10 @@ pub struct DeviceStats {
 
     pub reset_requested: usize,
     pub reset_settings_requested: usize,
+
+    // jobs
+    pub jobs_currently_scheduled: usize,
+    pub jobs_processed: usize,
 }
 
 #[derive(Debug)]
@@ -218,6 +222,7 @@ impl Device {
                     pending_job.timestamp,
                     ctx,
                 );
+                self.stats.jobs_processed += 1;
                 return Some(result);
             } else {
                 warn!("No inner device controller to process job");
@@ -229,10 +234,12 @@ impl Device {
 
     pub fn shift_jobs(&mut self, now: &DateTime<Utc>) {
         self.jobs.shift(now);
+        self.stats.jobs_currently_scheduled = self.jobs.get_jobs_count();
     }
 
     pub fn register_new_jobs(&mut self, jobs_definitions: Vec<Box<dyn DevCtrlSchedJobTrait>>) {
         self.jobs.register_new_jobs(jobs_definitions);
+        self.stats.jobs_currently_scheduled = self.jobs.get_jobs_count();
     }
 
     pub fn get_alert(&self) -> Option<DeviceAlert> {

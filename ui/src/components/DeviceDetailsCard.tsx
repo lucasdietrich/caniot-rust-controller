@@ -91,6 +91,8 @@ function DeviceStatusCardContent({ device: resp }: IDeviceCardContentProps) {
     ["attribute_tx", stats?.getAttributeTx() || 0],
     ["reset_requested", stats?.getResetRequested() || 0],
     ["reset_settings_requested", stats?.getResetSettingsRequested() || 0],
+    ["jobs_currently_scheduled", stats?.getJobsCurrentlyScheduled() || 0],
+    ["jobs_processed", stats?.getJobsProcessed() || 0],
   ]);
 
   const statsData = Array.from(statsDataRoot).map(([metric, value]) => ({

@@ -136,6 +136,10 @@ impl DeviceJobsContext {
     pub fn pop_pending(&mut self) -> Option<TriggeredDeviceJob> {
         self.pending.pop()
     }
+
+    pub fn get_jobs_count(&self) -> usize {
+        self.definitions.len()
+    }
 }
 
 impl ExpirableTrait<Duration> for DeviceJobsContext {

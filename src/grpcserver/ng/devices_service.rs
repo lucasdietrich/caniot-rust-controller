@@ -113,6 +113,8 @@ impl Into<m::Device> for &DeviceInfos {
                 attribute_tx: self.stats.attribute_tx as u32,
                 reset_requested: self.stats.reset_requested as u32,
                 reset_settings_requested: self.stats.reset_settings_requested as u32,
+                jobs_currently_scheduled: self.stats.jobs_currently_scheduled as u32,
+                jobs_processed: self.stats.jobs_processed as u32,
             }),
             board_temp: self.board_temperature,
             outside_temp: self.outside_temperature,
