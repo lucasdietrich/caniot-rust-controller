@@ -1,4 +1,4 @@
-use chrono::{DateTime, NaiveDateTime, Utc};
+use chrono::{DateTime, Utc};
 
 use crate::{
     caniot::{self, BoardClassTelemetry, Endpoint, HeatingMode, Response},
@@ -42,6 +42,7 @@ impl ActionResultTrait for HeaterStatus {}
 impl DeviceControllerTrait for HeatersController {
     type Action = HeaterAction;
     type SchedJob = ();
+    type Config = ();
 
     fn get_infos(&self) -> DeviceControllerInfos {
         DeviceControllerInfos::new("heaters", Some("Chauffage lucas"), Some("heaters"))
@@ -50,7 +51,7 @@ impl DeviceControllerTrait for HeatersController {
     fn process_job(
         &mut self,
         job: &DeviceJobImpl<Self::SchedJob>,
-        job_timestamp: DateTime<Utc>,
+        _job_timestamp: DateTime<Utc>,
         _ctx: &mut ProcessContext,
     ) -> Result<Verdict, DeviceError> {
         if job.is_device_add() {

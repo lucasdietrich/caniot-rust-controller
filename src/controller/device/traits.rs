@@ -9,13 +9,14 @@ use crate::{
 };
 
 use as_any::{AsAny, Downcast};
-use chrono::{DateTime, NaiveDateTime, Utc};
+use chrono::{DateTime, Utc};
 use log::debug;
+use serde::{Deserialize, Serialize};
 
 use super::{
     alert::DeviceAlert,
     verdict::{ActionVerdict, ActionVerdictWrapper, Verdict},
-    DeviceError, DeviceJobImpl, DeviceJobWrapper, ProcessContext, TriggeredDeviceJob,
+    DeviceError, DeviceJobImpl, DeviceJobWrapper, ProcessContext,
 };
 
 pub trait DeviceControllerTrait: Send + Debug + Default {
@@ -23,6 +24,11 @@ pub trait DeviceControllerTrait: Send + Debug + Default {
     // type Class: Class<'a>; ???
     type Action: ActionTrait;
     type SchedJob: DevCtrlSchedJobTrait;
+    type Config: Default + Debug + Serialize + Deserialize<'static> + Clone;
+
+    fn new(_config: Option<&Self::Config>) -> Self {
+        Self::default()
+    }
 
     // TODO add a config type to the trait
     // type Config;

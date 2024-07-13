@@ -33,6 +33,7 @@ impl DemoController {
 impl DeviceControllerTrait for DemoController {
     type Action = DemoAction;
     type SchedJob = ();
+    type Config = ();
 
     fn get_infos(&self) -> DeviceControllerInfos {
         DeviceControllerInfos::new("demo", Some("Demo Controller"), None)

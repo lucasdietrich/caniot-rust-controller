@@ -7,9 +7,13 @@ pub struct ProcessContext {
     // Received frame timestamp
     pub frame_received_at: DateTime<Utc>,
 
+    // // Current UTC time
+    // pub current_utc_time: DateTime<Utc>,
+
+    // Add function to remove a job def
+
     // New jobs to be scheduled
     pub new_jobs: Vec<Box<dyn DevCtrlSchedJobTrait>>,
-    // Add function to remove a job def
 }
 
 impl ProcessContext {

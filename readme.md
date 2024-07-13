@@ -110,6 +110,8 @@ Run with
 - controller cron jobs
 - start http server if datbase is not available
 - Check if usage of naive_utc() is ok ?
+- Try to merge device actions and jobs. Can an action be a scheduled job ?
+- Retrieve time from function argument instead of calling Utc::now() or Local::now() everywhere
 
 ```
 device_temperature{medium="CAN",mac="16",device="GarageDoorController",sensor="EMBEDDED",room="",collector="pycaniotcontroller"} 19.00

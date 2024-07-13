@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 
 use as_any::AsAny;
-use chrono::{DateTime, Duration, NaiveDateTime, Utc};
+use chrono::{DateTime, Duration, Utc};
 use dyn_clone::DynClone;
 
 use crate::utils::{expirable::ExpirableTrait, Scheduling};

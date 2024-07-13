@@ -141,6 +141,7 @@ pub struct GarageController {
 impl DeviceControllerTrait for GarageController {
     type Action = GarageAction;
     type SchedJob = ();
+    type Config = ();
 
     fn get_infos(&self) -> DeviceControllerInfos {
         DeviceControllerInfos::new("garage", Some("Portes de garage"), Some("garage"))

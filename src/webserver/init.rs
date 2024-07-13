@@ -4,7 +4,7 @@ use rocket::config::Shutdown;
 use rocket::fs::NamedFile;
 use rocket::serde::{Deserialize, Serialize};
 use rocket::State;
-use rocket::{log::LogLevel, Build, Config, Rocket};
+use rocket::{log::LogLevel, Config, Rocket};
 
 use crate::shared::SharedHandle;
 

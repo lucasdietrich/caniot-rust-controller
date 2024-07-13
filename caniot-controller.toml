@@ -23,3 +23,13 @@ inernal_api_mpsc_size = 20             # ms
 heaters_did = 1
 garage_did = 16
 outdoor_alarm_did = 24
+
+[caniot_controller.devices.alarm_config]
+auto_alarm_enable = true
+auto_alarm_enable_time = "00:00:00"
+auto_alarm_disable_time = "06:00:00"
+alarm_siren_minimum_interval_seconds = 30
+
+auto_lights_enable = true
+auto_lights_enable_time = "20:00:00"
+auto_lights_disable_time = "06:00:00"

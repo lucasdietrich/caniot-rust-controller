@@ -42,12 +42,12 @@ pub trait Behavior: Send + Sync {
         None
     }
 
-    fn process(&mut self, now: &Instant) -> Option<caniot::Endpoint> {
+    fn process(&mut self, _now: &Instant) -> Option<caniot::Endpoint> {
         None
     }
 
     // time in milliseconds
-    fn get_remaining_to_event(&self, now: &Instant) -> Option<Duration> {
+    fn get_remaining_to_event(&self, _now: &Instant) -> Option<Duration> {
         None
     }
 

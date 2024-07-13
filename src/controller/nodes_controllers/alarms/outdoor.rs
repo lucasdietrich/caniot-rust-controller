@@ -1,5 +1,7 @@
 use chrono::{DateTime, Duration, Local, NaiveTime, Utc};
 use log::{info, warn};
+use rocket::time::Date;
+use serde::{Deserialize, Serialize};
 
 use super::actions::{Action, AlarmEnable};
 use crate::{
@@ -20,7 +22,7 @@ use crate::{
 pub struct AlarmContext {
     pub state: ValueMonitor<AlarmEnable>,
 
-    pub last_siren_activation: Option<DateTime<Local>>,
+    pub last_siren_activation: Option<DateTime<Utc>>,
     pub siren_triggered_count: u32,
 
     pub south_detector: ValueMonitor<bool>,
@@ -97,12 +99,26 @@ impl DeviceIOState {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Default, Deserialize)]
+pub struct AlarmConfig {
+    pub auto_alarm_enable: bool,
+    pub auto_alarm_enable_time: NaiveTime,
+    pub auto_alarm_disable_time: NaiveTime,
+    pub alarm_siren_minimum_interval_seconds: u32,
+
+    pub auto_lights_enable: bool,
+    pub auto_lights_enable_time: NaiveTime,
+    pub auto_lights_disable_time: NaiveTime,
+}
+
 #[derive(Debug, Clone, Default)]
 pub struct AlarmController {
     pub ios: DeviceIOState,
 
     pub alarm: AlarmContext,
     pub night_lights: NightLightsContext,
+
+    pub config: AlarmConfig,
 }
 
 #[derive(Debug, Clone)]
@@ -115,6 +131,18 @@ pub struct AlarmControllerState {
 impl ActionResultTrait for AlarmControllerState {}
 
 impl AlarmController {
+    // Returns whether the minimum interval between two siren activations has passed
+    pub fn is_siren_interval_passed(&self, now: &DateTime<Utc>) -> bool {
+        match self.alarm.last_siren_activation {
+            Some(last_activation) => {
+                let interval =
+                    Duration::seconds(self.config.alarm_siren_minimum_interval_seconds as i64);
+                *now - last_activation >= interval
+            }
+            None => true,
+        }
+    }
+
     /// Updates the device state with a new state provided as input.
     ///
     /// Arguments:
@@ -124,7 +152,11 @@ impl AlarmController {
     /// Returns:
     ///
     /// Returns `request_data` if a request should be sent to the device.
-    pub fn update_state(&mut self, new_state: DeviceIOState) -> Option<RequestData> {
+    pub fn update_state(
+        &mut self,
+        new_state: DeviceIOState,
+        now: &DateTime<Utc>,
+    ) -> Option<RequestData> {
         self.ios = new_state;
 
         let mut command = OutdoorAlarmCommand::default();
@@ -135,7 +167,6 @@ impl AlarmController {
             self.alarm.sabotage.update(self.ios.sabotage),
         );
 
-        let now = Local::now();
         let mut trigger_siren = false;
 
         let detector_triggered =
@@ -164,11 +195,15 @@ impl AlarmController {
         }
 
         if trigger_siren {
-            command.set_siren(Xps::PulseOn);
-            command.set_east_light(Xps::PulseOn);
-            command.set_south_light(Xps::PulseOn);
-            self.alarm.last_siren_activation = Some(now);
-            self.alarm.siren_triggered_count += 1;
+            if self.is_siren_interval_passed(now) {
+                command.set_siren(Xps::PulseOn);
+                command.set_east_light(Xps::PulseOn);
+                command.set_south_light(Xps::PulseOn);
+                self.alarm.last_siren_activation = Some(*now);
+                self.alarm.siren_triggered_count += 1;
+            } else {
+                warn!("Siren activation blocked by minimum interval");
+            }
         }
 
         command.has_effect().then(|| command.into_request())
@@ -185,27 +220,19 @@ impl AlarmController {
 
 #[derive(Debug, Clone)]
 pub enum AlarmJob {
-    AlarmAutoEnable,
-    AlarmAutoDisable,
-    AutoLightsAutoEnable,
-    AutoLightsAutoDisable,
+    AlarmAutoEnableDaily(NaiveTime),
+    AlarmAutoDisableDaily(NaiveTime),
+    AutoLightsAutoEnableDaily(NaiveTime),
+    AutoLightsAutoDisableDaily(NaiveTime),
 }
 
 impl DevCtrlSchedJobTrait for AlarmJob {
     fn get_scheduling(&self) -> Scheduling {
         match self {
-            AlarmJob::AlarmAutoEnable => {
-                Scheduling::Daily(NaiveTime::from_hms_opt(0, 0, 0).unwrap())
-            }
-            AlarmJob::AlarmAutoDisable => {
-                Scheduling::Daily(NaiveTime::from_hms_opt(6, 0, 0).unwrap())
-            }
-            AlarmJob::AutoLightsAutoEnable => {
-                Scheduling::Daily(NaiveTime::from_hms_opt(20, 0, 0).unwrap())
-            }
-            AlarmJob::AutoLightsAutoDisable => {
-                Scheduling::Daily(NaiveTime::from_hms_opt(6, 0, 0).unwrap())
-            }
+            AlarmJob::AlarmAutoEnableDaily(time) => Scheduling::Daily(*time),
+            AlarmJob::AlarmAutoDisableDaily(time) => Scheduling::Daily(*time),
+            AlarmJob::AutoLightsAutoEnableDaily(time) => Scheduling::Daily(*time),
+            AlarmJob::AutoLightsAutoDisableDaily(time) => Scheduling::Daily(*time),
         }
     }
 }
@@ -213,6 +240,14 @@ impl DevCtrlSchedJobTrait for AlarmJob {
 impl DeviceControllerTrait for AlarmController {
     type Action = Action;
     type SchedJob = AlarmJob;
+    type Config = AlarmConfig;
+
+    fn new(config: Option<&Self::Config>) -> Self {
+        Self {
+            config: config.cloned().unwrap_or_default(),
+            ..Default::default()
+        }
+    }
 
     fn get_infos(&self) -> DeviceControllerInfos {
         DeviceControllerInfos::new(
@@ -241,7 +276,7 @@ impl DeviceControllerTrait for AlarmController {
     fn process_job(
         &mut self,
         job: &DeviceJobImpl<Self::SchedJob>,
-        job_timestamp: DateTime<Utc>,
+        _job_timestamp: DateTime<Utc>,
         ctx: &mut ProcessContext,
     ) -> Result<Verdict, DeviceError> {
         println!("Processing outdoor alarm: {:?}", job);
@@ -249,22 +284,35 @@ impl DeviceControllerTrait for AlarmController {
         match job {
             // Declare jobs that should be executed when the device is added
             DeviceJobImpl::DeviceAdd => {
-                ctx.add_job(AlarmJob::AlarmAutoEnable);
-                ctx.add_job(AlarmJob::AlarmAutoDisable);
-                ctx.add_job(AlarmJob::AutoLightsAutoEnable);
-                ctx.add_job(AlarmJob::AutoLightsAutoDisable);
+                if self.config.auto_alarm_enable {
+                    ctx.add_job(AlarmJob::AlarmAutoEnableDaily(
+                        self.config.auto_alarm_enable_time,
+                    ));
+                    ctx.add_job(AlarmJob::AlarmAutoDisableDaily(
+                        self.config.auto_alarm_disable_time,
+                    ));
+                }
+
+                if self.config.auto_lights_enable {
+                    ctx.add_job(AlarmJob::AutoLightsAutoEnableDaily(
+                        self.config.auto_lights_enable_time,
+                    ));
+                    ctx.add_job(AlarmJob::AutoLightsAutoDisableDaily(
+                        self.config.auto_lights_disable_time,
+                    ));
+                }
             }
             DeviceJobImpl::Scheduled(job) => match job {
-                AlarmJob::AlarmAutoEnable => {
+                AlarmJob::AlarmAutoEnableDaily(_) => {
                     self.alarm.set_enable(&AlarmEnable::Armed);
                 }
-                AlarmJob::AlarmAutoDisable => {
+                AlarmJob::AlarmAutoDisableDaily(_) => {
                     self.alarm.set_enable(&AlarmEnable::Disarmed);
                 }
-                AlarmJob::AutoLightsAutoEnable => {
+                AlarmJob::AutoLightsAutoEnableDaily(_) => {
                     self.night_lights.set_auto_active(true);
                 }
-                AlarmJob::AutoLightsAutoDisable => {
+                AlarmJob::AutoLightsAutoDisableDaily(_) => {
                     self.night_lights.set_auto_active(false);
                 }
             },
@@ -323,7 +371,7 @@ impl DeviceControllerTrait for AlarmController {
         &mut self,
         _frame: &caniot::ResponseData,
         as_class_blc: &Option<crate::caniot::BoardClassTelemetry>,
-        _ctx: &mut ProcessContext,
+        ctx: &mut ProcessContext,
     ) -> Result<Verdict, DeviceError> {
         if let Some(caniot::BoardClassTelemetry::Class0(telemetry)) = as_class_blc {
             let new_state = DeviceIOState {
@@ -333,8 +381,10 @@ impl DeviceControllerTrait for AlarmController {
                 sabotage: telemetry.in4,
             };
 
+            let now = Utc::now();
+
             return Ok(self
-                .update_state(new_state)
+                .update_state(new_state, &now)
                 .map(Verdict::Request)
                 .unwrap_or_default());
         }

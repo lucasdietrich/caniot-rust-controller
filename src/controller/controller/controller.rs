@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use std::time::{Duration, Instant};
 
-use chrono::{DateTime, NaiveDateTime, Utc};
+use chrono::{DateTime, Utc};
 use itertools::partition;
 
 use tokio::sync::oneshot::Sender;
