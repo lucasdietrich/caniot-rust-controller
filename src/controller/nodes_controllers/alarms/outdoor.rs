@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use chrono::{DateTime, Duration, Local, NaiveDateTime, NaiveTime};
+use chrono::{DateTime, Duration, Local, NaiveDateTime, NaiveTime, Utc};
 use log::{info, warn};
 
 use super::actions::{Action, AlarmEnable};
@@ -217,10 +217,10 @@ impl DevCtrlSchedJobTrait for AlarmJob {
             //     NaiveDateTime::from_str("2024-07-12T22:05:00.884862963").unwrap(),
             // ),
             AlarmJob::AlarmAutoEnable => {
-                Scheduling::Daily(NaiveTime::from_hms_opt(23, 22, 0).unwrap())
+                Scheduling::Daily(NaiveTime::from_hms_opt(14, 36, 0).unwrap())
             }
             AlarmJob::AlarmAutoDisable => {
-                Scheduling::Daily(NaiveTime::from_hms_opt(23, 23, 0).unwrap())
+                Scheduling::Daily(NaiveTime::from_hms_opt(14, 37, 0).unwrap())
             }
             AlarmJob::AutoLightsAutoEnable => {
                 Scheduling::Daily(NaiveTime::from_hms_opt(20, 0, 0).unwrap())
@@ -263,7 +263,7 @@ impl DeviceControllerTrait for AlarmController {
     fn process_job(
         &mut self,
         job: &DeviceJobImpl<Self::SchedJob>,
-        job_timestamp: NaiveDateTime,
+        job_timestamp: DateTime<Utc>,
         ctx: &mut ProcessContext,
     ) -> Result<Verdict, DeviceError> {
         println!("Processing outdoor alarm: {:?}", job);

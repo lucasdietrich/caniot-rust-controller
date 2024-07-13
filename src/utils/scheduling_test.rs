@@ -1,11 +1,14 @@
 use std::str::FromStr;
 
-use chrono::{Datelike, Duration, NaiveDate, NaiveDateTime, NaiveTime, Utc};
+use chrono::{
+    DateTime, Datelike, Duration, Local, NaiveDate, NaiveDateTime, NaiveTime, TimeZone, Utc,
+};
+use rocket::time::Date;
 
 use super::Scheduling as Sched;
 
-fn get_now() -> NaiveDateTime {
-    Utc::now().naive_utc()
+fn get_now() -> DateTime<Utc> {
+    Utc::now()
 }
 
 #[test]
@@ -60,6 +63,15 @@ fn test_once_in() {
 
 #[test]
 fn test_daily() {
+    // Naive local to Utc
+    fn nltu(d: NaiveDate, t: NaiveTime) -> DateTime<Utc> {
+        Local
+            .from_local_datetime(&NaiveDateTime::new(d, t))
+            .single()
+            .unwrap()
+            .into()
+    }
+
     let d1 = NaiveDate::from_ymd_opt(2024, 7, 13).unwrap();
     let d2 = NaiveDate::from_ymd_opt(2024, 7, 15).unwrap();
     let t1 = NaiveTime::from_hms_opt(19, 0, 0).unwrap();
@@ -71,55 +83,42 @@ fn test_daily() {
 
     assert!(!s.is_unescheduled());
     assert_eq!(s.into_next(), s);
-    assert_eq!(
-        s.time_to_next(&NaiveDateTime::new(d1, t1)),
-        Some(Duration::hours(1))
-    );
-    assert_eq!(
-        s.time_to_next(&NaiveDateTime::new(d1, t2)),
-        Some(Duration::hours(23))
-    );
-    assert_eq!(
-        s.time_to_next(&NaiveDateTime::new(d2, t1)),
-        Some(Duration::hours(1))
-    );
-    assert_eq!(
-        s.time_to_next(&NaiveDateTime::new(d2, t2)),
-        Some(Duration::hours(23))
-    );
+    assert_eq!(s.time_to_next(&nltu(d1, t1)), Some(Duration::hours(1)));
+    assert_eq!(s.time_to_next(&nltu(d1, t2)), Some(Duration::hours(23)));
+    assert_eq!(s.time_to_next(&nltu(d2, t1)), Some(Duration::hours(1)));
+    assert_eq!(s.time_to_next(&nltu(d2, t2)), Some(Duration::hours(23)));
 
     assert_eq!(
-        s.occurences(&NaiveDateTime::new(d1, t1), &NaiveDateTime::new(d1, t2)),
-        vec![NaiveDateTime::new(d1, tref)]
+        s.occurences(&nltu(d1, t1), &nltu(d1, t2)),
+        vec![nltu(d1, tref)]
     );
     assert_eq!(
-        s.occurences(&NaiveDateTime::new(d1, t1), &NaiveDateTime::new(d2, t1)),
+        s.occurences(&nltu(d1, t1), &nltu(d2, t1)),
+        vec![nltu(d1, tref), nltu(d1 + Duration::days(1), tref)]
+    );
+    assert_eq!(
+        s.occurences(&nltu(d1, t1), &nltu(d2, t2)),
         vec![
-            NaiveDateTime::new(d1, tref),
-            NaiveDateTime::new(d1 + Duration::days(1), tref)
+            nltu(d1, tref),
+            nltu(d1 + Duration::days(1), tref),
+            nltu(d1 + Duration::days(2), tref)
         ]
     );
     assert_eq!(
-        s.occurences(&NaiveDateTime::new(d1, t1), &NaiveDateTime::new(d2, t2)),
+        s.occurences(&nltu(d1, t2), &nltu(d2, t1)),
+        vec![nltu(d1 + Duration::days(1), tref)]
+    );
+    assert_eq!(
+        s.occurences(&nltu(d1, t2), &nltu(d2, t2)),
         vec![
-            NaiveDateTime::new(d1, tref),
-            NaiveDateTime::new(d1 + Duration::days(1), tref),
-            NaiveDateTime::new(d1 + Duration::days(2), tref)
+            nltu(d1 + Duration::days(1), tref),
+            nltu(d1 + Duration::days(2), tref)
         ]
     );
     assert_eq!(
-        s.occurences(&NaiveDateTime::new(d1, t2), &NaiveDateTime::new(d2, t1)),
-        vec![NaiveDateTime::new(d1 + Duration::days(1), tref)]
+        s.occurences(&nltu(d2, t1), &nltu(d2, t2)),
+        vec![nltu(d2, tref)]
     );
-    assert_eq!(
-        s.occurences(&NaiveDateTime::new(d1, t2), &NaiveDateTime::new(d2, t2)),
-        vec![
-            NaiveDateTime::new(d1 + Duration::days(1), tref),
-            NaiveDateTime::new(d1 + Duration::days(2), tref)
-        ]
-    );
-    assert_eq!(
-        s.occurences(&NaiveDateTime::new(d2, t1), &NaiveDateTime::new(d2, t2)),
-        vec![NaiveDateTime::new(d2, tref)]
-    );
+
+    // TODO Test edge cases
 }

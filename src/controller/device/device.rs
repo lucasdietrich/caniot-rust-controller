@@ -57,7 +57,7 @@ pub struct Device {
 impl Device {
     pub fn new(did: DeviceId) -> Self {
         // TODO remove/move
-        let now = Utc::now().naive_utc();
+        let now = Utc::now();
 
         Self {
             did,
@@ -227,7 +227,7 @@ impl Device {
         None
     }
 
-    pub fn shift_jobs(&mut self, now: &NaiveDateTime) {
+    pub fn shift_jobs(&mut self, now: &DateTime<Utc>) {
         self.jobs.shift(now);
     }
 
@@ -250,9 +250,9 @@ impl Device {
 
 impl ExpirableTrait<Duration> for Device {
     const ZERO: Duration = Duration::zero();
-    type Instant = NaiveDateTime;
+    type Instant = DateTime<Utc>;
 
-    fn ttl(&self, now: &NaiveDateTime) -> Option<Duration> {
+    fn ttl(&self, now: &DateTime<Utc>) -> Option<Duration> {
         self.jobs.ttl(now)
     }
 }

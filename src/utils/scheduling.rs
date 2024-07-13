@@ -1,4 +1,8 @@
-use chrono::{Datelike, Duration, NaiveDateTime, NaiveTime, Weekday};
+use chrono::{
+    Date, DateTime, Datelike, Duration, Local, NaiveDateTime, NaiveTime, TimeZone, Timelike, Utc,
+    Weekday,
+};
+use log::debug;
 
 #[derive(Default, PartialEq, Eq, Debug, Clone, Copy)]
 pub enum Scheduling {
@@ -10,7 +14,7 @@ pub enum Scheduling {
     Immediate,
 
     // Job is scheduled to run once at a specific date and time
-    OnceAt(NaiveDateTime),
+    OnceAt(DateTime<Utc>),
 
     // Job is scheduled to run once after a specific duration
     OnceIn(Duration),
@@ -34,7 +38,7 @@ impl Scheduling {
     }
 
     // Returns all the occurences of the job between two dates
-    pub fn occurences(&self, since: &NaiveDateTime, until: &NaiveDateTime) -> Vec<NaiveDateTime> {
+    pub fn occurences(&self, since: &DateTime<Utc>, until: &DateTime<Utc>) -> Vec<DateTime<Utc>> {
         match self {
             Scheduling::Unscheduled => vec![],
             Scheduling::Immediate => vec![*since],
@@ -52,27 +56,32 @@ impl Scheduling {
                     vec![]
                 }
             }
-            Scheduling::Daily(time) => {
-                let mut dt = NaiveDateTime::new(since.date(), *time);
+            Scheduling::Daily(local_time) => {
+                let local_since = DateTime::<Local>::from(*since);
+                let local_until = DateTime::<Local>::from(*until);
+
+                let mut local_naive_dt = NaiveDateTime::new(local_since.date_naive(), *local_time);
+
+                if local_naive_dt.time() <= local_since.time() {
+                    local_naive_dt += Duration::days(1);
+                }
+
                 let mut occurrences = vec![];
-
-                if time < &since.time() {
-                    dt += Duration::days(1);
+                while local_naive_dt <= local_until.naive_local() {
+                    occurrences.push(DateTime::<Utc>::from(
+                        local_naive_dt.and_local_timezone(Local).single().unwrap(),
+                    ));
+                    local_naive_dt += Duration::days(1);
                 }
 
-                while dt <= *until {
-                    occurrences.push(dt);
-                    dt += Duration::days(1);
-                }
-
-                occurrences
+                return occurrences;
             }
             _ => unimplemented!(),
         }
     }
 
     // Returns the duration to the next scheduled run
-    pub fn time_to_next(&self, now: &NaiveDateTime) -> Option<Duration> {
+    pub fn time_to_next(&self, now: &DateTime<Utc>) -> Option<Duration> {
         match self {
             Scheduling::Unscheduled => None,
             Scheduling::Immediate => Some(Duration::zero()),
@@ -85,13 +94,23 @@ impl Scheduling {
                     Some(duration)
                 }
             }
-            Scheduling::Daily(time) => {
-                let dt = NaiveDateTime::new(now.date(), *time);
-                let duration = if dt < *now {
-                    dt + Duration::days(1) - *now
+            Scheduling::Daily(local_time) => {
+                // Build a NaiveDateTime with today's date and the scheduled time
+                let local_dt = NaiveDateTime::new(now.naive_local().date(), *local_time);
+
+                // Convert now to local time
+                let local_now = DateTime::<Local>::from(*now).naive_local();
+
+                let duration = if local_dt < local_now {
+                    local_dt + Duration::days(1) - local_now
                 } else {
-                    dt - *now
+                    local_dt - local_now
                 };
+
+                debug!(
+                    "[Daily {}] now: {}, local_now: {}, local_dt: {}, duration: {}",
+                    local_time, now, local_now, local_dt, duration
+                );
 
                 Some(duration)
             }

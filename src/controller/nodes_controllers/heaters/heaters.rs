@@ -1,4 +1,4 @@
-use chrono::NaiveDateTime;
+use chrono::{DateTime, NaiveDateTime, Utc};
 
 use crate::{
     caniot::{self, BoardClassTelemetry, Endpoint, HeatingMode, Response},
@@ -50,7 +50,7 @@ impl DeviceControllerTrait for HeatersController {
     fn process_job(
         &mut self,
         job: &DeviceJobImpl<Self::SchedJob>,
-        job_timestamp: NaiveDateTime,
+        job_timestamp: DateTime<Utc>,
         _ctx: &mut ProcessContext,
     ) -> Result<Verdict, DeviceError> {
         if job.is_device_add() {

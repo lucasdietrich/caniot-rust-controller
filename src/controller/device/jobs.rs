@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 
 use as_any::AsAny;
-use chrono::{Duration, NaiveDateTime};
+use chrono::{DateTime, Duration, NaiveDateTime, Utc};
 use dyn_clone::DynClone;
 
 use crate::utils::{expirable::ExpirableTrait, Scheduling};
@@ -70,9 +70,9 @@ impl DeviceJobWrapper {
 
 impl ExpirableTrait<Duration> for DeviceJobWrapper {
     const ZERO: Duration = Duration::zero();
-    type Instant = NaiveDateTime;
+    type Instant = DateTime<Utc>;
 
-    fn ttl(&self, now: &NaiveDateTime) -> Option<Duration> {
+    fn ttl(&self, now: &DateTime<Utc>) -> Option<Duration> {
         self.get_scheduling().time_to_next(now)
     }
 }
@@ -80,17 +80,21 @@ impl ExpirableTrait<Duration> for DeviceJobWrapper {
 #[derive(Debug)]
 pub struct DeviceJobsContext {
     definitions: Vec<DeviceJobWrapper>,
-    last_eval: NaiveDateTime,
+    last_eval: DateTime<Utc>,
     eval_in: Option<Duration>,
     pending: Vec<TriggeredDeviceJob>,
 }
 
 impl DeviceJobsContext {
-    pub fn new(first_eval: NaiveDateTime) -> Self {
+    pub fn new(first_eval: DateTime<Utc>) -> Self {
+        // Default jobs
+        let init_jobs = vec![DeviceJobWrapper::DeviceAdd];
+        let init_eval_in = init_jobs.ttl(&first_eval);
+
         Self {
             last_eval: first_eval,
-            eval_in: None,
-            definitions: vec![DeviceJobWrapper::DeviceAdd], // Add the device add job by default
+            eval_in: init_eval_in,
+            definitions: init_jobs,
             pending: vec![],
         }
     }
@@ -100,12 +104,16 @@ impl DeviceJobsContext {
             .into_iter()
             .map(|job| DeviceJobWrapper::Scheduled(job))
             .collect();
-        self.definitions.extend(new_definitions);
 
-        self.eval_in = self.definitions.ttl(&self.last_eval);
+        // Perform the registration + calculation if the jobs changed
+        if !new_definitions.is_empty() {
+            println!("Registering new jobs: {:?}", new_definitions);
+            self.definitions.extend(new_definitions);
+            self.eval_in = self.definitions.ttl(&self.last_eval);
+        }
     }
 
-    pub fn shift(&mut self, now: &NaiveDateTime) {
+    pub fn shift(&mut self, now: &DateTime<Utc>) {
         self.definitions.retain(|definition| {
             let scheduling = definition.get_scheduling();
             let triggered_jobs: Vec<TriggeredDeviceJob> = scheduling
@@ -132,9 +140,9 @@ impl DeviceJobsContext {
 
 impl ExpirableTrait<Duration> for DeviceJobsContext {
     const ZERO: Duration = Duration::zero();
-    type Instant = NaiveDateTime;
+    type Instant = DateTime<Utc>;
 
-    fn ttl(&self, now: &NaiveDateTime) -> Option<Duration> {
+    fn ttl(&self, now: &DateTime<Utc>) -> Option<Duration> {
         if !self.pending.is_empty() {
             Some(Self::ZERO)
         } else if let Some(time_to_eval) = self.eval_in {
@@ -151,12 +159,12 @@ impl ExpirableTrait<Duration> for DeviceJobsContext {
 
 #[derive(Debug)]
 pub struct TriggeredDeviceJob {
-    pub timestamp: NaiveDateTime,
+    pub timestamp: DateTime<Utc>,
     pub definition: DeviceJobWrapper,
 }
 
 impl TriggeredDeviceJob {
-    pub fn new(timestamp: NaiveDateTime, definition: DeviceJobWrapper) -> Self {
+    pub fn new(timestamp: DateTime<Utc>, definition: DeviceJobWrapper) -> Self {
         Self {
             timestamp,
             definition,

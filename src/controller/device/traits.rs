@@ -9,7 +9,7 @@ use crate::{
 };
 
 use as_any::{AsAny, Downcast};
-use chrono::{NaiveDateTime, Utc};
+use chrono::{DateTime, NaiveDateTime, Utc};
 use log::debug;
 
 use super::{
@@ -67,7 +67,7 @@ pub trait DeviceControllerTrait: Send + Debug + Default {
     fn process_job(
         &mut self,
         _job: &DeviceJobImpl<Self::SchedJob>,
-        _job_timestamp: NaiveDateTime,
+        _job_timestamp: DateTime<Utc>,
         _ctx: &mut ProcessContext,
     ) -> Result<Verdict, DeviceError> {
         Ok(Verdict::default())
@@ -139,7 +139,7 @@ pub trait DeviceControllerWrapperTrait: Send + Debug {
     fn wrapper_process_one_job(
         &mut self,
         job: &DeviceJobWrapper,
-        job_timestamp: NaiveDateTime,
+        job_timestamp: DateTime<Utc>,
         ctx: &mut ProcessContext,
     ) -> Result<Verdict, DeviceError>;
 
@@ -192,7 +192,7 @@ impl<T: DeviceControllerTrait> DeviceControllerWrapperTrait for T {
     fn wrapper_process_one_job(
         &mut self,
         job: &DeviceJobWrapper,
-        job_timestamp: NaiveDateTime,
+        job_timestamp: DateTime<Utc>,
         ctx: &mut ProcessContext,
     ) -> Result<Verdict, DeviceError> {
         debug!("Processing job: {:?}", job);

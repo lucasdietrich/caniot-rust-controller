@@ -1,4 +1,4 @@
-use chrono::NaiveDateTime;
+use chrono::{DateTime, NaiveDateTime, Utc};
 
 use crate::{
     caniot::{self, BoardClassTelemetry, Payload, RequestData},
@@ -73,7 +73,7 @@ impl DeviceControllerTrait for DemoController {
     fn process_job(
         &mut self,
         _job: &DeviceJobImpl<Self::SchedJob>,
-        _job_timestamp: NaiveDateTime,
+        _job_timestamp: DateTime<Utc>,
         _ctx: &mut ProcessContext,
     ) -> Result<Verdict, DeviceError> {
         Ok(Verdict::default())

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use std::time::{Duration, Instant};
 
-use chrono::{NaiveDateTime, Utc};
+use chrono::{DateTime, NaiveDateTime, Utc};
 use itertools::partition;
 
 use tokio::sync::oneshot::Sender;
@@ -312,11 +312,9 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
         Ok(())
     }
 
-    async fn handle_pending_queries_timeout(&mut self) {
-        let now = std::time::Instant::now();
-
+    async fn handle_pending_queries_timeout(&mut self, now: &std::time::Instant) {
         // place all timed out queries at the end of the vector
-        let split_index = partition(&mut self.pending_queries, |pq| !pq.has_timed_out(&now));
+        let split_index = partition(&mut self.pending_queries, |pq| !pq.has_timed_out(now));
 
         // remove timed out queries
         let timed_out_queries = self.pending_queries.split_off(split_index);
@@ -333,7 +331,7 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
     }
 
     // Process all devices expired jobs
-    async fn process_devices_jobs(&mut self, now: &NaiveDateTime) -> Result<(), ControllerError> {
+    async fn process_devices_jobs(&mut self, now: &DateTime<Utc>) -> Result<(), ControllerError> {
         for (did, device) in self
             .devices
             .iter_mut()
@@ -372,10 +370,10 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
 
     pub async fn run(mut self) -> Result<(), ()> {
         loop {
-            let now = Instant::now();
-            let utc_now = Utc::now().naive_utc();
+            let sys_now = Instant::now();
+            let utc_now = Utc::now();
             let sleep_time = ttl(&[
-                self.pending_queries.iter().ttl(&now),
+                self.pending_queries.iter().ttl(&sys_now),
                 self.devices.values().ttl(&utc_now).map(|chrono_duration| {
                     chrono_duration
                         .to_std()
@@ -383,6 +381,13 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
                 }),
             ])
             .unwrap_or(Duration::MAX);
+
+            self.handle_pending_queries_timeout(&sys_now).await;
+
+            let result = self.process_devices_jobs(&utc_now).await;
+            if let Err(err) = result {
+                error!("Failed to process devices: {}", err);
+            }
 
             let tunnel_poll_tx = {
                 #[cfg(feature = "can-tunnel")]
@@ -431,13 +436,6 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
                     warn!("Received shutdown signal, exiting ...");
                     break;
                 }
-            }
-
-            self.handle_pending_queries_timeout().await;
-
-            let result = self.process_devices_jobs(&utc_now).await;
-            if let Err(err) = result {
-                error!("Failed to process devices: {}", err);
             }
         }
 
