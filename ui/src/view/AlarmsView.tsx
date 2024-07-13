@@ -226,11 +226,68 @@ function AlarmsView({ refreshInterval = 5000, isMobile = false }: IAlarmsViewPro
                 onStateChange={onAlarmChange}
               />
             </ListGridItem>
-          </List>
 
-          <List.Item>
-            <span style={{ fontWeight: "bold" }}>Alarme programmée</span>
-          </List.Item>
+            <List.Item>
+              <span style={{ fontWeight: "bold" }}>Alarme programmée</span>
+            </List.Item>
+
+            <ListGridItem
+              label="Auto activation"
+              description="Activation l'alarme extérieure à une heure programmée"
+              isMobile={isMobile}
+            >
+              <Badge status={outdoorAlarmState?.getAlarmAutoEnabled() ? "success" : "default"} />
+            </ListGridItem>
+
+            <ListGridItem
+              label="Activation"
+              description="Heure d'activation de l'alarme programmée"
+              isMobile={isMobile}
+            >
+              H {outdoorAlarmState?.getAlarmAutoEnableTime()}
+            </ListGridItem>
+            <ListGridItem
+              label="Désactivation"
+              description="Heure de désactivation de l'alarme programmée"
+              isMobile={isMobile}
+            >
+              H {outdoorAlarmState?.getAlarmAutoDisableTime()}
+            </ListGridItem>
+            <ListGridItem
+              label="Délai sirènes consécutives"
+              description="Délai minimum entre deux activations de la sirène"
+              isMobile={isMobile}
+            >
+              {outdoorAlarmState?.getAlarmSirenMinimumIntervalSeconds()} secondes
+            </ListGridItem>
+
+            <List.Item>
+              <span style={{ fontWeight: "bold" }}>Eclairage automatique</span>
+            </List.Item>
+
+            <ListGridItem
+              label="Auto activation"
+              description="Activation automatique des lumières la nuit"
+              isMobile={isMobile}
+            >
+              <Badge status={outdoorAlarmState?.getLightsAutoEnabled() ? "success" : "default"} />
+            </ListGridItem>
+
+            <ListGridItem
+              label="Activation"
+              description="Heure début des lumières automatiques"
+              isMobile={isMobile}
+            >
+              H {outdoorAlarmState?.getLightsAutoEnableTime()}
+            </ListGridItem>
+            <ListGridItem
+              label="Désactivation"
+              description="Heure de fin des lumières automatiques"
+              isMobile={isMobile}
+            >
+              H {outdoorAlarmState?.getLightsAutoDisableTime()}
+            </ListGridItem>
+          </List>
         </LoadableCard>
       </Col>
       <Col xl={10} xs={24}>

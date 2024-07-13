@@ -11,7 +11,7 @@ use super::model::internal::{
 
 use crate::{
     controller::ControllerStats,
-    grpcserver::{datetime_to_prost_timestamp, systemtime_to_prost_timestamp},
+    grpcserver::{systemtime_to_prost_timestamp, utc_to_prost_timestamp},
     internal::{
         firmware::{FirmwareBuildInfos, FirmwareInfos},
         software::{SoftwareBuildInfos, SoftwareInfos},
@@ -30,7 +30,7 @@ impl Into<Option<m::SoftwareBuildInfos>> for &SoftwareBuildInfos {
             Some(m::SoftwareBuildInfos {
                 version: self.version.to_owned().unwrap(),
                 commit: self.get_commit_hash_and_dirty().unwrap(),
-                build_date: Some(datetime_to_prost_timestamp(&self.build_date.unwrap())),
+                build_date: Some(utc_to_prost_timestamp(&self.build_date.unwrap())),
             })
         } else {
             warn!("SoftwareBuildInfos is not complete");
@@ -45,8 +45,8 @@ impl Into<m::SoftwareInfos> for &SoftwareInfos {
             build: (&self.build).into(),
             update_date: None,
             runtime: Some(m::SoftwareRuntimeInfos {
-                start_time: Some(datetime_to_prost_timestamp(&self.runtime.start_time)),
-                system_time: Some(datetime_to_prost_timestamp(&Utc::now())),
+                start_time: Some(utc_to_prost_timestamp(&self.runtime.start_time)),
+                system_time: Some(utc_to_prost_timestamp(&Utc::now())),
             }),
         }
     }
@@ -57,9 +57,7 @@ impl Into<m::FirmwareBuildInfos> for &FirmwareBuildInfos {
         m::FirmwareBuildInfos {
             distro: self.distro.to_owned(),
             distro_version: self.distro_version.to_owned(),
-            build_date: self
-                .build_date
-                .map(|ref dt| datetime_to_prost_timestamp(dt)),
+            build_date: self.build_date.map(|ref dt| utc_to_prost_timestamp(dt)),
         }
     }
 }

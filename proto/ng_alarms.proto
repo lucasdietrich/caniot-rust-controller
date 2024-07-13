@@ -38,8 +38,7 @@ message OutdoorAlarmCommand {
 message OutdoorAlarmState {
   bool enabled = 1;
 
-  uint32 triggered_count = 2;
-  uint32 siren_count = 3;
+  uint32 siren_triggered_count = 2;
 
   google.protobuf.Timestamp last_signal = 4;
   google.protobuf.Timestamp last_siren = 5;
@@ -47,6 +46,15 @@ message OutdoorAlarmState {
 
   // device state
   OutdoorAlarmDeviceState device = 7;
+
+  bool alarm_auto_enabled = 8;
+  string alarm_auto_enable_time = 9;
+  string alarm_auto_disable_time = 10;
+  uint32 alarm_siren_minimum_interval_seconds = 11;
+
+  bool lights_auto_enabled = 12;
+  string lights_auto_enable_time = 13;
+  string lights_auto_disable_time = 14;
 }
 
 message OutdoorAlarmDeviceState {

@@ -7,7 +7,7 @@ use crate::{
         auto_attach::{DEVICE_GARAGE_DID, DEVICE_HEATERS_DID, DEVICE_OUTDOOR_ALARM_DID},
         DeviceAction, DeviceActionResult, DeviceInfos,
     },
-    grpcserver::datetime_to_prost_timestamp,
+    grpcserver::utc_to_prost_timestamp,
     shared::SharedHandle,
     utils::emulated_delay_async,
 };
@@ -80,7 +80,7 @@ impl Into<m::DeviceAlert> for &DeviceAlert {
     fn into(self) -> m::DeviceAlert {
         m::DeviceAlert {
             message: self.name.clone(),
-            timestamp: Some(datetime_to_prost_timestamp(&self.timestamp)),
+            timestamp: Some(utc_to_prost_timestamp(&self.timestamp)),
             alert_type: match self.alert_type {
                 DeviceAlertType::Ok => m::DeviceAlertType::Ok as i32,
                 DeviceAlertType::Notification => m::DeviceAlertType::Notification as i32,
@@ -98,7 +98,7 @@ impl Into<m::Device> for &DeviceInfos {
         m::Device {
             did: Some(self.did.into()),
             is_seen: self.is_seen,
-            last_seen: self.last_seen.as_ref().map(datetime_to_prost_timestamp),
+            last_seen: self.last_seen.as_ref().map(utc_to_prost_timestamp),
             last_seen_from_now: self.last_seen_from_now,
             controller_attached: self.controller_attached,
             controller_name: self.controller_name.clone(),

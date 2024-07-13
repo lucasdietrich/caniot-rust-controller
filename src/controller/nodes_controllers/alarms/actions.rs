@@ -1,6 +1,6 @@
 use crate::{caniot::Xps, controller::ActionTrait};
 
-use super::outdoor::AlarmControllerState;
+use super::outdoor::AlarmControllerReport;
 
 #[derive(Debug, Clone, Default, Eq, PartialEq)]
 pub enum AlarmEnable {
@@ -59,5 +59,5 @@ pub enum Action {
 }
 
 impl ActionTrait for Action {
-    type Result = AlarmControllerState;
+    type Result = AlarmControllerReport;
 }

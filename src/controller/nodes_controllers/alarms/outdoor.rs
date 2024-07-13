@@ -122,13 +122,18 @@ pub struct AlarmController {
 }
 
 #[derive(Debug, Clone)]
-pub struct AlarmControllerState {
+pub struct AlarmControllerReport {
     pub ios: DeviceIOState,
 
     pub alarm_enabled: bool,
+
+    pub siren_triggered_count: u32,
+    pub last_siren_activation: Option<DateTime<Utc>>,
+
+    pub config: AlarmConfig,
 }
 
-impl ActionResultTrait for AlarmControllerState {}
+impl ActionResultTrait for AlarmControllerReport {}
 
 impl AlarmController {
     // Returns whether the minimum interval between two siren activations has passed
@@ -210,10 +215,13 @@ impl AlarmController {
     }
 
     /// Returns the current state of the device.
-    pub fn get_state(&self) -> AlarmControllerState {
-        AlarmControllerState {
+    pub fn get_state(&self) -> AlarmControllerReport {
+        AlarmControllerReport {
             ios: self.ios.clone(),
             alarm_enabled: self.alarm.is_armed(),
+            last_siren_activation: self.alarm.last_siren_activation,
+            siren_triggered_count: self.alarm.siren_triggered_count,
+            config: self.config.clone(),
         }
     }
 }
