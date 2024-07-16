@@ -15,9 +15,13 @@ pub struct Temperature(Option<i16>);
 impl Temperature {
     pub const INVALID: Temperature = Temperature(None);
     const VALUE_U10_MASK: u16 = 0x3FF;
-    const VALUE_U10_INVALID_MARKER: u16 = Self::VALUE_U10_MASK;
+    const VALUE_U10_INVALID_MARKER1: u16 = Self::VALUE_U10_MASK;
+    const VALUE_U10_INVALID_MARKER2: u16 = 0;
     const VALUE_U10_MAX_VALID: u16 = 1000;
     const VALUE_U16_MASK: u16 = 0xFFFF;
+    const VALUE_U16_INVALID_MARKER1: u16 = Self::VALUE_U16_MASK;
+    const VALUE_U16_INVALID_MARKER2: u16 = 0;
+
     const VALUE_F_MIN: f32 = -28.0;
     const VALUE_F_MAX: f32 = 72.0;
     const VALUE_I16_MIN: i16 = -2800;
@@ -32,7 +36,7 @@ impl Temperature {
     }
 
     pub fn from_raw_u16(raw: u16) -> Self {
-        if raw == Self::VALUE_U16_MASK {
+        if raw == Self::VALUE_U16_INVALID_MARKER1 || raw == Self::VALUE_U16_INVALID_MARKER2 {
             Self::INVALID
         } else {
             Temperature(Some(raw as i16))
@@ -40,7 +44,10 @@ impl Temperature {
     }
 
     pub fn from_raw_u10(raw: u16) -> Self {
-        if raw > Self::VALUE_U10_MAX_VALID || raw == Self::VALUE_U10_MASK {
+        if raw == Self::VALUE_U10_INVALID_MARKER1
+            || raw == Self::VALUE_U10_INVALID_MARKER2
+            || raw > Self::VALUE_U10_MAX_VALID
+        {
             Self::INVALID
         } else {
             Temperature(Some((raw * 10) as i16 - 2800))
@@ -65,7 +72,7 @@ impl Temperature {
                 let val = max(min(val, 720), -280) as i16;
                 (val + 280) as u16
             }
-            None => Self::VALUE_U10_INVALID_MARKER,
+            None => Self::VALUE_U10_INVALID_MARKER1,
         }
     }
 

@@ -143,7 +143,7 @@ impl Behavior for GarageController {
 
             telemetry.temp_in = Temperature::random_full_range();
             telemetry.temp_out = [
-                Temperature::random_full_range(),
+                Temperature::INVALID,
                 Temperature::INVALID,
                 Temperature::INVALID,
             ];

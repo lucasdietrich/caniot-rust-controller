@@ -109,10 +109,13 @@ fn get_xps() {
 
 #[test]
 fn temperature() {
-    assert_eq!(Temperature::from_raw_u10(0).to_celsius(), Some(-28.0));
+    assert_eq!(Temperature::from_raw_u10(0).to_celsius(), None);
+    assert!(Temperature::from_raw_u10(1).to_celsius().is_some());
     assert_eq!(Temperature::from_raw_u10(1000).to_celsius(), Some(72.0));
     assert_eq!(Temperature::from_raw_u10(1001), Temperature::INVALID);
-    assert_eq!(Temperature::from_raw_u10(0).to_raw_u10(), 0);
+    assert_eq!(Temperature::from_raw_u10(0x3FF), Temperature::INVALID);
+    assert_eq!(Temperature::from_raw_u10(0).to_raw_u10(), 0x3FF);
+    assert_eq!(Temperature::from_raw_u10(0x3FF).to_raw_u10(), 0x3FF);
     assert_eq!(Temperature::from_raw_u10(1000).to_raw_u10(), 1000);
     assert_eq!(
         Temperature::from_raw_u10(1001).to_raw_u10(),
