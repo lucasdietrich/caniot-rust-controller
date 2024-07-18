@@ -24,7 +24,7 @@ interface HomeProps {
   uiDebugMode?: boolean;
 }
 
-function Home({ refreshInterval = 5000, isMobile = false, uiDebugMode = false }: HomeProps) {
+function HomeView({ refreshInterval = 5000, isMobile = false, uiDebugMode = false }: HomeProps) {
   const [infosLoading, setInfosLoading] = useState(true);
   const [infos, setInfos] = useState<Infos | undefined>(undefined);
 
@@ -181,4 +181,4 @@ function Home({ refreshInterval = 5000, isMobile = false, uiDebugMode = false }:
   );
 }
 
-export default Home;
+export default HomeView;

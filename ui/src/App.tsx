@@ -2,7 +2,7 @@ import React, { Fragment, useEffect, useState } from "react";
 import { ConfigProvider, FloatButton, Layout, Switch, theme } from "antd";
 
 import { Routes, Route } from "react-router-dom";
-import Home from "./view/Home";
+import HomeView from "./view/HomeView";
 import About from "./view/About";
 import DevicesView from "./view/DevicesView";
 import AppMenu from "./components/Menu";
@@ -122,7 +122,10 @@ const App: React.FC = () => {
             }}
           >
             <Routes>
-              <Route path="/" element={<Home isMobile={isMobile} />} />
+              <Route
+                path="/"
+                element={<HomeView isMobile={isMobile} uiDebugMode={UIDebugMode} />}
+              />
               <Route path="/devices" element={<DevicesView />} />
               <Route path="/about" element={<About />} />
               {UIDebugMode && <Route path="/debug" element={<Debug />} />}
