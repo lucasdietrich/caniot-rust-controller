@@ -46,44 +46,21 @@ function SettingsView({
             <ListGridItem label="Mode nuit" description="Active le dark mode">
               <Switch checked={UIDarkMode} onChange={setDarkMode} />
             </ListGridItem>
-            <List.Item>
-              <span style={{ fontWeight: "bold" }}>Général (contrôleur)</span>
-            </List.Item>
-            <ListGridItem
-              label="Actif si"
-              description="Temps jusqu'auquel un capteur est considéré actif"
-            >
-              <Slider
-                defaultValue={60}
-                style={{
-                  width: "80%",
-                }}
-                tooltip={{
-                  formatter: (value) => `${value} s`,
-                }}
-                step={10}
-                max={300}
-                min={10}
-                marks={{
-                  30: "30s",
-                  60: "1m",
-                  120: "2m",
-                  300: "5m",
-                }}
-              />
-            </ListGridItem>
-
-            <List.Item>
-              <span style={{ fontWeight: "bold" }}>Actions</span>
-            </List.Item>
-            <ListGridItem
-              label="Réinitialiser "
-              description="Réinitialiser les paramètres aux valeurs usine"
-            >
-              <Button type="primary" danger onClick={setSettingsReset} disabled={loading}>
-                Réinitialiser les paramètres
-              </Button>
-            </ListGridItem>
+            {UIDebugMode && (
+              <>
+                <List.Item>
+                  <span style={{ fontWeight: "bold" }}>Actions</span>
+                </List.Item>
+                <ListGridItem
+                  label="Réinitialiser "
+                  description="Réinitialiser les paramètres aux valeurs usine"
+                >
+                  <Button type="primary" danger onClick={setSettingsReset} disabled={loading}>
+                    Réinitialiser les paramètres
+                  </Button>
+                </ListGridItem>
+              </>
+            )}
           </List>
         </LoadableCard>
       </Col>

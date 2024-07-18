@@ -5,7 +5,7 @@ use serde::Serialize;
 
 use crate::caniot::{traits::Class, ProtocolError};
 
-#[derive(Serialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Serialize, Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct DeviceId {
     pub class: u8,
     pub sub_id: u8,

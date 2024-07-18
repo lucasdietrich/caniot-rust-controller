@@ -21,9 +21,10 @@ const { Countdown } = Statistic;
 interface HomeProps {
   refreshInterval?: number;
   isMobile?: boolean;
+  uiDebugMode?: boolean;
 }
 
-function Home({ refreshInterval = 5000, isMobile = false }: HomeProps) {
+function Home({ refreshInterval = 5000, isMobile = false, uiDebugMode = false }: HomeProps) {
   const [infosLoading, setInfosLoading] = useState(true);
   const [infos, setInfos] = useState<Infos | undefined>(undefined);
 
@@ -163,15 +164,19 @@ function Home({ refreshInterval = 5000, isMobile = false }: HomeProps) {
         {garageDoorsStatusWidget}
       </Col>
 
-      <Col xs={24} xl={12} style={{ marginBottom: 8 }}>
-        <SoftwareInfosCard infos={infos?.getSoftware()} />
-      </Col>
-      <Col xs={24} xl={12} style={{ marginBottom: 8 }}>
-        <FirmwareInfosCard infos={infos?.getFirmware()} />
-      </Col>
-      <Col xs={24} xl={12} style={{ marginBottom: 8 }}>
-        <ControllerStatsCard stats={infos?.getControllerStats()} />
-      </Col>
+      {uiDebugMode && (
+        <>
+          <Col xs={24} xl={12} style={{ marginBottom: 8 }}>
+            <SoftwareInfosCard infos={infos?.getSoftware()} />
+          </Col>
+          <Col xs={24} xl={12} style={{ marginBottom: 8 }}>
+            <FirmwareInfosCard infos={infos?.getFirmware()} />
+          </Col>
+          <Col xs={24} xl={12} style={{ marginBottom: 8 }}>
+            <ControllerStatsCard stats={infos?.getControllerStats()} />
+          </Col>
+        </>
+      )}
     </Row>
   );
 }

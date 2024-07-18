@@ -16,9 +16,14 @@ import DeviceAlert from "../components/DeviceAlert";
 interface IHeatersViewProps {
   refreshInterval?: number;
   isMobile?: boolean;
+  uiDebugMode?: boolean;
 }
 
-function HeatersView({ refreshInterval = 5000, isMobile = false }: IHeatersViewProps) {
+function HeatersView({
+  refreshInterval = 5000,
+  isMobile = false,
+  uiDebugMode = false,
+}: IHeatersViewProps) {
   const [heatersStatus, setHeatersStatus] = useState<Status | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [heatersDevice, setHeatersDevice] = useState<Device | undefined>(undefined);
@@ -116,9 +121,11 @@ function HeatersView({ refreshInterval = 5000, isMobile = false }: IHeatersViewP
             </Row>
           </LoadableCard>
         </Col>
-        <Col xl={10} xs={24}>
-          <DeviceDetailsCard title="Chauffage" device={heatersDevice} />
-        </Col>
+        {uiDebugMode && (
+          <Col xl={10} xs={24}>
+            <DeviceDetailsCard title="Chauffage" device={heatersDevice} />
+          </Col>
+        )}
       </Row>
     </>
   );

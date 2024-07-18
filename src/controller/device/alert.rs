@@ -1,13 +1,15 @@
+use std::cmp::Ordering;
+
 use chrono::{DateTime, Utc};
 use serde::Serialize;
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum DeviceAlertType {
-    Ok,
-    Notification,
-    Warning,
-    Error,
-    Inhibitted,
+    Ok = 0,
+    Notification = 1,
+    Warning = 2,
+    Inhibitted = 3,
+    Error = 10,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -51,5 +53,18 @@ impl DeviceAlert {
     pub fn with_description(mut self, description: &str) -> Self {
         self.description = Some(description.to_string());
         self
+    }
+
+    pub fn cmp_severity(&self, other: &Self) -> Ordering {
+        self.alert_type.cmp(&other.alert_type)
+    }
+}
+
+pub fn cmp_severity(a: &Option<DeviceAlert>, b: &Option<DeviceAlert>) -> Ordering {
+    match (a, b) {
+        (Some(a), Some(b)) => a.cmp_severity(b),
+        (Some(_), None) => Ordering::Greater,
+        (None, Some(_)) => Ordering::Less,
+        (None, None) => Ordering::Equal,
     }
 }

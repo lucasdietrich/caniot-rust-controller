@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
 use chrono::{DateTime, Utc};
-use itertools::partition;
+use itertools::{partition, Itertools};
 
 use tokio::sync::oneshot::Sender;
 
@@ -12,8 +12,8 @@ use crate::caniot::{self, are_requests_concurrent, Frame, RequestData};
 use crate::caniot::{DeviceId, Request};
 use crate::controller::handle::{ControllerMessage, DeviceFilter};
 use crate::controller::{
-    ActionVerdict, CaniotConfig, CaniotDevicesConfig, Device, DeviceAction, DeviceActionResult,
-    DeviceError, DeviceInfos, PendingAction, ProcessContext, Verdict,
+    alert, ActionVerdict, CaniotConfig, CaniotDevicesConfig, Device, DeviceAction,
+    DeviceActionResult, DeviceError, DeviceInfos, PendingAction, ProcessContext, Verdict,
 };
 use crate::shutdown::Shutdown;
 use crate::utils::expirable::{ttl, ExpirableTrait};
@@ -443,12 +443,16 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
         Ok(())
     }
 
+    // Return a list of devices with given filter
     fn get_devices_infos(&self, filter: DeviceFilter) -> Vec<DeviceInfos> {
         let filter_function = filter.get_filter_function();
+        let sort_function = filter.get_sort_function();
         self.devices
             .iter()
             .filter(|(_, device)| filter_function(device))
+            .sorted_by(|(_, a), (_, b)| sort_function(a, b))
             .map(|(_, device)| device.into())
+            .rev()
             .collect()
     }
 

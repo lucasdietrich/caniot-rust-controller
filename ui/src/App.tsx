@@ -126,11 +126,35 @@ const App: React.FC = () => {
               <Route path="/devices" element={<DevicesView />} />
               <Route path="/about" element={<About />} />
               {UIDebugMode && <Route path="/debug" element={<Debug />} />}
-              <Route path="/devices/heaters" element={<HeatersView isMobile={isMobile} />} />
-              <Route path="/devices/garage" element={<GarageDoorsView refreshInterval={1000} />} />
-              <Route path="/garage" element={<GarageDoorsView refreshInterval={1000} />} />{" "}
+              <Route
+                path="/devices/heaters"
+                element={<HeatersView isMobile={isMobile} uiDebugMode={UIDebugMode} />}
+              />
+              <Route
+                path="/devices/garage"
+                element={
+                  <GarageDoorsView
+                    isMobile={isMobile}
+                    uiDebugMode={UIDebugMode}
+                    refreshInterval={1000}
+                  />
+                }
+              />
+              <Route
+                path="/garage"
+                element={
+                  <GarageDoorsView
+                    isMobile={isMobile}
+                    uiDebugMode={UIDebugMode}
+                    refreshInterval={1000}
+                  />
+                }
+              />{" "}
               {/* Alias to keep compat with caniot-pycontroller */}
-              <Route path="/devices/alarms" element={<AlarmsView isMobile={isMobile} />} />
+              <Route
+                path="/devices/alarms"
+                element={<AlarmsView isMobile={isMobile} uiDebugMode={UIDebugMode} />}
+              />
               <Route
                 path="/settings"
                 element={

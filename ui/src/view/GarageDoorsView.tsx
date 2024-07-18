@@ -20,9 +20,14 @@ import GarageDoorsStatus from "../components/GarageDoorsStatus";
 interface IGarageDoorsViewProps {
   refreshInterval?: number;
   isMobile?: boolean;
+  uiDebugMode?: boolean;
 }
 
-function GarageDoorsView({ refreshInterval = 5000, isMobile = false }: IGarageDoorsViewProps) {
+function GarageDoorsView({
+  refreshInterval = 5000,
+  isMobile = false,
+  uiDebugMode = false,
+}: IGarageDoorsViewProps) {
   const [garageState, setGarageState] = useState<Status | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [garageDevice, setGarageDevice] = useState<Device | undefined>(undefined);
@@ -85,9 +90,11 @@ function GarageDoorsView({ refreshInterval = 5000, isMobile = false }: IGarageDo
           </Row>
         </LoadableCard>
       </Col>
-      <Col xl={10} xs={24}>
-        <DeviceDetailsCard title="Contrôleur portes de garage" device={garageDevice} />
-      </Col>
+      {uiDebugMode && (
+        <Col xl={10} xs={24}>
+          <DeviceDetailsCard title="Contrôleur portes de garage" device={garageDevice} />
+        </Col>
+      )}
     </Row>
   );
 }

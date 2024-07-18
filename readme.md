@@ -660,6 +660,7 @@ Exiting...
   - https://www.pushbullet.com/
   - https://pushover.net/
 - AWS amazon https://aws.amazon.com/fr/sns/
+- Mettre un bouton pour se reconnecter en cas de perte de connexion
 
 ### Evaluate `react-media` for responsive design
 
