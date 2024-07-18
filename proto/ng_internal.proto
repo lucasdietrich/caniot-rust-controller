@@ -78,4 +78,5 @@ message ControllerStats {
   uint32 pq_duplicate_dropped = 13;
 
   uint32 api_rx = 20;
+  uint64 loop_runs = 21;
 }

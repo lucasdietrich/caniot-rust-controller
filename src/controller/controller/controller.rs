@@ -53,8 +53,8 @@ pub struct ControllerStats {
     pub pq_answered: usize,
     pub pq_duplicate_dropped: usize,
 
-    // API
-    pub api_rx: usize,
+    pub api_rx: usize,  // Internal API calls
+    pub loop_runs: u64, // Number of times the controller loop has been executed
 }
 
 #[derive(Error, Debug)]
@@ -437,6 +437,7 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
                     break;
                 }
             }
+            self.stats.loop_runs += 1;
         }
 
         Ok(())

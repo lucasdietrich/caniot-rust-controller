@@ -113,6 +113,7 @@ Run with
 - Try to merge device actions and jobs. Can an action be a scheduled job ?
 - Retrieve time from function argument instead of calling Utc::now() or Local::now() everywhere
 - Allow to log to file
+- Use nginx instead of rocket to server static files (UI)
 
 ```
 device_temperature{medium="CAN",mac="16",device="GarageDoorController",sensor="EMBEDDED",room="",collector="pycaniotcontroller"} 19.00
@@ -698,3 +699,51 @@ const queries = {
 
 - Repo: https://github.com/ant-design/ant-design-pro
 - Website: https://pro.ant.design/
+
+## Last run
+
+```
+Logiciel
+Status
+Running
+Version
+0.2.1
+Build date
+07/07/2024, 11:53:57
+Build commit
+32e51baa3b0b40117d9a7662244604bc396c2ebd (dirty)
+Derrière mise à jour
+Jamais
+Dernier lancement
+07/07/2024, 12:05:35
+Heure système
+18/07/2024, 20:47:00
+
+Firmware
+Distribution
+hypirl
+Version de distribution
+scarthgap
+Date de build
+N/A
+
+Statistiques du contrôleur
+CAN Interface RX
+56257
+CAN Interface TX
+91
+CAN Interface Errors
+0
+CAN Interface Malformed
+164
+Pending queries pushed
+71
+Pending queries answered
+71
+Pending queries timeout
+0
+Duplicate pending queries dropped
+0
+Internal API calls
+132935
+```

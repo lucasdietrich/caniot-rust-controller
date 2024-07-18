@@ -82,6 +82,7 @@ impl Into<m::ControllerStats> for &ControllerStats {
             pq_timeout: self.pq_timeout as u32,
             pq_duplicate_dropped: self.pq_duplicate_dropped as u32,
             api_rx: self.api_rx as u32,
+            loop_runs: self.loop_runs as u64,
         }
     }
 }

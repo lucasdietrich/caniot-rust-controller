@@ -33,6 +33,7 @@ function ControllerStatsCard({ stats }: ControllerStatsSardProps) {
           {stats?.getPqDuplicateDropped() ?? "N/A"}
         </ListLabelledItem>
         <ListLabelledItem label="Internal API calls">{stats?.getApiRx() ?? "N/A"}</ListLabelledItem>
+        <ListLabelledItem label="Loop runs count">{stats?.getLoopRuns() ?? "N/A"}</ListLabelledItem>
       </List>
     </LoadableCard>
   );
