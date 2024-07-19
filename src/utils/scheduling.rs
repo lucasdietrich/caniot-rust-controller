@@ -35,6 +35,8 @@ impl Scheduling {
     }
 
     // Returns all the occurences of the job between two dates
+    // The since date is exclusive and the until date is inclusive, i.e. ]since, until]
+    // This is because the since date is the last date the job was executed
     pub fn occurences(&self, since: &DateTime<Utc>, until: &DateTime<Utc>) -> Vec<DateTime<Utc>> {
         match self {
             Scheduling::Unscheduled => vec![],
@@ -91,25 +93,21 @@ impl Scheduling {
                     Some(duration)
                 }
             }
-            Scheduling::Daily(local_time) => {
-                // Build a NaiveDateTime with today's date and the scheduled time
-                let local_dt = NaiveDateTime::new(now.naive_local().date(), *local_time);
+            Scheduling::Daily(local_event_time) => {
+                let local_now_time = DateTime::<Local>::from(*now).naive_local().time();
 
-                // Convert now to local time
-                let local_now = DateTime::<Local>::from(*now).naive_local();
-
-                let duration = if local_dt < local_now {
-                    local_dt + Duration::days(1) - local_now
+                let time_to_next = if local_now_time <= *local_event_time {
+                    *local_event_time - local_now_time
                 } else {
-                    local_dt - local_now
+                    (*local_event_time - local_now_time) + Duration::days(1)
                 };
 
                 debug!(
-                    "[Daily {}] now: {}, local_now: {}, local_dt: {}, duration: {}",
-                    local_time, now, local_now, local_dt, duration
+                    "local_now_time: {:?}, local_event_time: {:?}, time_to_next: {:?}",
+                    local_now_time, local_event_time, time_to_next
                 );
 
-                Some(duration)
+                Some(time_to_next)
             }
             _ => unimplemented!(),
         }
