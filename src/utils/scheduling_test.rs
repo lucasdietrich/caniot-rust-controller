@@ -1,4 +1,5 @@
-use std::time;
+// TODO
+// Rework these tests as they only work for the current time zone (UTC+2)
 
 use chrono::{DateTime, Duration, Local, NaiveDate, NaiveDateTime, NaiveTime, TimeZone, Utc};
 
@@ -213,5 +214,21 @@ fn test_daily_edge_cases() {
         2,
         0,
         Some(Duration::days(1) - Duration::seconds(1)),
+    );
+
+    test_sample("2024-07-18 22:00:00.00", 0, 0, 0, Some(Duration::zero()));
+    test_sample(
+        "2024-07-18 22:00:01.00",
+        0,
+        0,
+        0,
+        Some(Duration::days(1) - Duration::seconds(1)),
+    );
+    test_sample(
+        "2024-07-18 21:59:59.00",
+        0,
+        0,
+        0,
+        Some(Duration::seconds(1)),
     );
 }
