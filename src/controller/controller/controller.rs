@@ -12,8 +12,8 @@ use crate::caniot::{self, are_requests_concurrent, Frame, RequestData};
 use crate::caniot::{DeviceId, Request};
 use crate::controller::handle::{ControllerMessage, DeviceFilter};
 use crate::controller::{
-    alert, ActionVerdict, CaniotConfig, CaniotDevicesConfig, Device, DeviceAction,
-    DeviceActionResult, DeviceError, DeviceInfos, PendingAction, ProcessContext, Verdict,
+    ActionVerdict, CaniotConfig, CaniotDevicesConfig, Device, DeviceAction, DeviceActionResult,
+    DeviceError, DeviceInfos, PendingAction, ProcessContext, Verdict,
 };
 use crate::shutdown::Shutdown;
 use crate::utils::expirable::{ttl, ExpirableTrait};
@@ -47,12 +47,16 @@ pub struct ControllerStats {
     pub iface_malformed: usize,
     // dropped ?
 
+    // caniot broadcast
+    pub broadcast_tx: usize,
+
     // Pending queries
     pub pq_pushed: usize,
     pub pq_timeout: usize,
     pub pq_answered: usize,
     pub pq_duplicate_dropped: usize,
 
+    // Internals
     pub api_rx: usize,  // Internal API calls
     pub loop_runs: u64, // Number of times the controller loop has been executed
 }
@@ -189,17 +193,23 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
         &mut self,
         request: &caniot::Request,
     ) -> Result<(), ControllerError> {
-        // Get or instantiate device
-        let device_did = request.device_id;
-        let device =
-            Self::device_get_or_create(&mut self.devices, device_did, &self.config.devices);
+        if request.is_broadcast() {
+            self.stats.broadcast_tx += 1;
+        } else {
+            // Get or instantiate device
+            let device = Self::device_get_or_create(
+                &mut self.devices,
+                request.device_id,
+                &self.config.devices,
+            );
 
-        // update device stats
-        match request.data {
-            RequestData::Telemetry { .. } => device.stats.telemetry_tx += 1,
-            RequestData::Command { .. } => device.stats.command_tx += 1,
-            RequestData::AttributeRead { .. } => device.stats.attribute_rx += 1,
-            RequestData::AttributeWrite { .. } => device.stats.attribute_tx += 1,
+            // update device stats
+            match request.data {
+                RequestData::Telemetry { .. } => device.stats.telemetry_tx += 1,
+                RequestData::Command { .. } => device.stats.command_tx += 1,
+                RequestData::AttributeRead { .. } => device.stats.attribute_rx += 1,
+                RequestData::AttributeWrite { .. } => device.stats.attribute_tx += 1,
+            }
         }
 
         Self::iface_send_caniot_frame(&mut self.iface, &mut self.stats, request).await
@@ -369,6 +379,15 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
     }
 
     pub async fn run(mut self) -> Result<(), ()> {
+        // Send a broadcast frame to query all devices BLC endpoint on the bus
+        let frame = RequestData::Telemetry {
+            endpoint: caniot::Endpoint::BoardControl,
+        }
+        .into_broadcast();
+        if let Err(err) = self.send_caniot_frame(&frame).await {
+            error!("Failed to send startup broadcast frame: {:?}", err);
+        }
+
         loop {
             let sys_now = Instant::now();
             let utc_now = Utc::now();

@@ -127,6 +127,7 @@ function HomeView({ refreshInterval = 5000, isMobile = false, uiDebugMode = fals
     />
   );
 
+  const hasAlertsActive = devicesWithAlert && devicesWithAlert.getDevicesList().length > 0;
   const devicesActiveAlerts = (
     <LoadableCard title="Alertes actives" loading={devicesWithAlertLoading} bordered={false}>
       {devicesWithAlert && devicesWithAlert.getDevicesList().length ? (
@@ -148,9 +149,11 @@ function HomeView({ refreshInterval = 5000, isMobile = false, uiDebugMode = fals
 
   return (
     <Row gutter={16}>
-      <Col xs={24} md={12} xl={12} style={{ marginBottom: 8 }}>
-        {devicesActiveAlerts}
-      </Col>
+      {(!isMobile || hasAlertsActive) && (
+        <Col xs={24} md={12} xl={12} style={{ marginBottom: 8 }}>
+          {devicesActiveAlerts}
+        </Col>
+      )}
       <Col xs={12} md={8} xl={6} style={{ marginBottom: 8 }}>
         {outdoorAlarmsMetricsWidget}
       </Col>

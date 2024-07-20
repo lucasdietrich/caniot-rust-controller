@@ -2,7 +2,9 @@ use core::fmt;
 
 use crate::caniot::{format_u8_list, Cd, Payload, ProtocolError, SysCtrl};
 
-use super::{Action, ConversionError, Direction, Endpoint, Frame, Id, InnerFrameTrait, Type};
+use super::{
+    Action, ConversionError, DeviceId, Direction, Endpoint, Frame, Id, InnerFrameTrait, Type,
+};
 use chrono::Utc;
 use embedded_can::{Frame as EmbeddedFrame, Id as EmbeddedId, StandardId};
 use serde::Serialize;
@@ -83,6 +85,14 @@ impl RequestData {
                 data.extend_from_slice(&value.to_le_bytes());
                 data
             }
+        }
+    }
+
+    pub fn into_broadcast(self) -> Request {
+        Frame {
+            device_id: DeviceId::BROADCAST,
+            data: self,
+            timestamp: Utc::now(),
         }
     }
 }

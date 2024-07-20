@@ -20,6 +20,9 @@ function ControllerStatsCard({ stats }: ControllerStatsSardProps) {
         <ListLabelledItem label="CAN Interface Malformed">
           {stats?.getIfaceMalformed() ?? "N/A"}
         </ListLabelledItem>
+        <ListLabelledItem label="Can IoT broadcast sent">
+          {stats?.getBroadcastTx() ?? "N/A"}
+        </ListLabelledItem>
         <ListLabelledItem label="Pending queries pushed">
           {stats?.getPqPushed() ?? "N/A"}
         </ListLabelledItem>

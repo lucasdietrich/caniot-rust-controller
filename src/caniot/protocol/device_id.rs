@@ -63,6 +63,10 @@ impl DeviceId {
     pub fn is<C: Class>(&self) -> bool {
         self.class == C::CLASS_ID
     }
+
+    pub fn is_broadcast(&self) -> bool {
+        self == &Self::BROADCAST
+    }
 }
 
 impl fmt::Display for DeviceId {

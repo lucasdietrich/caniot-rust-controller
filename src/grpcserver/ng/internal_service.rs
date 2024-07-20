@@ -77,6 +77,7 @@ impl Into<m::ControllerStats> for &ControllerStats {
             iface_tx: self.iface_tx as u32,
             iface_err: self.iface_err as u32,
             iface_malformed: self.iface_malformed as u32,
+            broadcast_tx: self.broadcast_tx as u32,
             pq_pushed: self.pq_pushed as u32,
             pq_answered: self.pq_answered as u32,
             pq_timeout: self.pq_timeout as u32,

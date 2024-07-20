@@ -72,6 +72,8 @@ message ControllerStats {
   uint32 iface_err = 3;
   uint32 iface_malformed = 4;
 
+  uint32 broadcast_tx = 5;
+
   uint32 pq_pushed = 10;
   uint32 pq_answered = 11;
   uint32 pq_timeout = 12;

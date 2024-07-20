@@ -1,6 +1,5 @@
-use chrono::{DateTime, Duration, Local, NaiveTime, Utc};
+use chrono::{DateTime, Duration, NaiveTime, Utc};
 use log::{info, warn};
-use rocket::time::Date;
 use serde::{Deserialize, Serialize};
 
 use super::actions::{Action, AlarmEnable};
@@ -379,7 +378,7 @@ impl DeviceControllerTrait for AlarmController {
         &mut self,
         _frame: &caniot::ResponseData,
         as_class_blc: &Option<crate::caniot::BoardClassTelemetry>,
-        ctx: &mut ProcessContext,
+        _ctx: &mut ProcessContext,
     ) -> Result<Verdict, DeviceError> {
         if let Some(caniot::BoardClassTelemetry::Class0(telemetry)) = as_class_blc {
             let new_state = DeviceIOState {

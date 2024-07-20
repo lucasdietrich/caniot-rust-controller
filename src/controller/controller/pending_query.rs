@@ -2,7 +2,7 @@ use std::time::{Duration, Instant};
 
 use super::{ControllerError, PendingAction};
 use crate::{caniot, utils::expirable::ExpirableTrait};
-use tokio::sync::{mpsc, oneshot};
+use tokio::sync::oneshot;
 
 /// Initiator of a pending query, it represents the entity that is waiting for the query to be answered
 #[derive(Debug)]

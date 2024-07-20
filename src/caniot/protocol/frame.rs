@@ -56,4 +56,8 @@ where
     pub fn get_key(&self) -> Option<u16> {
         self.data.get_key()
     }
+
+    pub fn is_broadcast(&self) -> bool {
+        self.device_id.is_broadcast()
+    }
 }
