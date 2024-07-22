@@ -5,10 +5,11 @@ use chrono::{DateTime, Utc};
 
 use tokio::sync::{mpsc, oneshot};
 
+#[cfg(feature = "emu")]
+use crate::grpcserver::EmuRequest;
 use crate::{
     bus::CanStats,
     caniot::{self as ct, DeviceId},
-    grpcserver::EmuRequest,
 };
 use serde::Serialize;
 

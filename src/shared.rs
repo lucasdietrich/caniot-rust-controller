@@ -31,9 +31,11 @@ pub struct Shared {
     /// The task subscribes to this channel
     pub notify_shutdown: broadcast::Sender<()>,
 
+    // TODO: Move this out of the structure, or create an Arc, because this gets cloned a lot
     // Firmware infos
     pub firmware_infos: FirmwareInfos,
 
+    // TODO: Move this out of the structure, or create an Arc, because this gets cloned a lot
     // Software infos
     pub software_infos: SoftwareInfos,
 }

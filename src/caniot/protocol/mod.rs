@@ -15,7 +15,7 @@ pub use response::*;
 pub use types::*;
 
 #[cfg(test)]
-mod protocol_test;
+mod response_test;
 
 #[cfg(test)]
 mod helper_test;

@@ -106,11 +106,14 @@ pub fn parse_error_payload(
 ) -> Result<ResponseData, ConversionError> {
     let len = payload.len();
     let error_code: Option<ErrorCode> = if len >= ERROR_CODE_LEN {
-        ErrorCode::from_i32(i32::from_le_bytes(
-            payload[0..ERROR_CODE_LEN]
-                .try_into()
-                .expect("Invalid error code"),
-        ))
+        Some(
+            ErrorCode::from_i32(i32::from_le_bytes(
+                payload[0..ERROR_CODE_LEN]
+                    .try_into()
+                    .expect("Invalid error code"),
+            ))
+            .ok_or(ConversionError::UnknownErrorCode)?,
+        )
     } else {
         None
     };

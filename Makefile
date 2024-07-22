@@ -18,7 +18,7 @@ clippy:
 	cargo clippy -- -D warnings
 
 run:
-	cargo run --features "emu" --profile dev
+	cargo run --features "emu" --profile dev --bin caniot-controller
 
 clean:
 	cargo clean

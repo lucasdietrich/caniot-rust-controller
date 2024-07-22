@@ -122,10 +122,12 @@ impl TryFrom<EmbeddedId> for Id {
     }
 }
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, PartialEq, Eq)]
 pub enum ConversionError {
     #[error("Not a valid caniot response frame")]
     NotValidResponse,
+    #[error("Unknown error code")]
+    UnknownErrorCode,
     #[error("Not a valid caniot request frame")]
     NotValidRequest,
     #[error("Extended id not supported")]

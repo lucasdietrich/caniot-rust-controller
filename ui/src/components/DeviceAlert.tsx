@@ -51,7 +51,7 @@ function DeviceAlert({
       action={
         navigateToController && (
           <Button type="link" onClick={() => navigate(navigateToController)}>
-            Go to controller
+            Intervenir
           </Button>
         )
       }

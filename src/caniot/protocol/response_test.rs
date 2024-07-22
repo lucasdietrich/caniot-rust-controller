@@ -8,7 +8,9 @@ fn test_parse_error_payload() {
         expected_source: ErrorSource,
         expected_error: Option<ErrorCode>,
     ) {
-        let resp = parse_error_payload(endpoint, payload).unwrap();
+        let resp = parse_error_payload(endpoint, payload);
+        assert!(resp.is_ok());
+        let resp = resp.unwrap();
         assert_eq!(
             resp,
             ResponseData::Error {
@@ -47,4 +49,11 @@ fn test_parse_error_payload() {
         ErrorSource::Attribute(Some(0x0100)),
         Some(ErrorCode::Einval),
     );
+
+    // Test invalid error
+    let payload = &[0xFF, 0x3a, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00];
+    let resp = parse_error_payload(None, payload);
+    assert!(resp.is_err());
+    let err = resp.unwrap_err();
+    assert_eq!(err, ConversionError::UnknownErrorCode);
 }
