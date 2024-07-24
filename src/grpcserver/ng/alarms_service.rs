@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use tonic::{Request, Response, Result, Status};
 
 use crate::{
@@ -30,7 +31,11 @@ impl Into<LightAction> for m::TwoStates {
 }
 
 impl NgAlarms {
-    fn alarms_state_to_proto(&self, state: &AlarmControllerReport) -> m::OutdoorAlarmState {
+    fn alarms_state_to_proto(
+        &self,
+        state: &AlarmControllerReport,
+        now: &DateTime<Utc>,
+    ) -> m::OutdoorAlarmState {
         m::OutdoorAlarmState {
             device: Some(m::OutdoorAlarmDeviceState {
                 east_light: state.ios.lights[0],
@@ -44,7 +49,18 @@ impl NgAlarms {
             last_siren: state
                 .last_siren_activation
                 .map(|dt| utc_to_prost_timestamp(&dt)),
-            siren_triggered_count: state.siren_triggered_count,
+            sirens_triggered_count: state.stats.sirens_triggered_count,
+            south_detector_triggered_count: state.stats.south_detector_triggered_count,
+            east_detector_triggered_count: state.stats.east_detector_triggered_count,
+            sabotage_triggered_count: state.stats.sabotage_triggered_count,
+            signals_total_count: state.stats.south_detector_triggered_count
+                + state.stats.east_detector_triggered_count
+                + state.stats.sabotage_triggered_count,
+            last_signal_from_now_seconds: state
+                .stats
+                .last_event
+                .map(|dt| (*now - dt).num_seconds() as u32),
+            last_signal: state.stats.last_event.map(|dt| utc_to_prost_timestamp(&dt)),
             alarm_auto_enabled: state.config.auto_alarm_enable,
             alarm_auto_enable_time: naive_time_to_string(&state.config.auto_alarm_enable_time),
             alarm_auto_disable_time: naive_time_to_string(&state.config.auto_alarm_disable_time),
@@ -52,6 +68,9 @@ impl NgAlarms {
             alarm_siren_minimum_interval_seconds: state.config.alarm_siren_minimum_interval_seconds,
             lights_auto_enable_time: naive_time_to_string(&state.config.auto_lights_enable_time),
             lights_auto_disable_time: naive_time_to_string(&state.config.auto_lights_disable_time),
+            last_siren_from_now_seconds: state
+                .last_siren_activation
+                .map(|dt| (*now - dt).num_seconds() as u32),
             ..Default::default()
         }
     }
@@ -69,7 +88,9 @@ impl NgAlarms {
                 Status::internal(format!("Error in get_outdoor_alarm_state: {} ({:?})", e, e))
             })?;
 
-        Ok(Response::new(self.alarms_state_to_proto(&result)))
+        Ok(Response::new(
+            self.alarms_state_to_proto(&result, &Utc::now()),
+        ))
     }
 }
 
@@ -132,7 +153,9 @@ impl AlarmsService for NgAlarms {
                         e, e
                     ))
                 })?;
-            Ok(Response::new(self.alarms_state_to_proto(&result)))
+            Ok(Response::new(
+                self.alarms_state_to_proto(&result, &Utc::now()),
+            ))
         } else {
             self.get_outdoor_alarm_state_inner().await
         }

@@ -5,19 +5,21 @@ import { SECONDS_TO_CONSIDER_ONLINE } from "../constants";
 
 interface ILastSeenBadge {
   lastSeenDate?: Date;
-  lastSeenValue: number;
+  lastSeenValue?: number;
   secondsToConsiderOnline?: number;
   minimalDisplay?: boolean;
+  counterPrefix?: string;
 }
 
 function LastSeenBadge({
   lastSeenDate,
-  lastSeenValue,
+  lastSeenValue = undefined,
   secondsToConsiderOnline = SECONDS_TO_CONSIDER_ONLINE,
   minimalDisplay = false,
+  counterPrefix = undefined,
 }: ILastSeenBadge) {
   if (lastSeenDate !== undefined) {
-    const isOnline = lastSeenValue < secondsToConsiderOnline;
+    const isOnline = lastSeenValue !== undefined && lastSeenValue < secondsToConsiderOnline;
     const lastseen_fmt = lastSeenDate?.toLocaleString();
 
     return (
@@ -26,11 +28,14 @@ function LastSeenBadge({
         text={
           <>
             {!minimalDisplay && lastseen_fmt}
-            <LastSeenSecondsCounter
-              lastSeenValue={lastSeenValue}
-              refreshIntervalMs={1000}
-              minimalDisplay={minimalDisplay}
-            />
+            {lastSeenValue !== undefined && (
+              <LastSeenSecondsCounter
+                lastSeenValue={lastSeenValue}
+                refreshIntervalMs={1000}
+                minimalDisplay={minimalDisplay}
+                prefix={counterPrefix}
+              />
+            )}
           </>
         }
       />

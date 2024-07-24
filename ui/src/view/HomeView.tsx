@@ -15,6 +15,9 @@ import { Infos, SoftwareInfos } from "@caniot-controller/caniot-api-grpc-web/api
 import internalStore from "../store/InternalStore";
 import FirmwareInfosCard from "../components/FirmwareInfosCard";
 import ControllerStatsCard from "../components/ControllerStatsCard";
+import AlarmDiagWidget from "../components/AlarmDiagWidget";
+import { OutdoorAlarmState } from "@caniot-controller/caniot-api-grpc-web/api/ng_alarms_pb";
+import alarmsStore from "../store/AlarmsStore";
 
 const { Countdown } = Statistic;
 
@@ -38,6 +41,9 @@ function HomeView({ refreshInterval = 5000, isMobile = false, uiDebugMode = fals
   const [heatersDevice, setHeatersDevice] = useState<Device | undefined>(undefined);
   const [heatersLoading, setHeatersLoading] = useState(true);
 
+  const [outdoorAlarmState, setOutdoorAlarmState] = useState<OutdoorAlarmState | undefined>(
+    undefined
+  );
   const [outdoorAlarmsDevice, setOutdoorAlarmsDevice] = useState<Device | undefined>(undefined);
   const [outdoorAlarmsLoading, setOutdoorAlarmsLoading] = useState(true);
 
@@ -79,7 +85,10 @@ function HomeView({ refreshInterval = 5000, isMobile = false, uiDebugMode = fals
 
     devicesStore.getOutdoorAlarmDevice((resp: Device) => {
       setOutdoorAlarmsDevice(resp);
-      setOutdoorAlarmsLoading(false);
+      alarmsStore.getOutdoorAlarmState((resp: OutdoorAlarmState) => {
+        setOutdoorAlarmState(resp);
+        setOutdoorAlarmsLoading(false);
+      });
     });
 
     const intervalRefresh = setInterval(() => setTime(Date.now()), refreshInterval);
@@ -118,12 +127,22 @@ function HomeView({ refreshInterval = 5000, isMobile = false, uiDebugMode = fals
     />
   );
 
-  const outdoorAlarmsMetricsWidget = (
+  const outdoorAlarmsGenericMetricsWidget = (
     <DeviceMetricsWidget
       title="Alarme extérieure"
       loading={outdoorAlarmsLoading}
       device={outdoorAlarmsDevice}
       navigateTo="/devices/alarms"
+    />
+  );
+
+  const outdoorAlarmsMetricsWidget = (
+    <AlarmDiagWidget
+      title="Diagnostic alarme"
+      alarm={outdoorAlarmState}
+      loading={outdoorAlarmsLoading}
+      navigateTo="/devices/alarms"
+      isMobile={isMobile}
     />
   );
 
@@ -155,16 +174,19 @@ function HomeView({ refreshInterval = 5000, isMobile = false, uiDebugMode = fals
         </Col>
       )}
       <Col xs={12} md={8} xl={6} style={{ marginBottom: 8 }}>
-        {outdoorAlarmsMetricsWidget}
+        {garageDoorsStatusWidget}
       </Col>
       <Col xs={12} sm={12} md={8} xl={6} style={{ marginBottom: 8 }}>
         {garageDoorsMetricsWidget}
       </Col>
       <Col xs={12} md={8} xl={6} style={{ marginBottom: 8 }}>
+        {outdoorAlarmsGenericMetricsWidget}
+      </Col>
+      <Col xs={12} md={8} xl={6} style={{ marginBottom: 8 }}>
         {heatersMetricsWidget}
       </Col>
       <Col xs={12} md={8} xl={6} style={{ marginBottom: 8 }}>
-        {garageDoorsStatusWidget}
+        {outdoorAlarmsMetricsWidget}
       </Col>
 
       {uiDebugMode && (

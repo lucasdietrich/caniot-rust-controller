@@ -49,7 +49,7 @@ interface TemperatureGaugeProps {
 }
 
 function TemperatureGaugeStatistic({ title, temperature, showIcon = true }: TemperatureGaugeProps) {
-  return temperature ? (
+  return temperature !== undefined ? (
     <Statistic
       title={title}
       value={temperature}

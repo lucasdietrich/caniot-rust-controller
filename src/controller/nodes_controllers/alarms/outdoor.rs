@@ -22,10 +22,7 @@ pub struct AlarmContext {
     pub state: ValueMonitor<AlarmEnable>,
 
     pub last_siren_activation: Option<DateTime<Utc>>,
-    pub siren_triggered_count: u32,
 
-    pub south_detector: ValueMonitor<bool>,
-    pub east_detector: ValueMonitor<bool>,
     pub sabotage: ValueMonitor<bool>,
 }
 
@@ -110,25 +107,48 @@ pub struct AlarmConfig {
     pub auto_lights_disable_time: NaiveTime,
 }
 
+#[derive(Debug, Clone, Serialize, Default, Deserialize)]
+pub struct AlarmStats {
+    pub south_detector_triggered_count: u32,
+    pub east_detector_triggered_count: u32,
+    pub sabotage_triggered_count: u32,
+    pub sirens_triggered_count: u32,
+    pub last_event: Option<DateTime<Utc>>,
+}
+
 #[derive(Debug, Clone, Default)]
 pub struct AlarmController {
     pub ios: DeviceIOState,
+    // ios state
 
+    // general state
+    pub south_detector: ValueMonitor<bool>,
+    pub east_detector: ValueMonitor<bool>,
+
+    // internal state
     pub alarm: AlarmContext,
     pub night_lights: NightLightsContext,
 
+    // stats
+    pub stats: AlarmStats,
+
+    // config
     pub config: AlarmConfig,
 }
 
 #[derive(Debug, Clone)]
 pub struct AlarmControllerReport {
+    // ios state
     pub ios: DeviceIOState,
 
+    // internal state
     pub alarm_enabled: bool,
-
-    pub siren_triggered_count: u32,
     pub last_siren_activation: Option<DateTime<Utc>>,
 
+    // stats
+    pub stats: AlarmStats,
+
+    // config
     pub config: AlarmConfig,
 }
 
@@ -166,17 +186,25 @@ impl AlarmController {
         let mut command = OutdoorAlarmCommand::default();
 
         let (south_detector_result, east_detector_result, sabotage_result) = (
-            self.alarm.south_detector.update(self.ios.detectors[0]),
-            self.alarm.east_detector.update(self.ios.detectors[1]),
+            self.south_detector.update(self.ios.detectors[0]),
+            self.east_detector.update(self.ios.detectors[1]),
             self.alarm.sabotage.update(self.ios.sabotage),
         );
 
+        let mut detector_triggered = false;
+        if south_detector_result.is_rising() {
+            detector_triggered = true;
+            self.stats.south_detector_triggered_count += 1;
+            self.stats.last_event = Some(*now);
+        }
+
+        if east_detector_result.is_rising() {
+            detector_triggered = true;
+            self.stats.east_detector_triggered_count += 1;
+            self.stats.last_event = Some(*now);
+        }
+
         let mut trigger_siren = false;
-
-        let detector_triggered =
-            south_detector_result.is_rising() || east_detector_result.is_rising();
-        let sabotage_triggered = sabotage_result.is_rising();
-
         if detector_triggered {
             info!("Presence detected");
             if self.night_lights.is_active() {
@@ -190,7 +218,9 @@ impl AlarmController {
             }
         }
 
-        if sabotage_triggered {
+        if sabotage_result.is_rising() {
+            self.stats.sabotage_triggered_count += 1;
+            self.stats.last_event = Some(*now);
             warn!("Sabotage detected on the outdoor alarm");
             if self.alarm.is_armed() {
                 warn!("Sabotage detected while alarm is armed, activating siren");
@@ -203,8 +233,8 @@ impl AlarmController {
                 command.set_siren(Xps::PulseOn);
                 command.set_east_light(Xps::PulseOn);
                 command.set_south_light(Xps::PulseOn);
+                self.stats.sirens_triggered_count += 1;
                 self.alarm.last_siren_activation = Some(*now);
-                self.alarm.siren_triggered_count += 1;
             } else {
                 warn!("Siren activation blocked by minimum interval");
             }
@@ -219,7 +249,7 @@ impl AlarmController {
             ios: self.ios.clone(),
             alarm_enabled: self.alarm.is_armed(),
             last_siren_activation: self.alarm.last_siren_activation,
-            siren_triggered_count: self.alarm.siren_triggered_count,
+            stats: self.stats.clone(),
             config: self.config.clone(),
         }
     }

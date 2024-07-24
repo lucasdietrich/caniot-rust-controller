@@ -16,6 +16,7 @@ import {
 import alarmsStore from "../store/AlarmsStore";
 import { MinusCircleOutlined, SyncOutlined } from "@ant-design/icons";
 import DeviceAlert from "../components/DeviceAlert";
+import AlarmDiagWidget from "../components/AlarmDiagWidget";
 
 interface IAlarmsViewProps {
   refreshInterval?: number;
@@ -298,15 +299,70 @@ function AlarmsView({
                 >
                   H {outdoorAlarmState?.getLightsAutoDisableTime()}
                 </ListGridItem>
+
+                {/* <List.Item>
+                  <span style={{ fontWeight: "bold" }}>Statistiques</span>
+                </List.Item>
+
+                <ListGridItem
+                  label="Détections sud"
+                  description="Numbre de détections de mouvement côté sud"
+                  isMobile={isMobile}
+                >
+                  {outdoorAlarmState?.getSouthDetectorTriggeredCount()}
+                </ListGridItem>
+
+                <ListGridItem
+                  label="Détections est"
+                  description="Numbre de détections de mouvement côté est"
+                  isMobile={isMobile}
+                >
+                  {outdoorAlarmState?.getEastDetectorTriggeredCount()}
+                </ListGridItem>
+
+                <ListGridItem
+                  label="Détections sabotage"
+                  description="Numbre de détections de sabotage"
+                  isMobile={isMobile}
+                >
+                  {outdoorAlarmState?.getSabotageTriggeredCount()}
+                </ListGridItem>
+
+                <ListGridItem
+                  label="Total détections"
+                  description="Numbre total de détections (mouvement + sabotage)"
+                  isMobile={isMobile}
+                >
+                  {outdoorAlarmState?.getSignalsTotalCount()}
+                </ListGridItem>
+
+                <ListGridItem
+                  label="Sirènes déclenchées"
+                  description="Numbre total de déclenchements de la sirène"
+                  isMobile={isMobile}
+                >
+                  {outdoorAlarmState?.getSirensTriggeredCount()}
+                </ListGridItem> */}
               </>
             )}
           </List>
         </LoadableCard>
       </Col>
       {uiDebugMode && (
-        <Col xl={10} xs={24}>
-          <DeviceDetailsCard title="Alarme extérieure" device={outdoorAlarmDevice} />
-        </Col>
+        <>
+          <Col xl={10} xs={24}>
+            <AlarmDiagWidget
+              title="Diagnostique alarme"
+              alarm={outdoorAlarmState}
+              loading={loading}
+              navigateTo="/devices/alarms"
+              isMobile={isMobile}
+            />
+          </Col>
+          <Col xl={10} xs={24}>
+            <DeviceDetailsCard title="Alarme extérieure" device={outdoorAlarmDevice} />
+          </Col>
+        </>
       )}
     </Row>
   );
