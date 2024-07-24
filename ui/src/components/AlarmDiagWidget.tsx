@@ -1,9 +1,6 @@
 import React from "react";
 import LoadableCard from "./LoadableCard";
 import { Col, Divider, Row } from "antd";
-import TemperatureGaugeStatistic, { TemperatureGaugeText } from "./TemperatureGauges";
-import { TbCpu } from "react-icons/tb";
-import LastSeenBadge from "./LastSeenBadge";
 import { useNavigate } from "react-router-dom";
 import { OutdoorAlarmState } from "@caniot-controller/caniot-api-grpc-web/api/ng_alarms_pb";
 import CounterGauge from "./CounterGauge";

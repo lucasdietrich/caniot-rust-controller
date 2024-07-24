@@ -28,7 +28,7 @@ function DeviceMetricsWidget({ title, device, loading, navigateTo }: DeviceMetri
         <Col span={24}>
           <TemperatureGaugeStatistic
             title="Température ext"
-            temperature={device?.getOutsideTemp()}
+            temperature={device?.hasOutsideTemp() ? device.getOutsideTemp() : undefined}
           />
         </Col>
 
