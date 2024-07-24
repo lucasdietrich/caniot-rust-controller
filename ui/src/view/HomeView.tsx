@@ -138,7 +138,7 @@ function HomeView({ refreshInterval = 5000, isMobile = false, uiDebugMode = fals
 
   const outdoorAlarmsMetricsWidget = (
     <AlarmDiagWidget
-      title="Diagnostic alarme"
+      title="Diagnostique alarme"
       alarm={outdoorAlarmState}
       loading={outdoorAlarmsLoading}
       navigateTo="/devices/alarms"
