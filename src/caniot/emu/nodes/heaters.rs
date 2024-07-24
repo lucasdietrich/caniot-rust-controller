@@ -14,7 +14,7 @@ impl Default for HeatersController {
         Self {
             modes: [
                 HeatingMode::Stop,
-                HeatingMode::Comfort,
+                HeatingMode::Stop,
                 HeatingMode::Stop,
                 HeatingMode::Stop,
             ],
