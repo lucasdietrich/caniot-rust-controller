@@ -1,7 +1,6 @@
 use chrono::{DateTime, Duration, Utc};
 
 use log::warn;
-use serde::Serialize;
 
 use crate::{
     caniot::{
@@ -18,28 +17,8 @@ use super::{
     context::ProcessContext,
     traits::ActionWrapperTrait,
     verdict::{ActionVerdict, Verdict},
-    DeviceControllerWrapperTrait, DeviceError, DeviceJobsContext,
+    DeviceControllerWrapperTrait, DeviceError, DeviceJobsContext, DeviceStats,
 };
-
-#[derive(Serialize, Debug, Clone, Copy, Default)]
-pub struct DeviceStats {
-    pub rx: usize,
-    pub tx: usize,
-    pub telemetry_rx: usize,
-    pub telemetry_tx: usize,
-    pub command_tx: usize,
-    pub attribute_rx: usize,
-    pub attribute_tx: usize,
-    pub err_rx: usize,
-
-    pub reset_requested: usize,
-    pub reset_settings_requested: usize,
-
-    // jobs
-    pub jobs_currently_scheduled: usize,
-    pub jobs_processed: usize,
-}
-
 #[derive(Debug)]
 pub struct Device {
     pub did: DeviceId,

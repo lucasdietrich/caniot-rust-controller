@@ -24,10 +24,10 @@ use super::pending_query::PendingQueryTenant;
 
 use super::super::handle;
 use super::auto_attach::device_attach_controller;
+use super::stats::ControllerStats;
 use super::PendingQuery;
 
 use log::{info, warn};
-use serde::Serialize;
 
 use thiserror::Error;
 use tokio::select;
@@ -37,29 +37,6 @@ use tokio::time::sleep;
 const PENDING_QUERY_DEFAULT_TIMEOUT_MS: u32 = 1000; // 1s
 const ACTION_DEFAULT_TIMEOUT_MS: u32 = PENDING_QUERY_DEFAULT_TIMEOUT_MS; // 1s
 const API_CHANNEL_SIZE: u32 = 10;
-
-#[derive(Serialize, Debug, Clone, Copy, Default)]
-pub struct ControllerStats {
-    // can interface
-    pub iface_rx: usize,
-    pub iface_tx: usize,
-    pub iface_err: usize,
-    pub iface_malformed: usize,
-    // dropped ?
-
-    // caniot broadcast
-    pub broadcast_tx: usize,
-
-    // Pending queries
-    pub pq_pushed: usize,
-    pub pq_timeout: usize,
-    pub pq_answered: usize,
-    pub pq_duplicate_dropped: usize,
-
-    // Internals
-    pub api_rx: usize,  // Internal API calls
-    pub loop_runs: u64, // Number of times the controller loop has been executed
-}
 
 #[derive(Error, Debug)]
 pub enum ControllerError {

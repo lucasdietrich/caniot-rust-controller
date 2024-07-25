@@ -1,7 +1,12 @@
+use std::fmt::Write;
+
 use chrono::{DateTime, Utc};
 use serde::Serialize;
 
-use crate::caniot;
+use crate::{
+    caniot, impl_display_for_enum,
+    utils::{join_labels, PrometheusExporterTrait},
+};
 
 use super::{alert::DeviceAlert, Device, DeviceStats};
 
@@ -57,5 +62,102 @@ impl Into<DeviceInfos> for &Device {
             active_alert,
             ui_view_name,
         }
+    }
+}
+
+pub enum DeviceLabel {
+    Medium(String),
+    Mac(String),
+    Class(u8),
+    SubId(u8),
+}
+
+impl_display_for_enum!(DeviceLabel { Medium(String), Mac(String), Class(String), SubId(String) });
+
+impl PrometheusExporterTrait for DeviceInfos {
+    type Label = DeviceLabel;
+    fn export(&self, labels: impl AsRef<[Self::Label]>) -> String {
+        let str_labels = join_labels(&labels);
+        let mut buf = String::new();
+
+        if let Some(last_seen) = self.last_seen {
+            write!(
+                &mut buf,
+                "device_last_seen {{{str_labels}}} {}\n",
+                last_seen.timestamp()
+            )
+            .unwrap();
+        }
+
+        if let Some(last_seen_from_now) = self.last_seen_from_now {
+            write!(
+                &mut buf,
+                "device_last_seen_from_now {{{str_labels}}} {}\n",
+                last_seen_from_now
+            )
+            .unwrap();
+        }
+
+        write!(
+            &mut buf,
+            "device_controller_attached {{{str_labels}}} {}\n\
+            device_is_seen {{{str_labels}}} {}\n\
+            device_rx {{{str_labels}}} {}\n\
+            device_tx {{{str_labels}}} {}\n\
+            device_telemetry_rx {{{str_labels}}} {}\n\
+            device_telemetry_tx {{{str_labels}}} {}\n\
+            device_command_tx {{{str_labels}}} {}\n\
+            device_attribute_rx {{{str_labels}}} {}\n\
+            device_attribute_tx {{{str_labels}}} {}\n\
+            device_err_rx {{{str_labels}}} {}\n\
+            device_reset_requested {{{str_labels}}} {}\n\
+            device_reset_settings_requested {{{str_labels}}} {}\n\
+            device_jobs_currently_scheduled {{{str_labels}}} {}\n\
+            device_jobs_processed {{{str_labels}}} {}\n",
+            if self.controller_attached { 1 } else { 0 },
+            if self.is_seen { 1 } else { 0 },
+            self.stats.rx,
+            self.stats.tx,
+            self.stats.telemetry_rx,
+            self.stats.telemetry_tx,
+            self.stats.command_tx,
+            self.stats.attribute_rx,
+            self.stats.attribute_tx,
+            self.stats.err_rx,
+            self.stats.reset_requested,
+            self.stats.reset_settings_requested,
+            self.stats.jobs_currently_scheduled,
+            self.stats.jobs_processed,
+        )
+        .unwrap();
+
+        if let Some(controller_name) = &self.controller_name {
+            write!(
+                &mut buf,
+                "device_controller_name {{{str_labels}}} \"{}\"\n",
+                controller_name
+            )
+            .unwrap();
+        }
+
+        if let Some(board_temperature) = self.board_temperature {
+            write!(
+                &mut buf,
+                "device_temperature {{{str_labels},sensor=\"embedded\"}} {}\n",
+                board_temperature
+            )
+            .unwrap();
+        }
+
+        if let Some(outside_temperature) = self.outside_temperature {
+            write!(
+                &mut buf,
+                "device_temperature {{{str_labels},sensor=\"external\"}} {}\n",
+                outside_temperature
+            )
+            .unwrap();
+        }
+
+        buf
     }
 }

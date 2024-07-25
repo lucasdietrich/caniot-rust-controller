@@ -4,6 +4,8 @@ use serde::{Deserialize, Serialize};
 use socketcan::{CanDataFrame, Error as CanError};
 use thiserror::Error;
 
+use crate::utils::{PrometheusExporterTrait, PrometheusNoLabel};
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct CanConfig {
     pub interface: String,
@@ -23,6 +25,19 @@ pub struct CanStats {
     pub tx: usize,
     pub err: usize,
     pub unhandled: usize,
+}
+
+impl PrometheusExporterTrait for CanStats {
+    type Label = PrometheusNoLabel;
+    fn export(&self, _labels: impl AsRef<[Self::Label]>) -> String {
+        format!(
+            "can_rx {}\n\
+            can_tx {}\n\
+            can_err {}\n\
+            can_unhandled {}\n",
+            self.rx, self.tx, self.err, self.unhandled
+        )
+    }
 }
 
 #[derive(Error, Debug)]

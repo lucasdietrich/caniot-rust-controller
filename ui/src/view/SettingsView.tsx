@@ -9,6 +9,7 @@ import {
 import internalStore from "../store/InternalStore";
 import LoadableCard from "../components/LoadableCard";
 import ListGridItem from "../components/ListGridItem";
+import { Link } from "react-router-dom";
 
 interface ISettingsProps {
   settings?: Settings;
@@ -62,6 +63,9 @@ function SettingsView({
               </>
             )}
           </List>
+          <ListGridItem label="Prometheus metrics" description="Lien vers les metrics Prometheus">
+            <Link to="/metrics">/metrics</Link>
+          </ListGridItem>
         </LoadableCard>
       </Col>
       <Col xl={14} xs={24}></Col>

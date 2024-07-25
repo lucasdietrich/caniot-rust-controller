@@ -8,6 +8,8 @@ use rocket::{log::LogLevel, Config, Rocket};
 
 use crate::shared::SharedHandle;
 
+use super::prometheus_exporter;
+
 const DEFAULT_PORT: u16 = 8000;
 const DEFAULT_LISTEN: &str = "0.0.0.0";
 const DEFAULT_STATIC_PATH: &str = "ui/dist";
@@ -47,6 +49,12 @@ pub async fn files(path: PathBuf, state: &State<SharedHandle>) -> Option<NamedFi
     }
 }
 
+// prometheus exporter
+#[get("/metrics")]
+pub async fn metrics(shared: &State<SharedHandle>) -> String {
+    prometheus_exporter::export(shared).await
+}
+
 pub async fn rocket_server(shared: SharedHandle) -> Result<Rocket<rocket::Ignite>, rocket::Error> {
     let config = &shared.config.web;
 
@@ -68,7 +76,7 @@ pub async fn rocket_server(shared: SharedHandle) -> Result<Rocket<rocket::Ignite
 
     let rocket = rocket::custom(config)
         .manage(shared)
-        .mount("/", routes![files]);
+        .mount("/", routes![metrics, files]);
 
     rocket.launch().await
 }
