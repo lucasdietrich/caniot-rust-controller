@@ -3,6 +3,7 @@ use std::fmt::Debug;
 use as_any::AsAny;
 use chrono::{DateTime, Duration, Utc};
 use dyn_clone::DynClone;
+use log::debug;
 
 use crate::utils::{expirable::ExpirableTrait, Scheduling};
 
@@ -107,7 +108,7 @@ impl DeviceJobsContext {
 
         // Perform the registration + calculation if the jobs changed
         if !new_definitions.is_empty() {
-            println!("Registering new jobs: {:?}", new_definitions);
+            debug!("Registering new jobs: {:?}", new_definitions);
             self.definitions.extend(new_definitions);
             self.eval_in = self.definitions.ttl(&self.last_eval);
         }

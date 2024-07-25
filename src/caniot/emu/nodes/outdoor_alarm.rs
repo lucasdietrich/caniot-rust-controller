@@ -20,9 +20,9 @@ const SIREN_PULSE_DURATION: Duration = Duration::from_secs(20);
 
 #[derive(Default)]
 pub struct OutdoorAlarmController {
-    lights: [EmuXps; 2],         // oc1, oc2
+    lights: [EmuXps; 2],         // oc1, oc2 (south, east)
     siren: EmuXps,               // rl1
-    presence_sensors: [bool; 2], // in1, in2
+    presence_sensors: [bool; 2], // in1, in2 (south, east)
     sabotage: bool,              // in4
 }
 

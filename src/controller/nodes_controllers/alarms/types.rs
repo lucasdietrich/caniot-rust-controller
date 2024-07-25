@@ -23,11 +23,11 @@ impl OutdoorAlarmCommand {
     }
 
     pub fn set_east_light(&mut self, cmd: Xps) {
-        self.0.coc1 = cmd;
+        self.0.coc2 = cmd;
     }
 
     pub fn set_south_light(&mut self, cmd: Xps) {
-        self.0.coc2 = cmd;
+        self.0.coc1 = cmd;
     }
 
     pub fn into_request(self) -> caniot::RequestData {

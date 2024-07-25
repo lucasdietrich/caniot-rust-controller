@@ -84,8 +84,8 @@ impl NightLightsContext {
 #[derive(Debug, Clone, Default)]
 pub struct DeviceIOState {
     pub siren: bool,          // true if siren is on
-    pub detectors: [bool; 2], // east, south (true if presence detected)
-    pub lights: [bool; 2],    // east, south (true if lights are on)
+    pub detectors: [bool; 2], // south, east (true if presence detected)
+    pub lights: [bool; 2],    // south, east (true if lights are on)
     pub sabotage: bool,       // false if sabotage detected
 }
 
@@ -316,8 +316,6 @@ impl DeviceControllerTrait for AlarmController {
         _job_timestamp: DateTime<Utc>,
         ctx: &mut ProcessContext,
     ) -> Result<Verdict, DeviceError> {
-        println!("Processing outdoor alarm: {:?}", job);
-
         match job {
             // Declare jobs that should be executed when the device is added
             DeviceJobImpl::DeviceAdd => {
