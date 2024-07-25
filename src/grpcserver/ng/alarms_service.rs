@@ -40,8 +40,8 @@ impl NgAlarms {
             device: Some(m::OutdoorAlarmDeviceState {
                 south_light: state.ios.lights[0],
                 east_light: state.ios.lights[1],
-                south_detector: state.ios.detectors[0],
-                east_detector: state.ios.detectors[1],
+                east_detector: state.ios.detectors[0],
+                south_detector: state.ios.detectors[1],
                 siren_active: state.ios.siren,
                 sabotage: state.ios.sabotage,
             }),

@@ -84,7 +84,7 @@ impl NightLightsContext {
 #[derive(Debug, Clone, Default)]
 pub struct DeviceIOState {
     pub siren: bool,          // true if siren is on
-    pub detectors: [bool; 2], // south, east (true if presence detected)
+    pub detectors: [bool; 2], // east, south (true if presence detected)
     pub lights: [bool; 2],    // south, east (true if lights are on)
     pub sabotage: bool,       // false if sabotage detected
 }
@@ -186,8 +186,8 @@ impl AlarmController {
         let mut command = OutdoorAlarmCommand::default();
 
         let (south_detector_result, east_detector_result, sabotage_result) = (
-            self.south_detector.update(self.ios.detectors[0]),
-            self.east_detector.update(self.ios.detectors[1]),
+            self.east_detector.update(self.ios.detectors[0]),
+            self.south_detector.update(self.ios.detectors[1]),
             self.alarm.sabotage.update(self.ios.sabotage),
         );
 
