@@ -34,26 +34,30 @@ function convertSecondsToHumanReadable(seconds: number) {
 }
 
 function LastSeenSecondsCounter({
-  lastSeenValue = 0,
+  lastSeenValue = undefined,
   refreshIntervalMs = 1000,
   minimalDisplay = false,
   prefix = "actif il y a ",
 }: ILastSeenSecondsCounterProps) {
-  const [seconds, setSeconds] = useState(lastSeenValue);
+  if (lastSeenValue !== undefined) {
+    const [seconds, setSeconds] = useState(lastSeenValue);
 
-  useEffect(() => {
-    setSeconds(lastSeenValue);
-    const id = setInterval(() => setSeconds((oldCount) => oldCount + 1), refreshIntervalMs);
+    useEffect(() => {
+      setSeconds(lastSeenValue);
+      const id = setInterval(() => setSeconds((oldCount) => oldCount + 1), refreshIntervalMs);
 
-    return () => {
-      clearInterval(id);
-    };
-  }, [lastSeenValue, refreshIntervalMs]);
+      return () => {
+        clearInterval(id);
+      };
+    }, [lastSeenValue, refreshIntervalMs]);
 
-  const fmt_seconds = convertSecondsToHumanReadable(seconds);
-  const fmt = minimalDisplay ? fmt_seconds : " (" + prefix + fmt_seconds + ")";
+    const fmt_seconds = convertSecondsToHumanReadable(seconds);
+    const fmt = minimalDisplay ? fmt_seconds : " (" + prefix + fmt_seconds + ")";
 
-  return <>{fmt}</>;
+    return <>{fmt}</>;
+  } else {
+    return "Jamais";
+  }
 }
 
 export default LastSeenSecondsCounter;

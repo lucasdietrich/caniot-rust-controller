@@ -57,7 +57,11 @@ function AlarmDiagWidget({
           >
             {!isMobile && alarm?.getLastSignal()?.toDate().toLocaleString()}
             <LastSeenSecondsCounter
-              lastSeenValue={alarm?.getLastSignalFromNowSeconds()}
+              lastSeenValue={
+                alarm?.hasLastSignalFromNowSeconds()
+                  ? alarm?.getLastSignalFromNowSeconds()
+                  : undefined
+              }
               refreshIntervalMs={1000}
               minimalDisplay={isMobile}
               prefix=""
@@ -85,7 +89,11 @@ function AlarmDiagWidget({
           >
             {!isMobile && alarm?.getLastSiren()?.toDate().toLocaleString()}
             <LastSeenSecondsCounter
-              lastSeenValue={alarm?.getLastSirenFromNowSeconds()}
+              lastSeenValue={
+                alarm?.hasLastSignalFromNowSeconds()
+                  ? alarm?.getLastSirenFromNowSeconds()
+                  : undefined
+              }
               refreshIntervalMs={1000}
               minimalDisplay={isMobile}
               prefix=""
