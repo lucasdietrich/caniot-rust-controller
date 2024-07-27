@@ -64,7 +64,9 @@ function SettingsView({
             )}
           </List>
           <ListGridItem label="Prometheus metrics" description="Lien vers les metrics Prometheus">
-            <Link to="/metrics">/metrics</Link>
+            <Link to="/metrics" target="_blank">
+              /metrics
+            </Link>
           </ListGridItem>
         </LoadableCard>
       </Col>
