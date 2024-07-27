@@ -101,7 +101,7 @@ impl Into<m::Device> for &DeviceInfos {
             last_seen: self.last_seen.as_ref().map(utc_to_prost_timestamp),
             last_seen_from_now: self.last_seen_from_now,
             controller_attached: self.controller_attached,
-            controller_name: self.controller_name.clone(),
+            controller_name: self.controller_display_name.clone(),
             stats: Some(m::DeviceStats {
                 rx: self.stats.rx as u32,
                 tx: self.stats.tx as u32,

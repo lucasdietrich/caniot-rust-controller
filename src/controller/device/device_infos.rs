@@ -18,6 +18,7 @@ pub struct DeviceInfos {
     pub last_seen_from_now: Option<u32>, // seconds
     pub controller_attached: bool,
     pub controller_name: Option<String>,
+    pub controller_display_name: Option<String>,
     pub controller_metrics: Vec<String>,
     pub stats: DeviceStats,
     pub measures: Option<caniot::BoardClassTelemetry>,
@@ -36,6 +37,7 @@ pub struct DeviceInfos {
 impl Into<DeviceInfos> for &Device {
     fn into(self) -> DeviceInfos {
         // If controller get the controller infos
+        let mut controller_display_name = None;
         let mut controller_name = None;
         let mut active_alert = None;
         let mut controller_attached = false;
@@ -44,7 +46,8 @@ impl Into<DeviceInfos> for &Device {
             controller_attached = true;
 
             let infos = controller.wrapper_get_infos();
-            controller_name = infos.display_name;
+            controller_name = Some(infos.name);
+            controller_display_name = infos.display_name;
             active_alert = controller.wrapper_get_alert();
             ui_view_name = infos.ui_view_name;
         }
@@ -53,7 +56,8 @@ impl Into<DeviceInfos> for &Device {
             did: self.did,
             last_seen: self.last_seen,
             controller_attached: controller_attached,
-            controller_name: controller_name,
+            controller_name,
+            controller_display_name,
             controller_metrics: self.get_controller_metrics(),
             is_seen: self.is_seen(),
             last_seen_from_now: self.last_seen_from_now(),
@@ -69,13 +73,14 @@ impl Into<DeviceInfos> for &Device {
 
 #[derive(Clone)]
 pub enum DeviceLabel {
+    Controller(String),
     Medium(String),
     Mac(String),
     Class(u8),
     SubId(u8),
 }
 
-impl_display_for_enum!(DeviceLabel { Medium(String), Mac(String), Class(String), SubId(String) });
+impl_display_for_enum!(DeviceLabel { Controller(String), Medium(String), Mac(String), Class(String), SubId(String) });
 
 impl<'a> PrometheusExporterTrait<'a> for DeviceInfos {
     type Label = DeviceLabel;
@@ -134,7 +139,7 @@ impl<'a> PrometheusExporterTrait<'a> for DeviceInfos {
         )
         .unwrap();
 
-        if let Some(controller_name) = &self.controller_name {
+        if let Some(controller_name) = &self.controller_display_name {
             writeln!(
                 &mut buf,
                 "device_controller_name {{{str_labels}}} \"{}\"",
