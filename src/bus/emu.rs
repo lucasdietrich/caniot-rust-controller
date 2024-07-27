@@ -75,6 +75,7 @@ impl CanInterfaceTrait for CanInterface {
 
     async fn recv_poll(&mut self) -> Option<CanDataFrame> {
         if let Some(frame) = self.to_recv_msgq.pop() {
+            self.stats.rx += 1;
             return Some(frame);
         }
 
@@ -85,6 +86,7 @@ impl CanInterfaceTrait for CanInterface {
 
             for device in self.devices.iter_mut() {
                 if let Some(caniot_response) = device.process(None, &now) {
+                    self.stats.rx += 1;
                     return Some(caniot_response.into());
                 }
 
