@@ -41,7 +41,7 @@ impl ActionResultTrait for HeaterStatus {}
 
 impl DeviceControllerTrait for HeatersController {
     type Action = HeaterAction;
-    type SchedJob = ();
+    type Job = ();
     type Config = ();
 
     fn get_infos(&self) -> DeviceControllerInfos {
@@ -50,7 +50,7 @@ impl DeviceControllerTrait for HeatersController {
 
     fn process_job(
         &mut self,
-        job: &DeviceJobImpl<Self::SchedJob>,
+        job: &DeviceJobImpl<Self::Job>,
         _job_timestamp: DateTime<Utc>,
         _ctx: &mut ProcessContext,
     ) -> Result<Verdict, DeviceError> {

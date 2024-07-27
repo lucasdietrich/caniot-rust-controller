@@ -7,7 +7,7 @@ use log::debug;
 
 use crate::utils::{expirable::ExpirableTrait, Scheduling};
 
-pub trait DevCtrlSchedJobTrait: AsAny + Send + Debug + DynClone {
+pub trait JobTrait: AsAny + Send + Debug + DynClone {
     fn get_scheduling(&self) -> Scheduling {
         Scheduling::Unscheduled
     }
@@ -15,16 +15,16 @@ pub trait DevCtrlSchedJobTrait: AsAny + Send + Debug + DynClone {
 
 // YAYE! More dirty tricks to make bad code work
 // TODO review this shitty Job implementation
-dyn_clone::clone_trait_object!(DevCtrlSchedJobTrait);
+dyn_clone::clone_trait_object!(JobTrait);
 
 // Implement the trait for the unit type to avoid having a job for device
 // controllers that don't need any
-impl DevCtrlSchedJobTrait for () {}
+impl JobTrait for () {}
 
 #[derive(Debug)]
 pub enum DeviceJobImpl<'a, J>
 where
-    J: DevCtrlSchedJobTrait,
+    J: JobTrait,
 {
     // Job executed when the device is added
     DeviceAdd,
@@ -38,7 +38,7 @@ where
 
 impl<'a, J> DeviceJobImpl<'a, J>
 where
-    J: DevCtrlSchedJobTrait,
+    J: JobTrait,
 {
     pub fn is_device_add(&self) -> bool {
         matches!(self, DeviceJobImpl::DeviceAdd)
@@ -56,7 +56,7 @@ where
 pub enum DeviceJobWrapper {
     DeviceAdd,
     DeviceRemove,
-    Scheduled(Box<dyn DevCtrlSchedJobTrait>),
+    Scheduled(Box<dyn JobTrait>),
 }
 
 impl DeviceJobWrapper {
@@ -100,7 +100,7 @@ impl DeviceJobsContext {
         }
     }
 
-    pub fn register_new_jobs(&mut self, jobs_definitions: Vec<Box<dyn DevCtrlSchedJobTrait>>) {
+    pub fn register_new_jobs(&mut self, jobs_definitions: Vec<Box<dyn JobTrait>>) {
         let new_definitions: Vec<DeviceJobWrapper> = jobs_definitions
             .into_iter()
             .map(|job| DeviceJobWrapper::Scheduled(job))

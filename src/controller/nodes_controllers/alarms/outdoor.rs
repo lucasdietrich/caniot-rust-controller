@@ -1,4 +1,6 @@
-use chrono::{DateTime, Duration, NaiveTime, Utc};
+use std::fmt::Display;
+
+use chrono::{format, DateTime, Duration, NaiveTime, Utc};
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
 
@@ -8,12 +10,13 @@ use crate::{
     controller::{
         alarms::{actions::SirenAction, types::OutdoorAlarmCommand},
         alert::DeviceAlert,
-        ActionResultTrait, ActionTrait, ActionVerdict, DevCtrlSchedJobTrait, DeviceControllerInfos,
-        DeviceControllerTrait, DeviceError, DeviceJobImpl, ProcessContext, Verdict,
+        ActionResultTrait, ActionTrait, ActionVerdict, DeviceControllerInfos,
+        DeviceControllerTrait, DeviceError, DeviceJobImpl, JobTrait, ProcessContext, Verdict,
     },
     utils::{
+        format_metric, join_labels,
         monitorable::{MonitorableResultTrait, ValueMonitor},
-        Scheduling,
+        Scheduling, SensorLabel,
     },
 };
 
@@ -92,6 +95,26 @@ pub struct DeviceIOState {
 impl DeviceIOState {
     pub fn is_siren_on(&self) -> bool {
         self.siren
+    }
+
+    pub fn get_south_detector(&self) -> bool {
+        self.detectors[1]
+    }
+
+    pub fn get_east_detector(&self) -> bool {
+        self.detectors[0]
+    }
+
+    pub fn get_sabotage(&self) -> bool {
+        self.sabotage
+    }
+
+    pub fn get_south_light(&self) -> bool {
+        self.lights[0]
+    }
+
+    pub fn get_east_light(&self) -> bool {
+        self.lights[1]
     }
 }
 
@@ -186,9 +209,9 @@ impl AlarmController {
         let mut command = OutdoorAlarmCommand::default();
 
         let (south_detector_result, east_detector_result, sabotage_result) = (
-            self.east_detector.update(self.ios.detectors[0]),
-            self.south_detector.update(self.ios.detectors[1]),
-            self.alarm.sabotage.update(self.ios.sabotage),
+            self.east_detector.update(self.ios.get_east_detector()),
+            self.south_detector.update(self.ios.get_south_detector()),
+            self.alarm.sabotage.update(self.ios.get_sabotage()),
         );
 
         let mut detector_triggered = false;
@@ -263,7 +286,7 @@ pub enum AlarmJob {
     AutoLightsAutoDisableDaily(NaiveTime),
 }
 
-impl DevCtrlSchedJobTrait for AlarmJob {
+impl JobTrait for AlarmJob {
     fn get_scheduling(&self) -> Scheduling {
         match self {
             AlarmJob::AlarmAutoEnableDaily(time) => Scheduling::Daily(*time),
@@ -276,7 +299,7 @@ impl DevCtrlSchedJobTrait for AlarmJob {
 
 impl DeviceControllerTrait for AlarmController {
     type Action = Action;
-    type SchedJob = AlarmJob;
+    type Job = AlarmJob;
     type Config = AlarmConfig;
 
     fn new(config: Option<&Self::Config>) -> Self {
@@ -312,7 +335,7 @@ impl DeviceControllerTrait for AlarmController {
 
     fn process_job(
         &mut self,
-        job: &DeviceJobImpl<Self::SchedJob>,
+        job: &DeviceJobImpl<Self::Job>,
         _job_timestamp: DateTime<Utc>,
         ctx: &mut ProcessContext,
     ) -> Result<Verdict, DeviceError> {
@@ -432,5 +455,86 @@ impl DeviceControllerTrait for AlarmController {
         _completed_by: Response,
     ) -> Result<<Self::Action as ActionTrait>::Result, DeviceError> {
         Ok(self.get_state())
+    }
+
+    fn get_metrics(&self) -> Vec<String> {
+        let alarm_label = SensorLabel::Controller("alarm".to_string());
+        let outdoor_label = SensorLabel::Install("outdoor".to_string());
+        let south_label = SensorLabel::Location("south".to_string());
+        let east_label = SensorLabel::Location("east".to_string());
+
+        let metrics = vec![
+            // Counters
+            format_metric(
+                "detector_triggered_count",
+                self.stats.south_detector_triggered_count,
+                vec![&alarm_label, &outdoor_label, &south_label],
+            ),
+            format_metric(
+                "detector_triggered_count",
+                self.stats.east_detector_triggered_count,
+                vec![&alarm_label, &outdoor_label, &east_label],
+            ),
+            format_metric(
+                "sabotage_triggered_count",
+                self.stats.sabotage_triggered_count,
+                vec![&alarm_label, &outdoor_label],
+            ),
+            format_metric(
+                "sirens_triggered_count",
+                self.stats.sirens_triggered_count,
+                vec![&alarm_label, &outdoor_label],
+            ),
+            // DeviceIOState metrics
+            format_metric(
+                "siren",
+                self.ios.siren as u32,
+                vec![&alarm_label, &outdoor_label],
+            ),
+            format_metric(
+                "detector",
+                self.ios.get_east_detector() as u32,
+                vec![&alarm_label, &outdoor_label, &east_label],
+            ),
+            format_metric(
+                "detector",
+                self.ios.get_south_detector() as u32,
+                vec![&alarm_label, &outdoor_label, &south_label],
+            ),
+            format_metric(
+                "sabotage",
+                self.ios.sabotage as u32,
+                vec![&alarm_label, &outdoor_label],
+            ),
+            format_metric(
+                "light",
+                self.ios.get_south_light() as u32,
+                vec![&alarm_label, &outdoor_label, &south_label],
+            ),
+            format_metric(
+                "light",
+                self.ios.get_east_light() as u32,
+                vec![&alarm_label, &outdoor_label, &east_label],
+            ),
+            // Alarm state
+            format_metric(
+                "alarm_enabled",
+                self.alarm.is_armed() as u32,
+                vec![&alarm_label, &outdoor_label],
+            ),
+            // AlarmConfig metrics
+            format_metric(
+                "alarm_auto_enable",
+                self.config.auto_alarm_enable as u32,
+                vec![&alarm_label, &outdoor_label],
+            ),
+            format_metric(
+                "lights_auto_enable",
+                format!("{}", self.config.auto_lights_enable as u32),
+                vec![&alarm_label, &outdoor_label],
+            ),
+        ];
+
+        metrics
     }
 }

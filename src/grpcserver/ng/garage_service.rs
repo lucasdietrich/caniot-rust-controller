@@ -14,12 +14,11 @@ pub struct NgGarage {
     pub shared: SharedHandle,
 }
 
-impl Into<m::DoorState> for garage::DoorState {
+impl Into<m::DoorState> for &garage::DoorState {
     fn into(self) -> m::DoorState {
         match self {
             garage::DoorState::Open => m::DoorState::Open,
             garage::DoorState::Closed => m::DoorState::Closed,
-            garage::DoorState::Moving(_) => m::DoorState::Open,
         }
     }
 }
@@ -38,11 +37,11 @@ impl NgGarage {
     fn garage_status_to_proto(&self, status: &Option<garage::GarageDoorStatus>) -> m::Status {
         if let Some(status) = status {
             m::Status {
-                left_closed: Into::<m::DoorState>::into(status.left_door_status).into(),
+                left_closed: Into::<m::DoorState>::into(status.left_door_status.as_ref()).into(),
                 left_progress: status.left_door_status.progress().map(|p| p as u32),
-                right_closed: Into::<m::DoorState>::into(status.right_door_status).into(),
+                right_closed: Into::<m::DoorState>::into(status.right_door_status.as_ref()).into(),
                 right_progress: status.right_door_status.progress().map(|p| p as u32),
-                gate_closed: Into::<m::DoorState>::into(!status.gate_open).into(),
+                gate_closed: Into::<m::DoorState>::into(!status.gate_open.as_ref()).into(),
             }
         } else {
             m::Status {

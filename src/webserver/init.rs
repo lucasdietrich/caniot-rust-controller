@@ -1,5 +1,6 @@
 use std::path::{Path, PathBuf};
 
+use log::warn;
 use rocket::config::Shutdown;
 use rocket::fs::NamedFile;
 use rocket::serde::{Deserialize, Serialize};
@@ -19,6 +20,9 @@ pub struct WebserverConfig {
     pub port: u16,
     pub listen: String,
     pub static_path: String,
+
+    // Enable prometheus metrics
+    pub prometheus_metrics: bool,
 }
 
 impl Default for WebserverConfig {
@@ -27,6 +31,7 @@ impl Default for WebserverConfig {
             port: DEFAULT_PORT,
             listen: DEFAULT_LISTEN.to_string(),
             static_path: DEFAULT_STATIC_PATH.to_string(),
+            prometheus_metrics: true,
         }
     }
 }
@@ -52,7 +57,12 @@ pub async fn files(path: PathBuf, state: &State<SharedHandle>) -> Option<NamedFi
 // prometheus exporter
 #[get("/metrics")]
 pub async fn metrics(shared: &State<SharedHandle>) -> String {
-    prometheus_exporter::export(shared).await
+    if shared.config.web.prometheus_metrics {
+        prometheus_exporter::export(shared).await
+    } else {
+        warn!("Accessing /metrics but prometheus exporter is disabled");
+        "".to_owned()
+    }
 }
 
 pub async fn rocket_server(shared: SharedHandle) -> Result<Rocket<rocket::Ignite>, rocket::Error> {

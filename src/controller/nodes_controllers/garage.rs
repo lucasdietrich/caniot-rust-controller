@@ -4,11 +4,18 @@ use crate::{
         alert::DeviceAlert, ActionResultTrait, ActionTrait, ActionVerdict, DeviceControllerInfos,
         DeviceControllerTrait, DeviceError, Verdict,
     },
+    utils::{
+        format_metric,
+        monitorable::{MonitorableResultTrait, ValueMonitor},
+        SensorLabel,
+    },
 };
 
 use self::traits::ClassCommandTrait;
 
 use super::super::super::caniot::*;
+
+const CONTROLLER_NAME: &str = "garage";
 
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub struct GarageDoorCommand {
@@ -54,21 +61,70 @@ impl Into<class0::Command> for &GarageDoorCommand {
     }
 }
 
-#[derive(Debug, Default, Clone, Copy, PartialEq)]
-pub struct GarageDoorStatus {
-    pub left_door_status: DoorState,
-    pub right_door_status: DoorState,
+pub struct GarageIOState {
+    pub left_door_open: bool,
+    pub right_door_open: bool,
     pub gate_open: bool,
 }
 
-impl From<&class0::Telemetry> for GarageDoorStatus {
+impl From<&class0::Telemetry> for GarageIOState {
     fn from(payload: &class0::Telemetry) -> Self {
         Self {
-            left_door_status: payload.in3.into(),
-            right_door_status: payload.in4.into(),
+            left_door_open: payload.in3.into(),
+            right_door_open: payload.in4.into(),
             gate_open: payload.in2,
         }
     }
+}
+
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct GarageDoorStatus {
+    pub left_door_status: ValueMonitor<DoorState>,
+    pub right_door_status: ValueMonitor<DoorState>,
+    pub gate_open: ValueMonitor<bool>,
+}
+
+impl GarageDoorStatus {
+    pub fn init(ios: GarageIOState) -> Self {
+        Self {
+            left_door_status: ValueMonitor::init(ios.left_door_open.into()),
+            right_door_status: ValueMonitor::init(ios.right_door_open.into()),
+            gate_open: ValueMonitor::init(ios.gate_open),
+        }
+    }
+
+    fn update(&mut self, ios: GarageIOState, stats: &mut GarageDoorStats) {
+        self.left_door_status
+            .update(ios.left_door_open.into())
+            .map(|old| {
+                if old.is_closed() {
+                    stats.left_door_open_count += 1;
+                }
+            });
+
+        self.right_door_status
+            .update(ios.right_door_open.into())
+            .map(|old| {
+                if old.is_closed() {
+                    stats.right_door_open_count += 1;
+                }
+            });
+
+        self.gate_open.update(ios.gate_open).map(|old| {
+            if !old {
+                stats.gate_open_count += 1;
+            }
+        });
+    }
+}
+
+#[derive(Debug, Default, Clone, Copy)]
+struct GarageDoorStats {
+    pub left_door_open_count: u32,
+    pub right_door_open_count: u32,
+    pub gate_open_count: u32,
+    pub left_door_command_sent: u32,
+    pub right_door_command_sent: u32,
 }
 
 #[derive(Debug)]
@@ -83,12 +139,11 @@ impl ActionTrait for GarageAction {
 
 impl ActionResultTrait for Option<GarageDoorStatus> {}
 
-#[derive(Debug, Clone, Copy, Default, PartialEq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum DoorState {
     #[default]
     Open,
     Closed,
-    Moving(u8),
 }
 
 impl DoorState {
@@ -96,10 +151,12 @@ impl DoorState {
         !matches!(self, DoorState::Closed)
     }
 
+    pub fn is_closed(&self) -> bool {
+        !self.is_open()
+    }
     pub fn progress(&self) -> Option<u8> {
         match self {
             DoorState::Open => None,
-            DoorState::Moving(progress) => Some(*progress),
             DoorState::Closed => None,
         }
     }
@@ -110,7 +167,6 @@ impl Into<bool> for DoorState {
         match self {
             DoorState::Open => true,
             DoorState::Closed => false,
-            DoorState::Moving(..) => true,
         }
     }
 }
@@ -125,26 +181,19 @@ impl From<bool> for DoorState {
     }
 }
 
-// #[derive(Debug)]
-// struct RequestedState {
-//     state: DoorState,
-//     date: DateTime<Utc>,
-// }
-
 #[derive(Debug, Default)]
 pub struct GarageController {
-    // left_door_triggered: Option<RequestedState>,
-    // right_door_triggered: Option<RequestedState>,
     status: Option<GarageDoorStatus>,
+    stats: GarageDoorStats,
 }
 
 impl DeviceControllerTrait for GarageController {
     type Action = GarageAction;
-    type SchedJob = ();
+    type Job = ();
     type Config = ();
 
     fn get_infos(&self) -> DeviceControllerInfos {
-        DeviceControllerInfos::new("garage", Some("Portes de garage"), Some("garage"))
+        DeviceControllerInfos::new(CONTROLLER_NAME, Some("Portes de garage"), Some("garage"))
     }
 
     fn handle_action(
@@ -156,6 +205,14 @@ impl DeviceControllerTrait for GarageController {
         match action {
             GarageAction::GetStatus => Ok(ActionVerdict::ActionResult(self.status.clone())),
             GarageAction::SetStatus(command) => {
+                if command.left_door_activate {
+                    self.stats.left_door_command_sent += 1;
+                }
+
+                if command.right_door_activate {
+                    self.stats.right_door_command_sent += 1;
+                }
+
                 let blc0_command: class0::Command = command.into();
                 Ok(ActionVerdict::ActionPendingOn(blc0_command.into_request()))
             }
@@ -178,7 +235,12 @@ impl DeviceControllerTrait for GarageController {
     ) -> Result<crate::controller::Verdict, crate::controller::DeviceError> {
         if let Some(telemetry) = as_class_blc {
             if let Some(telemetry) = telemetry.as_class0() {
-                self.status = Some(telemetry.into());
+                let ios = GarageIOState::from(telemetry);
+                if let Some(ref mut status) = self.status {
+                    status.update(ios, &mut self.stats);
+                } else {
+                    self.status = Some(GarageDoorStatus::init(ios));
+                }
             }
         }
 
@@ -186,12 +248,74 @@ impl DeviceControllerTrait for GarageController {
     }
 
     fn get_alert(&self) -> Option<DeviceAlert> {
-        self.status.and_then(|s| {
-            if s.left_door_status.is_open() || s.right_door_status.is_open() || s.gate_open {
+        self.status.as_ref().and_then(|s| {
+            if s.left_door_status.is_open() || s.right_door_status.is_open() || *s.gate_open {
                 Some(DeviceAlert::new_warning("Porte(s) de garage ouverte(s)"))
             } else {
                 None
             }
         })
+    }
+
+    fn get_metrics(&self) -> Vec<String> {
+        let label_ctrl = SensorLabel::Controller(CONTROLLER_NAME.to_string());
+        let label_location = SensorLabel::Install("indoor".to_string());
+        let label_left_door = SensorLabel::Location("left".to_string());
+        let label_right_door = SensorLabel::Location("right".to_string());
+        let label_gate = SensorLabel::Location("gate".to_string());
+
+        let mut metrics = vec![];
+
+        if let Some(ref status) = self.status {
+            metrics.push(format_metric(
+                "door_open",
+                status.left_door_status.is_open() as u32,
+                vec![&label_ctrl, &label_location, &label_left_door],
+            ));
+
+            metrics.push(format_metric(
+                "door_open",
+                status.right_door_status.is_open() as u32,
+                vec![&label_ctrl, &label_location, &label_right_door],
+            ));
+
+            metrics.push(format_metric(
+                "door_open",
+                *status.gate_open as u32,
+                vec![&label_ctrl, &label_location, &label_gate],
+            ));
+
+            metrics.push(format_metric(
+                "door_open_count",
+                self.stats.left_door_open_count,
+                vec![&label_ctrl, &label_location, &label_left_door],
+            ));
+
+            metrics.push(format_metric(
+                "door_open_count",
+                self.stats.right_door_open_count,
+                vec![&label_ctrl, &label_location, &label_right_door],
+            ));
+
+            metrics.push(format_metric(
+                "door_open_count",
+                self.stats.gate_open_count,
+                vec![&label_ctrl, &label_location, &label_gate],
+            ));
+
+            metrics.push(format_metric(
+                "door_command_sent",
+                self.stats.left_door_command_sent,
+                vec![&label_ctrl, &label_location, &label_left_door],
+            ));
+
+            metrics.push(format_metric(
+                "door_command_sent",
+                self.stats.right_door_command_sent,
+                vec![&label_ctrl, &label_location, &label_right_door],
+            ));
+        }
+
+        metrics
     }
 }

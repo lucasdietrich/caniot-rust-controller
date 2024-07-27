@@ -23,9 +23,9 @@ pub struct DeviceStats {
     pub jobs_processed: usize,
 }
 
-impl PrometheusExporterTrait for DeviceStats {
+impl<'a> PrometheusExporterTrait<'a> for DeviceStats {
     type Label = DeviceLabel;
-    fn export(&self, labels: impl AsRef<[Self::Label]>) -> String {
+    fn export(&self, labels: impl AsRef<[&'a Self::Label]>) -> String {
         let labels = join_labels(labels);
         format!(
             "device_stats_rx {{{labels}}} {}\n\

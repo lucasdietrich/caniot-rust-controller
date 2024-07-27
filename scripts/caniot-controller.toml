@@ -5,6 +5,7 @@ interface = "can0"
 port = 8080
 listen = "0.0.0.0"
 static_path = "ui/dist"
+prometheus_metrics = true
 
 [grpc]
 listen = "[::]:50051"

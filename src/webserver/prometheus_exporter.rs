@@ -9,13 +9,14 @@ pub async fn export(shared: &SharedHandle) -> String {
     buf.push_str(&controller_stats.export(&[]));
     buf.push_str(&can_stats.export(&[]));
 
+    let medium_label = DeviceLabel::Medium("CAN".to_string());
     for device_infos in devices_infos {
-        let device_labels = vec![
-            DeviceLabel::Medium("CAN".to_string()),
-            DeviceLabel::Mac(format!("{}", device_infos.did.to_u8())),
-            DeviceLabel::Class(device_infos.did.class),
-            DeviceLabel::SubId(device_infos.did.sub_id),
-        ];
+        let mac_label = DeviceLabel::Mac(format!("{}", device_infos.did.to_u8()));
+        let class_label = DeviceLabel::Class(device_infos.did.class);
+        let sub_id_label = DeviceLabel::SubId(device_infos.did.sub_id);
+
+        let device_labels = vec![&medium_label, &mac_label, &class_label, &sub_id_label];
+
         buf.push_str(&device_infos.stats.export(&device_labels));
         buf.push_str(&device_infos.export(&device_labels));
     }

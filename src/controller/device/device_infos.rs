@@ -18,6 +18,7 @@ pub struct DeviceInfos {
     pub last_seen_from_now: Option<u32>, // seconds
     pub controller_attached: bool,
     pub controller_name: Option<String>,
+    pub controller_metrics: Vec<String>,
     pub stats: DeviceStats,
     pub measures: Option<caniot::BoardClassTelemetry>,
 
@@ -53,6 +54,7 @@ impl Into<DeviceInfos> for &Device {
             last_seen: self.last_seen,
             controller_attached: controller_attached,
             controller_name: controller_name,
+            controller_metrics: self.get_controller_metrics(),
             is_seen: self.is_seen(),
             last_seen_from_now: self.last_seen_from_now(),
             stats: self.stats,
@@ -65,6 +67,7 @@ impl Into<DeviceInfos> for &Device {
     }
 }
 
+#[derive(Clone)]
 pub enum DeviceLabel {
     Medium(String),
     Mac(String),
@@ -74,25 +77,25 @@ pub enum DeviceLabel {
 
 impl_display_for_enum!(DeviceLabel { Medium(String), Mac(String), Class(String), SubId(String) });
 
-impl PrometheusExporterTrait for DeviceInfos {
+impl<'a> PrometheusExporterTrait<'a> for DeviceInfos {
     type Label = DeviceLabel;
-    fn export(&self, labels: impl AsRef<[Self::Label]>) -> String {
+    fn export(&self, labels: impl AsRef<[&'a Self::Label]>) -> String {
         let str_labels = join_labels(&labels);
         let mut buf = String::new();
 
         if let Some(last_seen) = self.last_seen {
-            write!(
+            writeln!(
                 &mut buf,
-                "device_last_seen {{{str_labels}}} {}\n",
+                "device_last_seen {{{str_labels}}} {}",
                 last_seen.timestamp()
             )
             .unwrap();
         }
 
         if let Some(last_seen_from_now) = self.last_seen_from_now {
-            write!(
+            writeln!(
                 &mut buf,
-                "device_last_seen_from_now {{{str_labels}}} {}\n",
+                "device_last_seen_from_now {{{str_labels}}} {}",
                 last_seen_from_now
             )
             .unwrap();
@@ -132,30 +135,34 @@ impl PrometheusExporterTrait for DeviceInfos {
         .unwrap();
 
         if let Some(controller_name) = &self.controller_name {
-            write!(
+            writeln!(
                 &mut buf,
-                "device_controller_name {{{str_labels}}} \"{}\"\n",
+                "device_controller_name {{{str_labels}}} \"{}\"",
                 controller_name
             )
             .unwrap();
         }
 
         if let Some(board_temperature) = self.board_temperature {
-            write!(
+            writeln!(
                 &mut buf,
-                "device_temperature {{{str_labels},sensor=\"embedded\"}} {}\n",
+                "device_temperature {{{str_labels},sensor=\"embedded\"}} {}",
                 board_temperature
             )
             .unwrap();
         }
 
         if let Some(outside_temperature) = self.outside_temperature {
-            write!(
+            writeln!(
                 &mut buf,
-                "device_temperature {{{str_labels},sensor=\"external\"}} {}\n",
+                "device_temperature {{{str_labels},sensor=\"external\"}} {}",
                 outside_temperature
             )
             .unwrap();
+        }
+
+        for metric in &self.controller_metrics {
+            writeln!(&mut buf, "{}", metric).unwrap();
         }
 
         buf

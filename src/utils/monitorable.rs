@@ -2,7 +2,7 @@ use std::{fmt::Debug, ops::Deref};
 
 pub trait MonitorableTrait: PartialEq + Eq + Clone + Debug + Default {
     fn monitor(self) -> ValueMonitor<Self> {
-        ValueMonitor::new(self)
+        ValueMonitor::init(self)
     }
 }
 
@@ -20,7 +20,7 @@ where
     T: MonitorableTrait,
 {
     #[allow(dead_code)]
-    pub fn new(value: T) -> Self {
+    pub fn init(value: T) -> Self {
         Self {
             value,
             updates_count: 0,

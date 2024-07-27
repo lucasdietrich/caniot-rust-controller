@@ -5,7 +5,7 @@ use std::{
 
 use crate::{
     caniot::{self, BoardClassTelemetry, Response},
-    controller::DevCtrlSchedJobTrait,
+    controller::JobTrait,
 };
 
 use as_any::{AsAny, Downcast};
@@ -23,7 +23,7 @@ pub trait DeviceControllerTrait: Send + Debug + Default {
     // TODO
     // type Class: Class<'a>; ???
     type Action: ActionTrait;
-    type SchedJob: DevCtrlSchedJobTrait;
+    type Job: JobTrait;
     type Config: Default + Debug + Serialize + Deserialize<'static> + Clone;
 
     fn new(_config: Option<&Self::Config>) -> Self {
@@ -72,7 +72,7 @@ pub trait DeviceControllerTrait: Send + Debug + Default {
     // - If requested via the process context
     fn process_job(
         &mut self,
-        _job: &DeviceJobImpl<Self::SchedJob>,
+        _job: &DeviceJobImpl<Self::Job>,
         _job_timestamp: DateTime<Utc>,
         _ctx: &mut ProcessContext,
     ) -> Result<Verdict, DeviceError> {
@@ -85,6 +85,11 @@ pub trait DeviceControllerTrait: Send + Debug + Default {
     // Retrieve active alert if any
     fn get_alert(&self) -> Option<DeviceAlert> {
         None
+    }
+
+    // Retrieve prometheus metrics
+    fn get_metrics(&self) -> Vec<String> {
+        vec![]
     }
 }
 
@@ -152,6 +157,8 @@ pub trait DeviceControllerWrapperTrait: Send + Debug {
     fn wrapper_get_infos(&self) -> DeviceControllerInfos;
 
     fn wrapper_get_alert(&self) -> Option<DeviceAlert>;
+
+    fn wrapper_get_metrics(&self) -> Vec<String>;
 }
 
 /// Automatically implement DeviceWrapperTrait for any DeviceTrait
@@ -206,7 +213,7 @@ impl<T: DeviceControllerTrait> DeviceControllerWrapperTrait for T {
         let job_inner = match job {
             DeviceJobWrapper::DeviceAdd => Ok(DeviceJobImpl::DeviceAdd),
             DeviceJobWrapper::DeviceRemove => Ok(DeviceJobImpl::DeviceRemoved),
-            DeviceJobWrapper::Scheduled(job) => match job.deref().downcast_ref::<T::SchedJob>() {
+            DeviceJobWrapper::Scheduled(job) => match job.deref().downcast_ref::<T::Job>() {
                 Some(job) => Ok(DeviceJobImpl::Scheduled(job)),
                 None => Err(DeviceError::UnsupportedProcessType),
             },
@@ -221,6 +228,10 @@ impl<T: DeviceControllerTrait> DeviceControllerWrapperTrait for T {
 
     fn wrapper_get_alert(&self) -> Option<DeviceAlert> {
         self.get_alert()
+    }
+
+    fn wrapper_get_metrics(&self) -> Vec<String> {
+        self.get_metrics()
     }
 }
 

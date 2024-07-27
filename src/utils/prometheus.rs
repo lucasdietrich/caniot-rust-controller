@@ -1,13 +1,14 @@
 use std::fmt::Display;
 
-pub trait PrometheusLabel: Display {
+pub trait PrometheusLabelTrait: Display + Clone {
     fn label(&self) -> String {
         format!("{}", self)
     }
 }
 
-impl<T> PrometheusLabel for T where T: Display {}
+impl<L> PrometheusLabelTrait for L where L: Display + Clone {}
 
+#[derive(Clone)]
 pub enum PrometheusNoLabel {}
 
 impl Display for PrometheusNoLabel {
@@ -32,7 +33,7 @@ macro_rules! impl_display_for_enum {
 }
 
 // TODO: Include the start "{" and end "}" immediately, don't include them if the labels are empty
-pub fn join_labels<T: PrometheusLabel>(labels: impl AsRef<[T]>) -> String {
+pub fn join_labels<'a, L: PrometheusLabelTrait + 'a>(labels: impl AsRef<[&'a L]>) -> String {
     labels
         .as_ref()
         .iter()
@@ -41,11 +42,34 @@ pub fn join_labels<T: PrometheusLabel>(labels: impl AsRef<[T]>) -> String {
         .join(",")
 }
 
-pub trait PrometheusExporterTrait {
-    type Label: PrometheusLabel;
+pub trait PrometheusExporterTrait<'a> {
+    type Label: PrometheusLabelTrait + 'a;
 
-    fn export(&self, labels: impl AsRef<[Self::Label]>) -> String;
+    fn export(&self, labels: impl AsRef<[&'a Self::Label]>) -> String;
 }
+
+pub fn format_metric<'a>(
+    name: &str,
+    value: impl Display,
+    labels: impl AsRef<[&'a SensorLabel]>,
+) -> String {
+    let labels = labels.as_ref();
+    if labels.is_empty() {
+        format!("{} {}", name, value)
+    } else {
+        format!("{}{{{}}} {}", name, join_labels(labels), value)
+    }
+}
+
+// prometheus library
+#[derive(Clone)]
+pub enum SensorLabel {
+    Controller(String), // alarm, other
+    Install(String),    // indoor, outdoor
+    Location(String),   // south, east
+}
+
+impl_display_for_enum!(SensorLabel { Controller(String), Install(String), Location(String) });
 
 #[cfg(test)]
 mod tests {
@@ -55,6 +79,7 @@ mod tests {
 
     #[test]
     fn test_prometheus_labels() {
+        #[derive(Clone)]
         enum Label {
             Medium(String),
             Mac(String),
@@ -69,20 +94,19 @@ mod tests {
             }
         }
 
-        let labels = vec![
-            Label::Medium("BLE".to_string()),
-            Label::Mac("A4:C1:38:68:05:63".to_string()),
-        ];
+        let label_ble = Label::Medium("BLE".to_string());
+        let label_mac = Label::Mac("A4:C1:38:68:05:63".to_string());
+        let labels = vec![&label_ble, &label_mac];
 
         struct Stats {
             rx: usize,
             tx: usize,
         }
 
-        impl PrometheusExporterTrait for Stats {
+        impl<'a> PrometheusExporterTrait<'a> for Stats {
             type Label = Label;
 
-            fn export(&self, labels: impl AsRef<[Self::Label]>) -> String {
+            fn export(&self, labels: impl AsRef<[&'a Self::Label]>) -> String {
                 let labels = join_labels(labels);
                 format!(
                     "can_rx {{{labels}}} {}\n\

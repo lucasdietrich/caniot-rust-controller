@@ -7,7 +7,7 @@ use crate::{
         self, classes, BoardClassTelemetry, DeviceId, Endpoint, Response, ResponseData, SysCtrl,
         TSP,
     },
-    controller::{ActionTrait, DevCtrlSchedJobTrait},
+    controller::{ActionTrait, JobTrait},
     utils::expirable::ExpirableTrait,
 };
 
@@ -216,7 +216,7 @@ impl Device {
         self.stats.jobs_currently_scheduled = self.jobs.get_jobs_count();
     }
 
-    pub fn register_new_jobs(&mut self, jobs_definitions: Vec<Box<dyn DevCtrlSchedJobTrait>>) {
+    pub fn register_new_jobs(&mut self, jobs_definitions: Vec<Box<dyn JobTrait>>) {
         self.jobs.register_new_jobs(jobs_definitions);
         self.stats.jobs_currently_scheduled = self.jobs.get_jobs_count();
     }
@@ -230,6 +230,14 @@ impl Device {
             inner.wrapper_get_alert()
         } else {
             None
+        }
+    }
+
+    pub fn get_controller_metrics(&self) -> Vec<String> {
+        if let Some(inner) = self.controller.as_ref() {
+            inner.wrapper_get_metrics()
+        } else {
+            vec![]
         }
     }
 }

@@ -27,14 +27,14 @@ pub struct CanStats {
     pub unhandled: usize,
 }
 
-impl PrometheusExporterTrait for CanStats {
+impl<'a> PrometheusExporterTrait<'a> for CanStats {
     type Label = PrometheusNoLabel;
-    fn export(&self, _labels: impl AsRef<[Self::Label]>) -> String {
+    fn export(&self, _labels: impl AsRef<[&'a Self::Label]>) -> String {
         format!(
-            "can_rx {}\n\
-            can_tx {}\n\
-            can_err {}\n\
-            can_unhandled {}\n",
+            "bus_can_rx {}\n\
+            bus_can_tx {}\n\
+            bus_can_err {}\n\
+            bus_can_unhandled {}\n",
             self.rx, self.tx, self.err, self.unhandled
         )
     }

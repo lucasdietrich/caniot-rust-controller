@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
 
-use super::DevCtrlSchedJobTrait;
+use super::JobTrait;
 
 #[derive(Default, Debug)]
 pub struct ProcessContext {
@@ -13,7 +13,7 @@ pub struct ProcessContext {
     // Add function to remove a job def
 
     // New jobs to be scheduled
-    pub new_jobs: Vec<Box<dyn DevCtrlSchedJobTrait>>,
+    pub new_jobs: Vec<Box<dyn JobTrait>>,
 }
 
 impl ProcessContext {
@@ -27,7 +27,7 @@ impl ProcessContext {
 
     pub fn add_job<J>(&mut self, job: J)
     where
-        J: DevCtrlSchedJobTrait,
+        J: JobTrait,
     {
         self.new_jobs.push(Box::new(job));
     }

@@ -32,7 +32,7 @@ impl DemoController {
 
 impl DeviceControllerTrait for DemoController {
     type Action = DemoAction;
-    type SchedJob = ();
+    type Job = ();
     type Config = ();
 
     fn get_infos(&self) -> DeviceControllerInfos {
@@ -73,7 +73,7 @@ impl DeviceControllerTrait for DemoController {
 
     fn process_job(
         &mut self,
-        _job: &DeviceJobImpl<Self::SchedJob>,
+        _job: &DeviceJobImpl<Self::Job>,
         _job_timestamp: DateTime<Utc>,
         _ctx: &mut ProcessContext,
     ) -> Result<Verdict, DeviceError> {

@@ -25,10 +25,10 @@ pub struct ControllerStats {
     pub loop_runs: u64, // Number of times the controller loop has been executed
 }
 
-impl PrometheusExporterTrait for ControllerStats {
+impl<'a> PrometheusExporterTrait<'a> for ControllerStats {
     type Label = PrometheusNoLabel;
 
-    fn export(&self, _labels: impl AsRef<[Self::Label]>) -> String {
+    fn export(&self, _labels: impl AsRef<[&'a Self::Label]>) -> String {
         format!(
             "controller_iface_rx {}\n\
             controller_iface_tx {}\n\
