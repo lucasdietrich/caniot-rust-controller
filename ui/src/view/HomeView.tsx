@@ -185,7 +185,7 @@ function HomeView({ refreshInterval = 5000, isMobile = false, uiDebugMode = fals
       <Col xs={12} md={8} xl={6} style={{ marginBottom: 8 }}>
         {heatersMetricsWidget}
       </Col>
-      <Col xs={12} md={8} xl={6} style={{ marginBottom: 8 }}>
+      <Col xs={24} md={8} xl={6} style={{ marginBottom: 8 }}>
         {outdoorAlarmsMetricsWidget}
       </Col>
 
