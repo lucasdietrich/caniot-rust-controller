@@ -139,15 +139,6 @@ impl<'a> PrometheusExporterTrait<'a> for DeviceInfos {
         )
         .unwrap();
 
-        if let Some(controller_name) = &self.controller_display_name {
-            writeln!(
-                &mut buf,
-                "device_controller_name {{{str_labels}}} \"{}\"",
-                controller_name
-            )
-            .unwrap();
-        }
-
         if let Some(board_temperature) = self.board_temperature {
             writeln!(
                 &mut buf,
