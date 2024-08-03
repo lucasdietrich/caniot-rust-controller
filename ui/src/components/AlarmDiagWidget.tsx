@@ -90,7 +90,7 @@ function AlarmDiagWidget({
             {!isMobile && alarm?.getLastSiren()?.toDate().toLocaleString()}
             <LastSeenSecondsCounter
               lastSeenValue={
-                alarm?.hasLastSignalFromNowSeconds()
+                alarm?.hasLastSirenFromNowSeconds()
                   ? alarm?.getLastSirenFromNowSeconds()
                   : undefined
               }
