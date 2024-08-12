@@ -23,6 +23,9 @@ function AppMenu({ isMobile = false, uiDebugMode = false }: IMenuProps) {
   // Disable the tooltip for now
   const titleTooltipEnable = "";
 
+  // Use last part of the URL as the current route
+  const currentRoute = window.location.pathname.split("/").pop();
+
   const menuItems: MenuProps["items"] = [
     {
       key: "home",
@@ -93,7 +96,7 @@ function AppMenu({ isMobile = false, uiDebugMode = false }: IMenuProps) {
   return (
     <AntMenu
       mode="inline"
-      defaultSelectedKeys={["home"]} // make this dynamic depending on the current route
+      defaultSelectedKeys={[currentRoute || "home"]} // make this dynamic depending on the current route
       defaultOpenKeys={defaultOpenKeys}
       style={{ height: "100%" }}
       items={menuItems}
