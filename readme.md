@@ -1,16 +1,32 @@
 # CANIOT Rust Controller
 
+This personal project aims to build a controller for automation devices I developed for my house, utilizing a CAN bus network. This controller currently manages the following devices:
+
+- Heaters controller
+- Alarm controller
+- Garage door controller
+
+Source code of these devices in available in the [caniot-device repository](git@github.com:lucasdietrich/caniot-device.git).
+
+The controller is composed of a backend written in Rust serving a frontend application written in TypeScript, React and Ant Design.
+Both communicate through a GRPC API.
+
+This new controller targets Linux platforms (particularly the Raspberry Pi 2) and is the successor of [my previous stm32/zephyr controller](https://github.com/lucasdietrich/zephyr-caniot-controller).
+
+I use Yocto to build a custom Linux distribution for my Raspberry Pi 2.
+
 ## Overview
 
-![res/pics/ui_heaters.png](res/pics/ui_heaters.png)
+![res/pics/home.png](res/pics/home.png) ![pics/garage.png](res/pics/garage.png)
+![pics/alarm.png](res/pics/alarm.png) ![pics/heaters.png](res/pics/heaters.png)
 
-## Build for Raspberry Pi 3
+## Build for Raspberry Pi 2
 
 Requirements:
 
 - [Rust](https://www.rust-lang.org/tools/install) version 1.71.0
   - Rustup target `armv7-unknown-linux-gnueabihf` (install with `rustup target add armv7-unknown-linux-gnueabihf`)
-- Yocto Poky SDK for Raspberry Pi 3 (_Hypirl_ personnal distribution)
+- Yocto Poky SDK for Raspberry Pi 2 (_Hypirl_ personnal distribution)
 - `sudo dnf install protobuf-compiler protobuf-devel`
 - `sudo dnf install grpcurl` (optional: for testing purpose)
 
