@@ -130,14 +130,9 @@ Run with
 - Retrieve time from function argument instead of calling Utc::now() or Local::now() everywhere
 - Allow to log to file
 - Use nginx instead of rocket to server static files (UI)
-
-```
-device_temperature{medium="CAN",mac="16",device="GarageDoorController",sensor="EMBEDDED",room="",collector="pycaniotcontroller"} 19.00
-device_temperature{medium="CAN",mac="24",device="AlarmController",sensor="EMBEDDED",room="",collector="pycaniotcontroller"} 17.50
-device_temperature{medium="CAN",mac="24",device="AlarmController",sensor="EXTERNAL",room="",collector="pycaniotcontroller"} 13.60
-device_temperature{medium="CAN",mac="1",device="HeatersController",sensor="EMBEDDED",room="",collector="pycaniotcontroller"} 22.50
-device_temperature{medium="CAN",mac="1",device="HeatersController",sensor="EXTERNAL",room="",collector="pycaniotcontroller"} 13.90
-```
+- outdoor alarm: Double detection
+- reorder heaters buttons in ui
+- implement BLE devices (add transport layer abstraction)
 
 ## TODO (UI)
 

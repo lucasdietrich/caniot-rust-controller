@@ -4,6 +4,7 @@ pub mod expirable;
 pub mod monitorable;
 pub mod prometheus;
 pub mod scheduling;
+pub mod time_range;
 
 pub use prometheus::*;
 

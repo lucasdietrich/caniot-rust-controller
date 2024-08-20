@@ -22,8 +22,9 @@ fn dec() {
         in4: false,
         ..Default::default()
     };
-    let status = GarageDoorStatus::from(&payload);
-    assert_eq!(status.left_door_status, DoorState::Closed);
-    assert_eq!(status.right_door_status, DoorState::Closed);
-    assert_eq!(status.gate_open, false);
+    let ios = GarageIOState::from(&payload);
+    let status = GarageDoorStatus::init(ios);
+    assert_eq!(status.left_door_status.get(), DoorState::Closed);
+    assert_eq!(status.right_door_status.get(), DoorState::Closed);
+    assert_eq!(status.gate_open.get(), false);
 }

@@ -14,7 +14,7 @@ use crate::{
         DeviceControllerTrait, DeviceError, DeviceJobImpl, JobTrait, ProcessContext, Verdict,
     },
     utils::{
-        format_metric, join_labels,
+        format_metric,
         monitorable::{MonitorableResultTrait, ValueMonitor},
         Scheduling, SensorLabel,
     },

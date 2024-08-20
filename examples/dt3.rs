@@ -11,6 +11,9 @@ fn main() {
     let now_local: DateTime<Local> = now.and_local_timezone(Local).unwrap();
     println!("now_local: {:?}", now_local);
 
+    let naive_time = now.time();
+    println!("naive_local_time: {:?}", naive_time);
+
     let diff = now_utc.signed_duration_since(now_local);
     println!("diff: {:?}", diff);
 }
