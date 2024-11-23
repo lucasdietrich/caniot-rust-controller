@@ -1,4 +1,5 @@
 mod actions;
+mod jobs;
 pub mod outdoor;
 mod types;
 
@@ -7,3 +8,7 @@ pub use outdoor::*;
 
 #[cfg(test)]
 mod outdoor_test;
+
+pub mod config;
+
+pub use config::{AlarmConfig, AlarmDetectionTimeRangeConfig, AlarmPartialConfig};

@@ -3,9 +3,10 @@ use tonic::{Request, Response, Result, Status};
 
 use crate::{
     controller::{
-        Action, AlarmControllerReport, AlarmEnable, LightAction, LightsActions, SirenAction,
+        alarms, outdoor, Action, AlarmControllerReport, AlarmEnable, LightAction, LightsActions,
+        SirenAction,
     },
-    grpcserver::{naive_time_to_string, utc_to_prost_timestamp},
+    grpcserver::{naive_time_to_string, string_to_naive_time, utc_to_prost_timestamp},
     shared::SharedHandle,
 };
 
@@ -26,6 +27,49 @@ impl Into<LightAction> for m::TwoStates {
             m::TwoStates::Off => LightAction::Off,
             m::TwoStates::On => LightAction::On,
             m::TwoStates::Toggle => LightAction::Toggle,
+        }
+    }
+}
+
+impl Into<m::AlarmConfig> for &alarms::AlarmConfig {
+    fn into(self) -> m::AlarmConfig {
+        m::AlarmConfig {
+            alarm_auto_enabled: self.auto_alarm_enable,
+            alarm_auto_enable_time: naive_time_to_string(&self.auto_alarm_enable_time),
+            alarm_auto_disable_time: naive_time_to_string(&self.auto_alarm_disable_time),
+            lights_auto_enabled: self.auto_lights_enable,
+            alarm_siren_minimum_interval_seconds: self.alarm_siren_minimum_interval_seconds,
+            lights_auto_enable_time: naive_time_to_string(&self.auto_lights_enable_time),
+            lights_auto_disable_time: naive_time_to_string(&self.auto_lights_disable_time),
+        }
+    }
+}
+
+impl Into<m::AlarmConfig> for alarms::AlarmConfig {
+    fn into(self) -> m::AlarmConfig {
+        (&self).into()
+    }
+}
+
+impl Into<alarms::AlarmPartialConfig> for m::AlarmPartialConfig {
+    fn into(self) -> alarms::AlarmPartialConfig {
+        alarms::AlarmPartialConfig {
+            auto_alarm_enable: self.alarm_auto_enabled,
+            auto_alarm_enable_time: self
+                .alarm_auto_enable_time
+                .map(|t| string_to_naive_time(&t)),
+            auto_alarm_disable_time: self
+                .alarm_auto_disable_time
+                .map(|t| string_to_naive_time(&t)),
+            alarm_siren_minimum_interval_seconds: self.alarm_siren_minimum_interval_seconds,
+            auto_lights_enable: self.lights_auto_enabled,
+            auto_lights_enable_time: self
+                .lights_auto_enable_time
+                .map(|t| string_to_naive_time(&t)),
+            auto_lights_disable_time: self
+                .lights_auto_disable_time
+                .map(|t| string_to_naive_time(&t)),
+            // detection_time_ranges: None, // TODO
         }
     }
 }
@@ -61,13 +105,7 @@ impl NgAlarms {
                 .last_event
                 .map(|dt| (*now - dt).num_seconds() as u32),
             last_signal: state.stats.last_event.map(|dt| utc_to_prost_timestamp(&dt)),
-            alarm_auto_enabled: state.config.auto_alarm_enable,
-            alarm_auto_enable_time: naive_time_to_string(&state.config.auto_alarm_enable_time),
-            alarm_auto_disable_time: naive_time_to_string(&state.config.auto_alarm_disable_time),
-            lights_auto_enabled: state.config.auto_lights_enable,
-            alarm_siren_minimum_interval_seconds: state.config.alarm_siren_minimum_interval_seconds,
-            lights_auto_enable_time: naive_time_to_string(&state.config.auto_lights_enable_time),
-            lights_auto_disable_time: naive_time_to_string(&state.config.auto_lights_disable_time),
+            config: Some((&state.config).into()),
             last_siren_from_now_seconds: state
                 .last_siren_activation
                 .map(|dt| (*now - dt).num_seconds() as u32),
@@ -158,6 +196,36 @@ impl AlarmsService for NgAlarms {
         } else {
             self.get_outdoor_alarm_state_inner().await
         }
+    }
+
+    async fn get_config(
+        &self,
+        _request: tonic::Request<()>,
+    ) -> std::result::Result<tonic::Response<m::AlarmConfig>, tonic::Status> {
+        let action = Action::GetConfig;
+        let result = self
+            .shared
+            .controller_handle
+            .device_action_inner(None, action, None)
+            .await
+            .map_err(|e| Status::internal(format!("Error in get_config: {} ({:?})", e, e)))?;
+
+        Ok(Response::new(result.config.into()))
+    }
+
+    async fn set_config(
+        &self,
+        request: tonic::Request<m::AlarmPartialConfig>,
+    ) -> std::result::Result<tonic::Response<m::AlarmConfig>, tonic::Status> {
+        let action = Action::SetConfig(request.into_inner().into());
+        let result = self
+            .shared
+            .controller_handle
+            .device_action_inner(None, action, None)
+            .await
+            .map_err(|e| Status::internal(format!("Error in set_config: {} ({:?})", e, e)))?;
+
+        Ok(Response::new(result.config.into()))
     }
 }
 

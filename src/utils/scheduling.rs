@@ -122,8 +122,8 @@ impl Scheduling {
             Scheduling::OnceAt(_dt) => Scheduling::Unscheduled,
             Scheduling::Minutely => self,
             Scheduling::Hourly => self,
-            Scheduling::Daily(_time) => self,
-            Scheduling::Weekly(_weekday, _time) => self,
+            Scheduling::Daily(..) => self,
+            Scheduling::Weekly(..) => self,
         }
     }
 }

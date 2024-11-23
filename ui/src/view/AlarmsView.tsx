@@ -1,4 +1,4 @@
-import { Alert, Badge, Button, Col, List, Row, Tag } from "antd";
+import { Alert, Badge, Button, Checkbox, Col, List, Row, Slider, Tag, TimePicker } from "antd";
 import React, { useEffect, useState } from "react";
 import DeviceDetailsCard from "../components/DeviceDetailsCard";
 import { Device } from "@caniot-controller/caniot-api-grpc-web/api/ng_devices_pb";
@@ -7,6 +7,8 @@ import LoadableCard from "../components/LoadableCard";
 import ListGridItem from "../components/ListGridItem";
 import TwoStatesSelector, { TwoStateCommand } from "../components/TwoStatesSelector";
 import {
+  AlarmConfig,
+  AlarmPartialConfig,
   OutdoorAlarmCommand,
   OutdoorAlarmLightsCommand,
   OutdoorAlarmState,
@@ -17,6 +19,9 @@ import alarmsStore from "../store/AlarmsStore";
 import { MinusCircleOutlined, SyncOutlined } from "@ant-design/icons";
 import DeviceAlert from "../components/DeviceAlert";
 import AlarmDiagWidget from "../components/AlarmDiagWidget";
+import dayjs from "dayjs";
+
+const timeFormat = "HH:mm";
 
 interface IAlarmsViewProps {
   refreshInterval?: number;
@@ -76,6 +81,21 @@ function AlarmsView({
     );
   };
 
+  const updateAlarmConfig = (pconfig: AlarmPartialConfig) => {
+    setLoading(true);
+    alarmsStore.setConfig(pconfig, (resp) => {
+      setOutdoorAlarmState((prev) => {
+        if (prev !== undefined) {
+          let newState = prev.clone();
+          newState.setConfig(resp);
+          return newState;
+        }
+        return prev;
+      });
+      setLoading(false);
+    });
+  };
+
   const handleLightAction = (light: Light, tsCmd: TwoStateCommand) => {
     setLoading(true);
 
@@ -127,6 +147,18 @@ function AlarmsView({
     command.setOutdoorAlarmSirenDirectAction(saCmd);
 
     sendAlarmCommand(command);
+  };
+
+  const handleAlarmAutoActivation = (val: boolean) => {
+    let partialConfig = new AlarmPartialConfig();
+    partialConfig.setAlarmAutoEnabled(val);
+    updateAlarmConfig(partialConfig);
+  };
+
+  const handleLightsAutoActivation = (val: boolean) => {
+    let partialConfig = new AlarmPartialConfig();
+    partialConfig.setLightsAutoEnabled(val);
+    updateAlarmConfig(partialConfig);
   };
 
   const onSouthLightChange = (ts: TwoStateCommand) => handleLightAction(Light.South, ts);
@@ -244,32 +276,90 @@ function AlarmsView({
                   description="Activation l'alarme extérieure à une heure programmée"
                   isMobile={isMobile}
                 >
-                  <Badge
-                    status={outdoorAlarmState?.getAlarmAutoEnabled() ? "success" : "default"}
+                  <Checkbox
+                    onChange={(e) => handleAlarmAutoActivation(e.target.checked)}
+                    checked={outdoorAlarmState?.getConfig()?.getAlarmAutoEnabled()}
                   />
                 </ListGridItem>
 
-                <ListGridItem
-                  label="Activation"
-                  description="Heure d'activation de l'alarme programmée"
-                  isMobile={isMobile}
-                >
-                  H {outdoorAlarmState?.getAlarmAutoEnableTime()}
-                </ListGridItem>
-                <ListGridItem
-                  label="Désactivation"
-                  description="Heure de désactivation de l'alarme programmée"
-                  isMobile={isMobile}
-                >
-                  H {outdoorAlarmState?.getAlarmAutoDisableTime()}
-                </ListGridItem>
-                <ListGridItem
-                  label="Délai sirènes consécutives"
-                  description="Délai minimum entre deux activations de la sirène"
-                  isMobile={isMobile}
-                >
-                  {outdoorAlarmState?.getAlarmSirenMinimumIntervalSeconds()} secondes
-                </ListGridItem>
+                {outdoorAlarmState?.getConfig()?.getAlarmAutoEnabled() && (
+                  <>
+                    <ListGridItem
+                      label="Activation"
+                      description="Heure d'activation de l'alarme programmée"
+                      isMobile={isMobile}
+                    >
+                      <TimePicker
+                        defaultValue={dayjs(
+                          outdoorAlarmState?.getConfig()?.getAlarmAutoEnableTime(),
+                          timeFormat
+                        )}
+                        onChange={(time) => {
+                          let partialConfig = new AlarmPartialConfig();
+                          partialConfig.setAlarmAutoEnableTime(time.format("HH:mm:ss"));
+                          updateAlarmConfig(partialConfig);
+                        }}
+                        format={timeFormat}
+                        minuteStep={15}
+                        size="large"
+                        allowClear={false}
+                      />
+                    </ListGridItem>
+                    <ListGridItem
+                      label="Désactivation"
+                      description="Heure de désactivation de l'alarme programmée"
+                      isMobile={isMobile}
+                    >
+                      <TimePicker
+                        defaultValue={dayjs(
+                          outdoorAlarmState?.getConfig()?.getAlarmAutoDisableTime(),
+                          timeFormat
+                        )}
+                        onChange={(time) => {
+                          let partialConfig = new AlarmPartialConfig();
+                          partialConfig.setAlarmAutoDisableTime(time.format("HH:mm:ss"));
+                          updateAlarmConfig(partialConfig);
+                        }}
+                        format={timeFormat}
+                        minuteStep={15}
+                        size="large"
+                        allowClear={false}
+                      />
+                    </ListGridItem>
+                    <ListGridItem
+                      label="Délai sirènes consécutives"
+                      description="Délai minimum entre deux activations de la sirène"
+                      isMobile={isMobile}
+                    >
+                      <Slider
+                        marks={{
+                          0: "0 s",
+                          30: "30 s",
+                          60: "1 m",
+                          120: "2  m",
+                          180: "3 m",
+                        }}
+                        onChangeComplete={(value) => {
+                          let partialConfig = new AlarmPartialConfig();
+                          partialConfig.setAlarmSirenMinimumIntervalSeconds(value);
+                          updateAlarmConfig(partialConfig);
+                        }}
+                        step={10}
+                        defaultValue={outdoorAlarmState
+                          ?.getConfig()
+                          ?.getAlarmSirenMinimumIntervalSeconds()}
+                        min={0}
+                        max={180}
+                        style={{}}
+                        tooltip={{
+                          placement: "top",
+                          visible: true,
+                          formatter: (value) => `${value} s`,
+                        }}
+                      />
+                    </ListGridItem>
+                  </>
+                )}
 
                 <List.Item>
                   <span style={{ fontWeight: "bold" }}>Eclairage automatique</span>
@@ -280,25 +370,58 @@ function AlarmsView({
                   description="Activation automatique des lumières la nuit"
                   isMobile={isMobile}
                 >
-                  <Badge
-                    status={outdoorAlarmState?.getLightsAutoEnabled() ? "success" : "default"}
+                  <Checkbox
+                    onChange={(e) => handleLightsAutoActivation(e.target.checked)}
+                    checked={outdoorAlarmState?.getConfig()?.getLightsAutoEnabled()}
                   />
                 </ListGridItem>
 
-                <ListGridItem
-                  label="Activation"
-                  description="Heure début des lumières automatiques"
-                  isMobile={isMobile}
-                >
-                  H {outdoorAlarmState?.getLightsAutoEnableTime()}
-                </ListGridItem>
-                <ListGridItem
-                  label="Désactivation"
-                  description="Heure de fin des lumières automatiques"
-                  isMobile={isMobile}
-                >
-                  H {outdoorAlarmState?.getLightsAutoDisableTime()}
-                </ListGridItem>
+                {outdoorAlarmState?.getConfig()?.getLightsAutoEnabled() && (
+                  <>
+                    <ListGridItem
+                      label="Activation"
+                      description="Heure début des lumières automatiques"
+                      isMobile={isMobile}
+                    >
+                      <TimePicker
+                        defaultValue={dayjs(
+                          outdoorAlarmState?.getConfig()?.getLightsAutoEnableTime(),
+                          timeFormat
+                        )}
+                        onChange={(time) => {
+                          let partialConfig = new AlarmPartialConfig();
+                          partialConfig.setLightsAutoEnableTime(time.format("HH:mm:ss"));
+                          updateAlarmConfig(partialConfig);
+                        }}
+                        format={timeFormat}
+                        minuteStep={15}
+                        size="large"
+                        allowClear={false}
+                      />
+                    </ListGridItem>
+                    <ListGridItem
+                      label="Désactivation"
+                      description="Heure de fin des lumières automatiques"
+                      isMobile={isMobile}
+                    >
+                      <TimePicker
+                        defaultValue={dayjs(
+                          outdoorAlarmState?.getConfig()?.getLightsAutoDisableTime(),
+                          timeFormat
+                        )}
+                        onChange={(time) => {
+                          let partialConfig = new AlarmPartialConfig();
+                          partialConfig.setLightsAutoDisableTime(time.format("HH:mm:ss"));
+                          updateAlarmConfig(partialConfig);
+                        }}
+                        format={timeFormat}
+                        minuteStep={15}
+                        size="large"
+                        allowClear={false}
+                      />
+                    </ListGridItem>
+                  </>
+                )}
 
                 {/* <List.Item>
                   <span style={{ fontWeight: "bold" }}>Statistiques</span>

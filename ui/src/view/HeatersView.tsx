@@ -1,4 +1,16 @@
-import { Badge, Card, Col, Form, Result, Row, Space, Spin } from "antd";
+import {
+  Badge,
+  Card,
+  Col,
+  Form,
+  Result,
+  Row,
+  Slider,
+  SliderSingleProps,
+  Space,
+  Spin,
+  TimePicker,
+} from "antd";
 import React, { useEffect, useState } from "react";
 import HeaterModeSelector from "../components/HeaterModeSelector";
 import { CheckCircleFilled, CheckCircleOutlined, LoadingOutlined } from "@ant-design/icons";
@@ -12,6 +24,8 @@ import devicesStore from "../store/DevicesStore";
 import { DeviceId } from "@caniot-controller/caniot-api-grpc-web/api/common_pb";
 import LoadableCard from "../components/LoadableCard";
 import DeviceAlert from "../components/DeviceAlert";
+import dayjs from "dayjs";
+import HeatersSchedulingCard from "../components/HeatersSchedulingCard";
 
 interface IHeatersViewProps {
   refreshInterval?: number;
@@ -67,7 +81,7 @@ function HeatersView({
 
   return (
     <>
-      <Row gutter={16}>
+      <Row>
         <Col
           xl={14}
           xs={24}
@@ -75,51 +89,72 @@ function HeatersView({
             marginBottom: 16,
           }}
         >
-          <LoadableCard
-            title="Chauffage (lucas)"
-            status={heatersStatus !== undefined && heatersStatus?.getPowerStatus()}
-            loading={loading}
-            onRefresh={() => {
-              setLoading(true);
-              setTime(Date.now());
-            }}
-          >
-            <Row>
-              <Col span={24}>
-                <DeviceAlert alert={heatersDevice?.getActiveAlert()} />
-              </Col>
-              <Col span={24} style={{ marginTop: 20 }}>
-                <HeaterModeSelector
-                  label="Chauffage 1"
-                  heaterIndex={0}
-                  initialMode={heatersStatus?.getHeaterList()[0]}
-                  onModeChange={onModeChange}
-                  isMobile={isMobile}
-                ></HeaterModeSelector>
-                <HeaterModeSelector
-                  label="Chauffage 2"
-                  heaterIndex={1}
-                  initialMode={heatersStatus?.getHeaterList()[1]}
-                  onModeChange={onModeChange}
-                  isMobile={isMobile}
-                ></HeaterModeSelector>
-                <HeaterModeSelector
-                  label="Chauffage 3"
-                  heaterIndex={2}
-                  initialMode={heatersStatus?.getHeaterList()[2]}
-                  onModeChange={onModeChange}
-                  isMobile={isMobile}
-                ></HeaterModeSelector>
-                <HeaterModeSelector
-                  label="Chauffage 4"
-                  heaterIndex={3}
-                  initialMode={heatersStatus?.getHeaterList()[3]}
-                  onModeChange={onModeChange}
-                  isMobile={isMobile}
-                ></HeaterModeSelector>
-              </Col>
-            </Row>
-          </LoadableCard>
+          <Row>
+            <Col
+              xl={23}
+              xs={24}
+              style={{
+                marginBottom: 16,
+              }}
+            >
+              <LoadableCard
+                title="Chauffage (lucas)"
+                status={heatersStatus !== undefined && heatersStatus?.getPowerStatus()}
+                loading={loading}
+                onRefresh={() => {
+                  setLoading(true);
+                  setTime(Date.now());
+                }}
+              >
+                <Row>
+                  <Col span={24}>
+                    <DeviceAlert alert={heatersDevice?.getActiveAlert()} />
+                  </Col>
+                  <Col span={24} style={{ marginTop: 20 }}>
+                    <HeaterModeSelector
+                      label="Chauffage 1"
+                      heaterIndex={0}
+                      initialMode={heatersStatus?.getHeaterList()[0]}
+                      onModeChange={onModeChange}
+                      isMobile={isMobile}
+                    ></HeaterModeSelector>
+                    <HeaterModeSelector
+                      label="Chauffage 2"
+                      heaterIndex={1}
+                      initialMode={heatersStatus?.getHeaterList()[1]}
+                      onModeChange={onModeChange}
+                      isMobile={isMobile}
+                    ></HeaterModeSelector>
+                    <HeaterModeSelector
+                      label="Chauffage 3"
+                      heaterIndex={2}
+                      initialMode={heatersStatus?.getHeaterList()[2]}
+                      onModeChange={onModeChange}
+                      isMobile={isMobile}
+                    ></HeaterModeSelector>
+                    <HeaterModeSelector
+                      label="Chauffage 4"
+                      heaterIndex={3}
+                      initialMode={heatersStatus?.getHeaterList()[3]}
+                      onModeChange={onModeChange}
+                      isMobile={isMobile}
+                    ></HeaterModeSelector>
+                  </Col>
+                </Row>
+              </LoadableCard>
+            </Col>
+          </Row>
+          {/* <Row>
+            <Col
+              xl={23}
+              xs={24}
+              style={{
+                marginBottom: 16,
+              }}
+            >
+              <HeatersSchedulingCard isMobile={isMobile} />
+            </Col>
+          </Row> */}
         </Col>
         {uiDebugMode && (
           <Col xl={10} xs={24}>

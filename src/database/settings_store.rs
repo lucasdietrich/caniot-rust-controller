@@ -1,9 +1,11 @@
-use sqlx::{PgPool, Row};
+use sqlx::{Pool, Row};
 
-use crate::settings::SettingTrait;
+use crate::database::settings_types::SettingTrait;
 use thiserror::Error;
 
-pub struct SettingsStore<'a>(&'a PgPool);
+use super::DatabaseType;
+
+pub struct SettingsStore<'a>(&'a Pool<DatabaseType>);
 
 #[derive(Debug, Error)]
 pub enum SettingsError {
@@ -16,7 +18,7 @@ pub enum SettingsError {
 }
 
 impl<'a> SettingsStore<'a> {
-    pub fn new(pool: &'a PgPool) -> Self {
+    pub fn new(pool: &'a Pool<DatabaseType>) -> Self {
         Self(pool)
     }
 
@@ -38,9 +40,32 @@ impl<'a> SettingsStore<'a> {
         Ok(value)
     }
 
-    pub async fn set<T: SettingTrait>(&self, key: &str, value: &T) -> Result<(), SettingsError> {
+    pub async fn read_or_setting_default<T: SettingTrait>(
+        &self,
+        key: &str,
+    ) -> Result<T, SettingsError> {
+        match self.read(key).await {
+            Ok(value) => Ok(value),
+            Err(SettingsError::NotFound) => Ok(T::default()),
+            Err(e) => Err(e),
+        }
+    }
+
+    pub async fn read_or<T: SettingTrait>(
+        &self,
+        key: &str,
+        default: T,
+    ) -> Result<T, SettingsError> {
+        match self.read(key).await {
+            Ok(value) => Ok(value),
+            Err(SettingsError::NotFound) => Ok(default),
+            Err(e) => Err(e),
+        }
+    }
+
+    pub async fn write<T: SettingTrait>(&self, key: &str, value: &T) -> Result<(), SettingsError> {
         sqlx::query(
-            "INSERT INTO settings (key, val, type) VALUES ($1, $2, $3) ON CONFLICT (key) DO UPDATE SET val = $2, type = $3"
+            "INSERT INTO settings (key, val, type, last_updated) VALUES ($1, $2, $3, datetime('now')) ON CONFLICT (key) DO UPDATE SET val = $2, type = $3, last_updated = datetime('now')",
         )
         .bind(key)
         .bind(value.as_string())
@@ -51,21 +76,12 @@ impl<'a> SettingsStore<'a> {
         Ok(())
     }
 
-    #[allow(dead_code)]
+    #[allow(unused)]
     pub async fn set_default<T: SettingTrait>(&self, key: &str) -> Result<(), SettingsError> {
-        sqlx::query(
-            "INSERT INTO settings (key, val, type) VALUES ($1, $2, $3) ON CONFLICT (key) DO UPDATE SET val = $2, type = $3"
-        )
-        .bind(key)
-        .bind(T::default().as_string())
-        .bind(T::type_name())
-        .execute(self.0)
-        .await?;
-
-        Ok(())
+        self.write::<T>(key, &T::default()).await
     }
 
-    #[allow(dead_code)]
+    #[allow(unused)]
     pub async fn delete(&self, key: &str) -> Result<(), SettingsError> {
         sqlx::query("DELETE FROM settings WHERE key = $1")
             .bind(key)
@@ -75,7 +91,7 @@ impl<'a> SettingsStore<'a> {
         Ok(())
     }
 
-    #[allow(dead_code)]
+    #[allow(unused)]
     pub async fn delete_all(&self) -> Result<(), sqlx::Error> {
         sqlx::query("DELETE FROM settings").execute(self.0).await?;
 

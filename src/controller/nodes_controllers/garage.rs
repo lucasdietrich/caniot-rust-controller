@@ -196,6 +196,10 @@ impl DeviceControllerTrait for GarageController {
         DeviceControllerInfos::new(CONTROLLER_NAME, Some("Portes de garage"), Some("garage"))
     }
 
+    fn get_config(&self) -> &Self::Config {
+        &()
+    }
+
     fn handle_action(
         &mut self,
         action: &Self::Action,

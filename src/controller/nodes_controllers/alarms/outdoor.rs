@@ -1,22 +1,27 @@
-use std::fmt::Display;
-
-use chrono::{format, DateTime, Duration, NaiveTime, Utc};
+use chrono::{DateTime, Duration, Utc};
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
 
-use super::actions::{Action, AlarmEnable};
+use super::{
+    actions::{Action, AlarmEnable},
+    config::{AlarmConfig, ConfigUpdateAutoJobsResult},
+    jobs::{AlarmJob, AutoAction, AutoDevice},
+    AlarmPartialConfig,
+};
 use crate::{
     caniot::{self, RequestData, Response, Xps},
     controller::{
         alarms::{actions::SirenAction, types::OutdoorAlarmCommand},
         alert::DeviceAlert,
-        ActionResultTrait, ActionTrait, ActionVerdict, DeviceControllerInfos,
-        DeviceControllerTrait, DeviceError, DeviceJobImpl, JobTrait, ProcessContext, Verdict,
+        ActionResultTrait, ActionTrait, ActionVerdict, ConfigTrait, DeviceControllerInfos,
+        DeviceControllerTrait, DeviceError, DeviceJobImpl, PartialConfigTrait, ProcessContext,
+        UpdateJobVerdict, Verdict,
     },
+    database::settings_types::SettingTrait,
     utils::{
         format_metric,
         monitorable::{MonitorableResultTrait, ValueMonitor},
-        Scheduling, SensorLabel,
+        SensorLabel,
     },
 };
 
@@ -119,18 +124,6 @@ impl DeviceIOState {
 }
 
 #[derive(Debug, Clone, Serialize, Default, Deserialize)]
-pub struct AlarmConfig {
-    pub auto_alarm_enable: bool,
-    pub auto_alarm_enable_time: NaiveTime,
-    pub auto_alarm_disable_time: NaiveTime,
-    pub alarm_siren_minimum_interval_seconds: u32,
-
-    pub auto_lights_enable: bool,
-    pub auto_lights_enable_time: NaiveTime,
-    pub auto_lights_disable_time: NaiveTime,
-}
-
-#[derive(Debug, Clone, Serialize, Default, Deserialize)]
 pub struct AlarmStats {
     pub south_detector_triggered_count: u32,
     pub east_detector_triggered_count: u32,
@@ -139,7 +132,7 @@ pub struct AlarmStats {
     pub last_event: Option<DateTime<Utc>>,
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct AlarmController {
     pub ios: DeviceIOState,
     // ios state
@@ -278,25 +271,6 @@ impl AlarmController {
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum AlarmJob {
-    AlarmAutoEnableDaily(NaiveTime),
-    AlarmAutoDisableDaily(NaiveTime),
-    AutoLightsAutoEnableDaily(NaiveTime),
-    AutoLightsAutoDisableDaily(NaiveTime),
-}
-
-impl JobTrait for AlarmJob {
-    fn get_scheduling(&self) -> Scheduling {
-        match self {
-            AlarmJob::AlarmAutoEnableDaily(time) => Scheduling::Daily(*time),
-            AlarmJob::AlarmAutoDisableDaily(time) => Scheduling::Daily(*time),
-            AlarmJob::AutoLightsAutoEnableDaily(time) => Scheduling::Daily(*time),
-            AlarmJob::AutoLightsAutoDisableDaily(time) => Scheduling::Daily(*time),
-        }
-    }
-}
-
 impl DeviceControllerTrait for AlarmController {
     type Action = Action;
     type Job = AlarmJob;
@@ -307,6 +281,43 @@ impl DeviceControllerTrait for AlarmController {
             config: config.cloned().unwrap_or_default(),
             ..Default::default()
         }
+    }
+
+    fn get_config(&self) -> &Self::Config {
+        &self.config
+    }
+
+    fn patch_config(
+        &mut self,
+        partial: AlarmPartialConfig,
+        ctx: &mut ProcessContext,
+    ) -> Result<(), DeviceError> {
+        let patch_result = self.config.patch(partial.clone())?;
+
+        fn handle_update_result(
+            update_result: ConfigUpdateAutoJobsResult,
+            ctx: &mut ProcessContext,
+        ) {
+            match update_result {
+                ConfigUpdateAutoJobsResult::EnableJobs(enable_job, disable_job) => {
+                    ctx.add_job(enable_job);
+                    ctx.add_job(disable_job);
+                }
+                ConfigUpdateAutoJobsResult::UpdateJobs => {
+                    ctx.request_jobs_update();
+                }
+                ConfigUpdateAutoJobsResult::Unchanged => {}
+            }
+        }
+
+        handle_update_result(patch_result.alarm, ctx);
+        handle_update_result(patch_result.lights, ctx);
+
+        // Set the update future
+        let storage = ctx.storage.clone();
+        ctx.set_async_future(async move { Ok(partial.save(&storage.get_settings_store()).await?) });
+
+        Ok(())
     }
 
     fn get_infos(&self) -> DeviceControllerInfos {
@@ -343,35 +354,42 @@ impl DeviceControllerTrait for AlarmController {
             // Declare jobs that should be executed when the device is added
             DeviceJobImpl::DeviceAdd => {
                 if self.config.auto_alarm_enable {
-                    ctx.add_job(AlarmJob::AlarmAutoEnableDaily(
+                    ctx.add_job(AlarmJob::DailyAuto(
                         self.config.auto_alarm_enable_time,
+                        AutoDevice::Alarm,
+                        AutoAction::Enable,
                     ));
-                    ctx.add_job(AlarmJob::AlarmAutoDisableDaily(
+                    ctx.add_job(AlarmJob::DailyAuto(
                         self.config.auto_alarm_disable_time,
+                        AutoDevice::Alarm,
+                        AutoAction::Disable,
                     ));
                 }
 
                 if self.config.auto_lights_enable {
-                    ctx.add_job(AlarmJob::AutoLightsAutoEnableDaily(
+                    ctx.add_job(AlarmJob::DailyAuto(
                         self.config.auto_lights_enable_time,
+                        AutoDevice::Lights,
+                        AutoAction::Enable,
                     ));
-                    ctx.add_job(AlarmJob::AutoLightsAutoDisableDaily(
+                    ctx.add_job(AlarmJob::DailyAuto(
                         self.config.auto_lights_disable_time,
+                        AutoDevice::Lights,
+                        AutoAction::Disable,
                     ));
                 }
             }
             DeviceJobImpl::Scheduled(job) => match job {
-                AlarmJob::AlarmAutoEnableDaily(_) => {
-                    self.alarm.set_enable(&AlarmEnable::Armed);
+                AlarmJob::DailyAuto(_, AutoDevice::Alarm, alarm_action) => {
+                    let action = match alarm_action {
+                        AutoAction::Enable => AlarmEnable::Armed,
+                        AutoAction::Disable => AlarmEnable::Disarmed,
+                    };
+                    self.alarm.set_enable(&action);
                 }
-                AlarmJob::AlarmAutoDisableDaily(_) => {
-                    self.alarm.set_enable(&AlarmEnable::Disarmed);
-                }
-                AlarmJob::AutoLightsAutoEnableDaily(_) => {
-                    self.night_lights.set_auto_active(true);
-                }
-                AlarmJob::AutoLightsAutoDisableDaily(_) => {
-                    self.night_lights.set_auto_active(false);
+                AlarmJob::DailyAuto(_, AutoDevice::Lights, lights_action) => {
+                    self.night_lights
+                        .set_auto_active(lights_action == &AutoAction::Enable);
                 }
             },
             _ => {}
@@ -380,13 +398,39 @@ impl DeviceControllerTrait for AlarmController {
         Ok(Verdict::default())
     }
 
+    // Unschedule daily jobs if auto mode is disabled, update time if changed
+    fn update_job(&mut self, job: &mut Self::Job) -> UpdateJobVerdict {
+        match job {
+            AlarmJob::DailyAuto(time, AutoDevice::Alarm, _) => {
+                if !self.config.auto_alarm_enable {
+                    info!("Unscheduling daily auto alarm job");
+                    return UpdateJobVerdict::Unschedule;
+                } else if self.config.auto_alarm_enable_time != *time {
+                    *time = self.config.auto_alarm_enable_time;
+                }
+            }
+            AlarmJob::DailyAuto(time, AutoDevice::Lights, _) => {
+                if !self.config.auto_lights_enable {
+                    info!("Unscheduling daily auto lights job");
+                    return UpdateJobVerdict::Unschedule;
+                } else if self.config.auto_lights_enable_time != *time {
+                    *time = self.config.auto_lights_enable_time;
+                }
+            }
+        }
+
+        UpdateJobVerdict::Keep
+    }
+
     fn handle_action(
         &mut self,
         action: &Self::Action,
-        _ctx: &mut ProcessContext,
+        ctx: &mut ProcessContext,
     ) -> Result<ActionVerdict<Self::Action>, DeviceError> {
         match action {
             Action::GetStatus => {}
+            Action::GetConfig => {}
+            Action::SetConfig(partial) => self.patch_config(partial.clone(), ctx)?,
             Action::SetAlarm(state) => {
                 let set_alarm_result = self.alarm.set_enable(state);
                 if set_alarm_result.is_falling() {

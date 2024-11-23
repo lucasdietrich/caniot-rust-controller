@@ -6,12 +6,12 @@ use tokio::{
 };
 
 use super::Controller;
-use crate::{bus::CanInterfaceTrait, config::AppConfig, database::Database, shutdown::Shutdown};
+use crate::{bus::CanInterfaceTrait, config::AppConfig, database::Storage, shutdown::Shutdown};
 
 pub fn init<IF: CanInterfaceTrait>(
     rt: &Arc<Runtime>,
     config: &AppConfig,
-    _db: &Arc<RwLock<Database>>,
+    storage: &Arc<Storage>,
     notify_shutdown: &Sender<()>,
 ) -> Controller<IF> {
     let can_iface = rt
@@ -21,6 +21,7 @@ pub fn init<IF: CanInterfaceTrait>(
     Controller::new(
         can_iface,
         config.caniot_controller.clone(),
+        storage.clone(),
         Shutdown::new(notify_shutdown.subscribe()),
     )
     .expect("Failed to create controller")

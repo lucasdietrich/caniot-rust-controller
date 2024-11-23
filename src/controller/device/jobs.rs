@@ -141,6 +141,14 @@ impl DeviceJobsContext {
     pub fn get_jobs_count(&self) -> usize {
         self.definitions.len()
     }
+
+    pub fn iter_jobs_definitions(&mut self) -> impl Iterator<Item = &mut DeviceJobWrapper> {
+        self.definitions.iter_mut()
+    }
+
+    pub fn retain_jobs_definitions(&mut self, f: impl FnMut(&mut DeviceJobWrapper) -> bool) {
+        self.definitions.retain_mut(f);
+    }
 }
 
 impl ExpirableTrait<Duration> for DeviceJobsContext {
@@ -175,4 +183,10 @@ impl TriggeredDeviceJob {
             definition,
         }
     }
+}
+
+#[derive(Debug)]
+pub enum UpdateJobVerdict {
+    Keep,
+    Unschedule,
 }

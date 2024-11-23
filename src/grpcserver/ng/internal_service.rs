@@ -91,8 +91,7 @@ impl Into<m::ControllerStats> for &ControllerStats {
 #[tonic::async_trait]
 impl InternalService for NgInternal {
     async fn get_settings(&self, _request: Request<()>) -> Result<Response<m::Settings>, Status> {
-        let db_lock = self.shared.db.read().await;
-        let settings = db_lock.get_settings_store();
+        let settings = self.shared.db.get_settings_store();
 
         debug!("Reading settings");
 
@@ -108,15 +107,14 @@ impl InternalService for NgInternal {
         ref request: Request<m::PartialSettings>,
     ) -> Result<Response<m::Settings>, Status> {
         let partial_settings = request.into_inner();
-        let db_lock = self.shared.db.read().await;
-        let settings = db_lock.get_settings_store();
+        let settings = self.shared.db.get_settings_store();
 
         debug!("Writing settings");
 
         let mut success = true;
 
         if let Some(debug_mode) = partial_settings.debug_mode {
-            success &= settings.set("debug_mode", &debug_mode).await.is_ok();
+            success &= settings.write("debug_mode", &debug_mode).await.is_ok();
         }
 
         if success {
@@ -127,14 +125,17 @@ impl InternalService for NgInternal {
     }
 
     async fn reset_settings(&self, _request: Request<()>) -> Result<Response<m::Settings>, Status> {
-        let db_lock = self.shared.db.read().await;
-        let settings = db_lock.get_settings_store();
+        let settings = self.shared.db.get_settings_store();
 
         debug!("Resetting settings");
 
-        let mut success = true;
-        success &= settings.set("debug_mode", &false).await.is_ok();
-
+        let mut success = settings.delete_all().await.is_ok();
+        success &= self
+            .shared
+            .controller_handle
+            .reset_devices_settings()
+            .await
+            .is_ok();
         if success {
             self.get_settings(Request::new(())).await
         } else {

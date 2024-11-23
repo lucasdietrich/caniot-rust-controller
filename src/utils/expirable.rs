@@ -7,7 +7,7 @@ pub trait ExpirableTrait<D>
 where
     D: Eq + Ord,
 {
-    const ZERO: D;
+    const ZERO: D; // Zero duration as Self::ZERO + Self::ZERO = Self::ZERO
     type Instant: Add<D, Output = Self::Instant>; // Instant/timestamp type for which the duration can be added to obtain a new instant
 
     /// Returns whether the object is expirable, i.e. has a time to expire.

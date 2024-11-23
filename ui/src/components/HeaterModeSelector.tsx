@@ -27,6 +27,52 @@ interface IHeaterModeSelectorProps {
   isMobile?: boolean;
 }
 
+function getHeaterModeLabel(mode: State, isMobile: boolean) {
+  switch (mode) {
+    case State.OFF:
+      return (
+        <>
+          <PoweroffOutlined /> {!isMobile ? "Off" : undefined}
+        </>
+      );
+    case State.COMFORT_ENERGY_SAVING:
+      return (
+        <>
+          <LuLeaf /> {!isMobile ? "Eco" : undefined}
+        </>
+      );
+    case State.COMFORT:
+      return (
+        <>
+          <HomeOutlined /> {!isMobile ? "Comfort" : undefined}
+        </>
+      );
+    case State.COMFORT_MIN_1:
+      return <>{!isMobile ? "Comfort -1°C" : "-1°C"}</>;
+    case State.COMFORT_MIN_2:
+      return (
+        <>
+          {!isMobile ? (
+            <>
+              <MoonOutlined /> Comfort -2°C
+            </>
+          ) : (
+            "-2°C"
+          )}
+        </>
+      );
+    case State.FROST_FREE:
+      return (
+        <>
+          <LuThermometerSnowflake />
+          {!isMobile ? "Hors-gel" : undefined}
+        </>
+      );
+    default:
+      return "";
+  }
+}
+
 function HeaterModeSelector({
   label,
   heaterIndex,
@@ -55,31 +101,22 @@ function HeaterModeSelector({
           onChange={onChange}
           size={isMobile ? "large" : "middle"}
         >
-          <Radio.Button value={State.OFF}>
-            <PoweroffOutlined /> {!isMobile ? "Off" : undefined}
-          </Radio.Button>
+          <Radio.Button value={State.OFF}>{getHeaterModeLabel(State.OFF, isMobile)}</Radio.Button>
           <Radio.Button value={State.COMFORT_ENERGY_SAVING}>
-            <LuLeaf /> {!isMobile ? "Eco" : undefined}
+            {getHeaterModeLabel(State.COMFORT_ENERGY_SAVING, isMobile)}
             {/* <ThunderboltOutlined /> Eco */}
           </Radio.Button>
           <Radio.Button value={State.COMFORT}>
-            <HomeOutlined /> {!isMobile ? "Comfort" : undefined}
+            {getHeaterModeLabel(State.COMFORT, isMobile)}
           </Radio.Button>
           <Radio.Button value={State.COMFORT_MIN_1}>
-            {!isMobile ? "Comfort -1°C" : "-1°C"}
+            {getHeaterModeLabel(State.COMFORT_MIN_1, isMobile)}
           </Radio.Button>
           <Radio.Button value={State.COMFORT_MIN_2}>
-            {!isMobile ? (
-              <>
-                <MoonOutlined /> Comfort -2°C
-              </>
-            ) : (
-              "-2°C"
-            )}
+            {getHeaterModeLabel(State.COMFORT_MIN_2, isMobile)}
           </Radio.Button>
           <Radio.Button value={State.FROST_FREE}>
-            <LuThermometerSnowflake />
-            {!isMobile ? "Hors-gel" : undefined}
+            {getHeaterModeLabel(State.FROST_FREE, isMobile)}
           </Radio.Button>
         </Radio.Group>
       </Form.Item>
@@ -88,3 +125,4 @@ function HeaterModeSelector({
 }
 
 export default HeaterModeSelector;
+export { getHeaterModeLabel };

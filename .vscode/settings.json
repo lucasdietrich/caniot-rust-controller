@@ -1,4 +1,11 @@
 {
+    "remote.SSH.defaultForwardedPorts": [
+        {
+            "name": "grpc",
+            "localPort": 50051,
+            "remotePort": 50051,
+        }
+    ],
     "rust-analyzer.linkedProjects": [
         "./Cargo.toml",
     ],

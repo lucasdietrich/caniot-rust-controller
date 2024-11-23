@@ -17,7 +17,7 @@ use super::{
     context::ProcessContext,
     traits::ActionWrapperTrait,
     verdict::{ActionVerdict, Verdict},
-    DeviceControllerWrapperTrait, DeviceError, DeviceJobsContext, DeviceStats,
+    DeviceControllerWrapperTrait, DeviceError, DeviceJobsContext, DeviceStats, UpdateJobVerdict,
 };
 #[derive(Debug)]
 pub struct Device {
@@ -38,7 +38,7 @@ pub struct Device {
 }
 
 impl Device {
-    pub fn new(did: DeviceId) -> Self {
+    pub fn new(did: DeviceId, controller: Option<Box<dyn DeviceControllerWrapperTrait>>) -> Self {
         // TODO remove/move
         let now = Utc::now();
 
@@ -46,7 +46,7 @@ impl Device {
             did,
             last_seen: None,
             stats: DeviceStats::default(),
-            controller: None,
+            controller,
             measures: None,
             jobs: DeviceJobsContext::new(now),
         }
@@ -155,7 +155,7 @@ impl Device {
         _as_class_blc: &Option<BoardClassTelemetry>,
         ctx: &mut ProcessContext,
     ) -> Result<Verdict, DeviceError> {
-        self.mark_last_seen(ctx.frame_received_at);
+        self.mark_last_seen(ctx.frame_received_at.unwrap());
 
         // Update device stats
         match frame {
@@ -204,7 +204,10 @@ impl Device {
                 self.stats.jobs_processed += 1;
                 return Some(result);
             } else {
-                warn!("No inner device controller to process job");
+                warn!(
+                    "No controller to process job {:?} for device {}",
+                    pending_job.definition, self.did
+                );
             }
         }
 
@@ -219,6 +222,20 @@ impl Device {
     pub fn register_new_jobs(&mut self, jobs_definitions: Vec<Box<dyn JobTrait>>) {
         self.jobs.register_new_jobs(jobs_definitions);
         self.stats.jobs_currently_scheduled = self.jobs.get_jobs_count();
+    }
+
+    pub fn update_scheduled_jobs(&mut self) {
+        self.jobs.retain_jobs_definitions(|job| {
+            if let Some(inner) = self.controller.as_mut() {
+                match inner.wrapper_update_scheduled_job(job) {
+                    UpdateJobVerdict::Keep => true,
+                    UpdateJobVerdict::Unschedule => false,
+                }
+            } else {
+                // Keep job if no defined device controller
+                true
+            }
+        });
     }
 
     pub fn get_alert(&self) -> Option<DeviceAlert> {
@@ -239,6 +256,12 @@ impl Device {
         } else {
             vec![]
         }
+    }
+
+    pub fn reset_settings(&mut self, ctx: &mut ProcessContext) {
+        self.controller
+            .as_mut()
+            .map(|inner| inner.wrapper_reset_config(ctx));
     }
 }
 

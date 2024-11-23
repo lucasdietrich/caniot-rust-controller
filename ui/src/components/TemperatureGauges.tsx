@@ -18,7 +18,7 @@ export function GetTemperatureColor(temp: number) {
   } else if (temp < 14) {
     return "#3FA0FF";
   } else if (temp < 22) {
-    return "#FFFFBF";
+    return "#2cde73";
   } else if (temp < 30) {
     return "#ffad72";
   } else if (temp < 40) {

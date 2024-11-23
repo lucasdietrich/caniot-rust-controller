@@ -138,4 +138,8 @@ impl DeviceControllerTrait for HeatersController {
             None
         }
     }
+
+    fn get_config(&self) -> &Self::Config {
+        &()
+    }
 }

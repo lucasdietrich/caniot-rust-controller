@@ -11,7 +11,6 @@ pub mod grpcserver;
 pub mod init;
 pub mod internal;
 pub mod logger;
-pub mod settings;
 pub mod shared;
 pub mod shutdown;
 pub mod utils;

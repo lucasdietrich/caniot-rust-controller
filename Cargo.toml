@@ -8,7 +8,7 @@ homepage = "https://github.com/lucasdietrich/caniot-rust-controller.git"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = []
+default = ["db-sqlite"]
 
 # feature for emulated can interface and devices
 can-tunnel = []
@@ -16,6 +16,9 @@ experimental = []
 emu = ["emu-delay"]
 grpc-can-iface-server = ["can-tunnel", "dep:tokio-stream", "dep:async-stream"]
 grpc-can-iface-client = ["can-tunnel", "dep:async-stream"]
+
+db-postgres = ["sqlx/postgres"]
+db-sqlite = ["sqlx/sqlite"]
 
 emu-delay = []
 
@@ -43,7 +46,7 @@ prost = "0.12"
 prost-types = "0.12"
 
 # database
-sqlx = { version = "0.7.4", features = ["runtime-tokio", "macros", "postgres"] }
+sqlx = { version = "0.7.4", features = ["runtime-tokio", "macros"] }
 
 # Webserver
 rocket = { version = "0.5.1", features = ["json"] }
@@ -76,28 +79,16 @@ dyn-clone = "1.0.17"
 tonic-build = { version = "0.11.0", features = ["prost"] }
 
 [profile.release]
-opt-level = 3
+opt-level = "z"
 lto = false
-codegen-units = 1
+codegen-units = 256
 debug = false
-strip = false            # "debuginfo"
-debug-assertions = false
-overflow-checks = false
-panic = 'abort'          # might be 'abort'
-incremental = false
+strip = false           # "debuginfo"
+debug-assertions = true
+overflow-checks = true
+panic = 'abort'
+incremental = true
 rpath = false
-
-# [profile.release]
-# opt-level = "z"
-# lto = false
-# codegen-units = 256
-# debug = false
-# strip = false           # "debuginfo"
-# debug-assertions = true
-# overflow-checks = true
-# panic = 'abort'
-# incremental = true
-# rpath = false
 
 [profile.dev]
 opt-level = 0

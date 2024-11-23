@@ -1,3 +1,4 @@
+use sqlx::Database;
 use std::sync::Arc;
 use tokio::runtime::Runtime;
 use tokio::sync::{broadcast, RwLock};
@@ -6,7 +7,7 @@ use serde::Serialize;
 
 use crate::config::AppConfig;
 use crate::controller::ControllerHandle;
-use crate::database::Database;
+use crate::database::{DatabaseType, Storage};
 use crate::internal::firmware::FirmwareInfos;
 use crate::internal::software::SoftwareInfos;
 
@@ -22,7 +23,7 @@ pub struct Shared {
     pub controller_handle: Arc<ControllerHandle>,
 
     /// The database handle
-    pub db: Arc<RwLock<Database>>,
+    pub db: Arc<Storage>,
 
     /// The application configuration
     pub config: AppConfig,
@@ -47,7 +48,7 @@ impl Shared {
     pub fn new(
         rt_handle: &Arc<Runtime>,
         controller_handle: Arc<ControllerHandle>,
-        db_handle: &Arc<RwLock<Database>>,
+        db_handle: &Arc<Storage>,
         config: &AppConfig,
         notify_shutdown: broadcast::Sender<()>,
         firmware_infos: FirmwareInfos,

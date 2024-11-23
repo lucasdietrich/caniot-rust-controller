@@ -1,11 +1,12 @@
 use std::{
     fmt::{Debug, Display},
-    ops::Deref,
+    ops::{Deref, DerefMut},
 };
 
 use crate::{
     caniot::{self, BoardClassTelemetry, Response},
     controller::JobTrait,
+    database::{SettingsError, SettingsStore},
 };
 
 use as_any::{AsAny, Downcast};
@@ -16,15 +17,63 @@ use serde::{Deserialize, Serialize};
 use super::{
     alert::DeviceAlert,
     verdict::{ActionVerdict, ActionVerdictWrapper, Verdict},
-    DeviceError, DeviceJobImpl, DeviceJobWrapper, ProcessContext,
+    DeviceError, DeviceJobImpl, DeviceJobWrapper, ProcessContext, UpdateJobVerdict,
 };
+
+#[async_trait]
+pub trait PartialConfigTrait: Default + Debug + Serialize + Deserialize<'static> + Clone {
+    async fn save<'a>(&self, stg: &SettingsStore<'a>) -> Result<(), SettingsError>;
+}
+
+#[async_trait]
+pub trait ConfigTrait: Default + Debug + Serialize + Deserialize<'static> + Clone {
+    type PartialConfig: PartialConfigTrait;
+    type PatchVerdict;
+
+    fn patch(&mut self, partial: Self::PartialConfig) -> Result<Self::PatchVerdict, DeviceError>;
+
+    async fn load<'a>(stg: &SettingsStore<'a>) -> Result<Self, SettingsError>;
+
+    // Build patch to set config to given value
+    fn into_patch(&self) -> Self::PartialConfig;
+
+    // Patch witch reset config to default if applied
+    fn new_patch_to_default() -> Self::PartialConfig {
+        (&Self::default()).into_patch()
+    }
+}
+
+#[async_trait]
+impl PartialConfigTrait for () {
+    async fn save<'a>(&self, _stg: &SettingsStore<'a>) -> Result<(), SettingsError> {
+        Ok(())
+    }
+}
+
+#[async_trait]
+impl ConfigTrait for () {
+    type PartialConfig = ();
+    type PatchVerdict = ();
+
+    fn patch(&mut self, _partial: Self::PartialConfig) -> Result<Self::PatchVerdict, DeviceError> {
+        Ok(())
+    }
+
+    async fn load<'a>(stg: &SettingsStore<'a>) -> Result<Self, SettingsError> {
+        Ok(())
+    }
+
+    fn into_patch(&self) -> Self::PartialConfig {
+        ()
+    }
+}
 
 pub trait DeviceControllerTrait: Send + Debug + Default {
     // TODO
     // type Class: Class<'a>; ???
     type Action: ActionTrait;
     type Job: JobTrait;
-    type Config: Default + Debug + Serialize + Deserialize<'static> + Clone;
+    type Config: ConfigTrait;
 
     fn new(_config: Option<&Self::Config>) -> Self {
         Self::default()
@@ -79,6 +128,12 @@ pub trait DeviceControllerTrait: Send + Debug + Default {
         Ok(Verdict::default())
     }
 
+    // Update job
+    fn update_job(&mut self, _job: &mut Self::Job) -> UpdateJobVerdict {
+        // Default implementation does nothing
+        UpdateJobVerdict::Keep
+    }
+
     // Retrieve device controller infos
     fn get_infos(&self) -> DeviceControllerInfos;
 
@@ -90,6 +145,23 @@ pub trait DeviceControllerTrait: Send + Debug + Default {
     // Retrieve prometheus metrics
     fn get_metrics(&self) -> Vec<String> {
         vec![]
+    }
+
+    // Get configuration for the device controller
+    fn get_config(&self) -> &Self::Config;
+
+    // Patch configuration for the device controller
+    fn patch_config(
+        &mut self,
+        _partial: <Self::Config as ConfigTrait>::PartialConfig,
+        _ctx: &mut ProcessContext,
+    ) -> Result<(), DeviceError> {
+        Err(DeviceError::NotImplemented)
+    }
+
+    // Reset configuration to default
+    fn reset_config(&mut self, ctx: &mut ProcessContext) -> Result<(), DeviceError> {
+        self.patch_config(Self::Config::new_patch_to_default(), ctx)
     }
 }
 
@@ -154,17 +226,25 @@ pub trait DeviceControllerWrapperTrait: Send + Debug {
         ctx: &mut ProcessContext,
     ) -> Result<Verdict, DeviceError>;
 
+    fn wrapper_update_scheduled_job(&mut self, jobs: &mut DeviceJobWrapper) -> UpdateJobVerdict;
+
     fn wrapper_get_infos(&self) -> DeviceControllerInfos;
 
     fn wrapper_get_alert(&self) -> Option<DeviceAlert>;
 
     fn wrapper_get_metrics(&self) -> Vec<String>;
+
+    fn wrapper_reset_config(&mut self, ctx: &mut ProcessContext) -> Result<(), DeviceError>;
 }
 
 /// Automatically implement DeviceWrapperTrait for any DeviceTrait
 impl<T: DeviceControllerTrait> DeviceControllerWrapperTrait for T {
     fn wrapper_can_handle_action(&self, action: &dyn ActionWrapperTrait) -> bool {
         action.is::<T::Action>()
+    }
+
+    fn wrapper_reset_config(&mut self, ctx: &mut ProcessContext) -> Result<(), DeviceError> {
+        self.reset_config(ctx)
     }
 
     fn wrapper_handle_frame(
@@ -220,6 +300,19 @@ impl<T: DeviceControllerTrait> DeviceControllerWrapperTrait for T {
         }?;
 
         self.process_job(&job_inner, job_timestamp, ctx)
+    }
+
+    fn wrapper_update_scheduled_job(&mut self, job: &mut DeviceJobWrapper) -> UpdateJobVerdict {
+        match job {
+            DeviceJobWrapper::Scheduled(job) => {
+                if let Some(job) = job.deref_mut().downcast_mut::<T::Job>() {
+                    self.update_job(job)
+                } else {
+                    UpdateJobVerdict::Keep
+                }
+            }
+            _ => UpdateJobVerdict::Keep,
+        }
     }
 
     fn wrapper_get_infos(&self) -> DeviceControllerInfos {

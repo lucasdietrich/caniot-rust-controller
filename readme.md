@@ -133,6 +133,9 @@ Run with
 - outdoor alarm: Double detection
 - reorder heaters buttons in ui
 - implement BLE devices (add transport layer abstraction)
+- improve the configuration handling:
+  - reseting device configuration
+  - remove async callback from the device configuration
 
 ## TODO (UI)
 

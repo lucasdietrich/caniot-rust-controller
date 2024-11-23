@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use crate::caniot;
+use crate::{caniot, database::SettingsError};
 
 #[derive(Error, Debug)]
 pub enum DeviceError {
@@ -22,4 +22,6 @@ pub enum DeviceError {
     ProtocolError(#[from] caniot::ProtocolError),
     #[error("Action rejected {0}")]
     ActionRejected(String),
+    #[error("Settings error: {0}")]
+    SettingsError(#[from] SettingsError),
 }

@@ -8,8 +8,6 @@ pub struct CaniotDevicesConfig {
     pub heaters_did: Option<u8>,
     pub garage_did: Option<u8>,
     pub outdoor_alarm_did: Option<u8>,
-
-    pub alarm_config: AlarmConfig,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]

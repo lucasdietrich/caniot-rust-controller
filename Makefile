@@ -68,3 +68,6 @@ ui_rebuild: ui_clean ui
 
 bitbake:
 	cargo-bitbake bitbake -R
+
+kill:
+	./scripts/kill-caniot-controller.sh

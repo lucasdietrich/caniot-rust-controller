@@ -68,6 +68,9 @@ pub enum ControllerMessage {
         respond_to: oneshot::Sender<Result<<DeviceAction as ActionTrait>::Result, ControllerError>>,
         timeout_ms: Option<u32>,
     },
+    DevicesResetSettings {
+        respond_to: oneshot::Sender<Result<(), ControllerError>>,
+    },
     #[cfg(feature = "can-tunnel")]
     EstablishCanTunnel {
         rx_queue: mpsc::Sender<CanDataFrame>, // Messages received from the bus
@@ -209,5 +212,10 @@ impl ControllerHandle {
             .send(ControllerMessage::EmulationRequest { event })
             .await
             .expect("Failed to send emulation request to controller");
+    }
+
+    pub async fn reset_devices_settings(&self) -> Result<(), ControllerError> {
+        self.query(|respond_to| ControllerMessage::DevicesResetSettings { respond_to })
+            .await
     }
 }

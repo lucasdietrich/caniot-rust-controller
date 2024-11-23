@@ -1,7 +1,10 @@
+use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
+use async_std::sync::RwLock;
 use chrono::{DateTime, Utc};
 use itertools::{partition, Itertools};
 
@@ -15,15 +18,16 @@ use crate::controller::{
     ActionVerdict, CaniotConfig, CaniotDevicesConfig, Device, DeviceAction, DeviceActionResult,
     DeviceError, DeviceInfos, PendingAction, ProcessContext, Verdict,
 };
+use crate::database::{SettingsError, SettingsStore, Storage};
 use crate::shutdown::Shutdown;
 use crate::utils::expirable::{ttl, ExpirableTrait};
 
+use super::auto_attach::device_init_controller;
 #[cfg(feature = "can-tunnel")]
 use super::can_tunnel::CanTunnelContextServer;
 use super::pending_query::PendingQueryTenant;
 
 use super::super::handle;
-use super::auto_attach::device_attach_controller;
 use super::stats::ControllerStats;
 use super::PendingQuery;
 
@@ -98,6 +102,9 @@ pub struct Controller<IF: CanInterfaceTrait> {
     // CAN interface
     iface: IF,
 
+    // Database storage
+    storage: Arc<Storage>,
+
     // Service
     pub config: CaniotConfig,
     pub stats: ControllerStats,
@@ -117,6 +124,7 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
     pub(crate) fn new(
         iface: IF,
         config: CaniotConfig,
+        storage: Arc<Storage>,
         shutdown: Shutdown,
     ) -> Result<Self, ControllerError> {
         let (sender, receiver) =
@@ -124,6 +132,7 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
 
         Ok(Self {
             iface,
+            storage,
             config,
             stats: ControllerStats::default(),
             shutdown,
@@ -154,16 +163,25 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
         Ok(())
     }
 
-    fn device_get_or_create<'d>(
+    async fn device_get_or_create<'d, 'stg>(
         devices: &'d mut HashMap<DeviceId, Device>,
         did: DeviceId,
         devices_config: &CaniotDevicesConfig,
+        stg: SettingsStore<'stg>,
     ) -> &'d mut Device {
-        devices.entry(did).or_insert_with(|| {
-            let mut new_device = Device::new(did);
-            device_attach_controller(&mut new_device, devices_config);
-            new_device
-        })
+        match devices.entry(did) {
+            Entry::Occupied(entry) => entry.into_mut(),
+            Entry::Vacant(entry) => {
+                // Create controller for device
+                let device_controller = device_init_controller(did, (), devices_config, stg).await;
+
+                // Create device and attach controller if any
+                let new_device = Device::new(did, device_controller);
+
+                // Insert device in the devices map
+                entry.insert(new_device)
+            }
+        }
     }
 
     pub async fn send_caniot_frame(
@@ -178,7 +196,9 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
                 &mut self.devices,
                 request.device_id,
                 &self.config.devices,
-            );
+                self.storage.get_settings_store(),
+            )
+            .await;
 
             // update device stats
             match request.data {
@@ -228,6 +248,23 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
         }
     }
 
+    async fn device_update_from_context<'f>(
+        device: &mut Device,
+        ctx: ProcessContext<'f>,
+    ) -> Result<(), DeviceError> {
+        if ctx.request_jobs_update {
+            device.update_scheduled_jobs();
+        }
+        device.register_new_jobs(ctx.new_jobs);
+        if let Some(device_future) = ctx.storage_update_future {
+            device_future.await.inspect_err(|err| {
+                error!("Failed to run device future: {}", err);
+            })?;
+        }
+
+        Ok(())
+    }
+
     async fn handle_caniot_frame(
         &mut self,
         frame: caniot::Response,
@@ -268,13 +305,17 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
 
         // Get or create device
         let device_did = frame.device_id;
-        let device =
-            Self::device_get_or_create(&mut self.devices, device_did, &self.config.devices);
-
-        let mut device_context = ProcessContext::new(frame.timestamp);
+        let device = Self::device_get_or_create(
+            &mut self.devices,
+            device_did,
+            &self.config.devices,
+            self.storage.get_settings_store(),
+        )
+        .await;
+        let mut device_ctx = ProcessContext::new(Some(frame.timestamp), self.storage.clone());
 
         // Let the device handle the frame
-        let verdict = device.handle_frame(&frame.data, &None, &mut device_context)?;
+        let verdict = device.handle_frame(&frame.data, &None, &mut device_ctx)?;
         match verdict {
             Verdict::None => {}
             Verdict::Request(request) => {
@@ -283,7 +324,7 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
             }
         }
 
-        device.register_new_jobs(device_context.new_jobs);
+        Self::device_update_from_context(device, device_ctx).await?;
 
         // Let the device compute the action result if any
         if let Some(mut answered_action) = answered_pending_action {
@@ -319,6 +360,7 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
 
     // Process all devices expired jobs
     async fn process_devices_jobs(&mut self, now: &DateTime<Utc>) -> Result<(), ControllerError> {
+        let storage = self.storage.clone();
         for (did, device) in self
             .devices
             .iter_mut()
@@ -329,9 +371,9 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
 
             // Process device jobs until no more jobs are available
             loop {
-                let mut device_context = ProcessContext::default();
+                let mut device_ctx = ProcessContext::new(None, storage.clone());
 
-                if let Some(verdict) = device.process_one_job(&mut device_context).transpose()? {
+                if let Some(verdict) = device.process_one_job(&mut device_ctx).transpose()? {
                     match verdict {
                         Verdict::None => {}
                         Verdict::Request(request) => {
@@ -345,7 +387,7 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
                         }
                     }
 
-                    device.register_new_jobs(device_context.new_jobs);
+                    Self::device_update_from_context(device, device_ctx).await?;
                 } else {
                     break;
                 }
@@ -519,14 +561,15 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
         did: Option<DeviceId>,
         action: DeviceAction,
     ) -> Result<ActionResultOrPending, ControllerError> {
+        let storage = self.storage.clone();
         // Find device by DID or by action
         let device = match did {
             Some(did) => Ok(self.get_device_by_did(&did)?),
             None => self.get_device_by_action(&action),
         }?;
 
-        let mut device_context = ProcessContext::default();
-        let result = match device.handle_action(&action, &mut device_context) {
+        let mut device_ctx = ProcessContext::new(None, storage);
+        let result = match device.handle_action(&action, &mut device_ctx) {
             Ok(verdict) => match verdict {
                 ActionVerdict::ActionPendingOn(request) => {
                     let request = Request::new(device.did, request);
@@ -539,7 +582,7 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
         }
         .map_err(ControllerError::from);
 
-        device.register_new_jobs(device_context.new_jobs);
+        Self::device_update_from_context(device, device_ctx).await?;
 
         result
     }
@@ -576,6 +619,14 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
             } => {
                 self.handle_api_device_action(did, action, respond_to, timeout_ms)
                     .await;
+            }
+            ControllerMessage::DevicesResetSettings { respond_to } => {
+                for device in self.devices.values_mut() {
+                    let mut ctx = ProcessContext::new(None, self.storage.clone());
+                    device.reset_settings(&mut ctx);
+                    Self::device_update_from_context(device, ctx).await?;
+                }
+                let _ = respond_to.send(Ok(()));
             }
             #[cfg(feature = "can-tunnel")]
             ControllerMessage::EstablishCanTunnel {

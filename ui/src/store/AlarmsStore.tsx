@@ -5,6 +5,8 @@ import { HandleError, HandleSuccess, getApiUrl } from "./helpers";
 import { Empty } from "google-protobuf/google/protobuf/empty_pb";
 import { AlarmsServiceClient } from "@caniot-controller/caniot-api-grpc-web/api/Ng_alarmsServiceClientPb";
 import {
+  AlarmConfig,
+  AlarmPartialConfig,
   OutdoorAlarmCommand,
   OutdoorAlarmState,
 } from "@caniot-controller/caniot-api-grpc-web/api/ng_alarms_pb";
@@ -44,6 +46,32 @@ class AlarmsStore extends EventEmitter {
       }
 
       HandleSuccess("AlarmsStore::SendOutdoorAlarmCommand succeeded");
+
+      callbackFunc(resp);
+    });
+  };
+
+  getConfig = (callbackFunc: (resp: AlarmConfig) => void) => {
+    this.client.getConfig(new Empty(), null, (err, resp) => {
+      if (err !== null) {
+        HandleError(err);
+        return;
+      }
+
+      HandleSuccess("AlarmsStore::GetConfig succeeded");
+
+      callbackFunc(resp);
+    });
+  };
+
+  setConfig = (req: AlarmPartialConfig, callbackFunc: (resp: AlarmConfig) => void) => {
+    this.client.setConfig(req, null, (err, resp) => {
+      if (err !== null) {
+        HandleError(err);
+        return;
+      }
+
+      HandleSuccess("AlarmsStore::SetConfig succeeded");
 
       callbackFunc(resp);
     });

@@ -4,7 +4,7 @@ use log::info;
 use tokio::sync::{broadcast, RwLock};
 use tokio::{self};
 
-use crate::database::Database;
+use crate::database::{DatabaseType, Storage};
 use crate::internal::firmware::FirmwareInfos;
 use crate::internal::software::SoftwareInfos;
 use crate::shared::Shared;
@@ -48,20 +48,20 @@ pub fn run_controller() {
     let rt = Arc::new(rt);
     let (notify_shutdown, _) = broadcast::channel(1);
 
-    let database = rt
-        .block_on(Database::try_connect(&config.database))
+    let storage = rt
+        .block_on(Storage::try_connect(&config.database))
         .expect("Failed to connect to database");
-    rt.block_on(database.initialize_tables())
+    rt.block_on(storage.initialize_tables())
         .expect("Failed to initialize database tables");
-    let database_handle = Arc::new(RwLock::new(database));
+    let storage_handle = Arc::new(storage);
 
     let controller =
-        controller::init::<bus::IFaceType>(&rt, &config, &database_handle, &notify_shutdown);
+        controller::init::<bus::IFaceType>(&rt, &config, &storage_handle, &notify_shutdown);
 
     let shared = Arc::new(Shared::new(
         &rt,
         Arc::new(controller.get_handle()),
-        &database_handle,
+        &storage_handle,
         &config,
         notify_shutdown.clone(),
         firmware_infos,

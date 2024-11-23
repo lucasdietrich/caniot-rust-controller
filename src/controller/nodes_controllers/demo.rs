@@ -79,6 +79,10 @@ impl DeviceControllerTrait for DemoController {
     ) -> Result<Verdict, DeviceError> {
         Ok(Verdict::default())
     }
+
+    fn get_config(&self) -> &Self::Config {
+        &()
+    }
 }
 
 #[derive(Debug)]

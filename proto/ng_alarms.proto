@@ -7,8 +7,10 @@ import "google/protobuf/timestamp.proto";
 
 service AlarmsService {
   rpc GetOutdoorAlarmState(google.protobuf.Empty) returns (OutdoorAlarmState) {}
-  rpc SendOutdoorAlarmCommand(OutdoorAlarmCommand) returns (OutdoorAlarmState) {
-  }
+  rpc SendOutdoorAlarmCommand(OutdoorAlarmCommand) returns (OutdoorAlarmState) {}
+  
+  rpc GetConfig(google.protobuf.Empty) returns (AlarmConfig) {}
+  rpc SetConfig(AlarmPartialConfig) returns (AlarmConfig) {} 
 }
 
 enum TwoStates {
@@ -42,14 +44,7 @@ message OutdoorAlarmState {
   OutdoorAlarmDeviceState device = 20;
 
   // config
-  bool alarm_auto_enabled = 30;
-  string alarm_auto_enable_time = 31;
-  string alarm_auto_disable_time = 32;
-  uint32 alarm_siren_minimum_interval_seconds = 33;
-
-  bool lights_auto_enabled = 40;
-  string lights_auto_enable_time = 41;
-  string lights_auto_disable_time = 42;
+  AlarmConfig config = 30;
 
   // stats
   uint32 south_detector_triggered_count = 50;
@@ -73,4 +68,26 @@ message OutdoorAlarmDeviceState {
 
   bool siren_active = 5;
   bool sabotage = 6;
+}
+
+message AlarmConfig {
+  bool alarm_auto_enabled = 1;
+  string alarm_auto_enable_time = 2;
+  string alarm_auto_disable_time = 3;
+  uint32 alarm_siren_minimum_interval_seconds = 4;
+
+  bool lights_auto_enabled = 5;
+  string lights_auto_enable_time = 6;
+  string lights_auto_disable_time = 7;
+}
+
+message AlarmPartialConfig {
+  optional bool alarm_auto_enabled = 1;
+  optional string alarm_auto_enable_time = 2;
+  optional string alarm_auto_disable_time = 3;
+  optional uint32 alarm_siren_minimum_interval_seconds = 4;
+
+  optional bool lights_auto_enabled = 5;
+  optional string lights_auto_enable_time = 6;
+  optional string lights_auto_disable_time = 7;
 }
