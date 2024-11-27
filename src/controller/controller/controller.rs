@@ -257,8 +257,9 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
         }
         device.register_new_jobs(ctx.new_jobs);
         if let Some(device_future) = ctx.storage_update_future {
-            device_future.await.inspect_err(|err| {
+            device_future.await.map_err(|err| {
                 error!("Failed to run device future: {}", err);
+                err
             })?;
         }
 
