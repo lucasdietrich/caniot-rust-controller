@@ -3,11 +3,10 @@ use crate::{controller::DeviceLabel, shared::SharedHandle, utils::PrometheusExpo
 pub async fn export(shared: &SharedHandle) -> String {
     let mut buf = String::new();
 
-    let (controller_stats, can_stats) = shared.controller_handle.get_controller_stats().await;
+    let stats = shared.controller_handle.get_controller_stats().await;
     let devices_infos = shared.controller_handle.get_devices_infos_list().await;
 
-    buf.push_str(&controller_stats.export(&[]));
-    buf.push_str(&can_stats.export(&[]));
+    buf.push_str(&stats.export(&[]));
 
     let medium_label = DeviceLabel::Medium("CAN".to_string());
     for device_infos in devices_infos {

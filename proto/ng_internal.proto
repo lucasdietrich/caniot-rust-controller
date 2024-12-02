@@ -81,4 +81,9 @@ message ControllerStats {
 
   uint32 api_rx = 20;
   uint64 loop_runs = 21;
+
+  uint32 can_rx = 30;
+  uint32 can_tx = 31;
+  uint32 can_err = 32;
+  uint32 can_unhandled = 33;
 }

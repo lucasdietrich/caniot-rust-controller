@@ -8,7 +8,7 @@ homepage = "https://github.com/lucasdietrich/caniot-rust-controller.git"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["db-sqlite"]
+default = ["db-sqlite", "ble-copro"]
 
 # feature for emulated can interface and devices
 can-tunnel = []
@@ -20,6 +20,7 @@ grpc-can-iface-client = ["can-tunnel", "dep:async-stream"]
 db-postgres = ["sqlx/postgres"]
 db-sqlite = ["sqlx/sqlite"]
 
+ble-copro = ["dep:ble-copro-stream-server"]
 emu-delay = []
 
 [dependencies]
@@ -32,7 +33,7 @@ async-stream = { version = "0.3.5", optional = true }
 futures = "0.3"
 futures-util = "0.3"
 
-# Can interface
+# CAN interface
 socketcan = { git = "https://github.com/socketcan-rs/socketcan-rs.git", rev = "c3004f0d7c600cd3964cd8655fd26f670d7c87e7", features = [
     "tokio",
     "async-std",
@@ -66,7 +67,7 @@ log = "0.4.22"
 num = "0.4"
 num-derive = "0.4"
 num-traits = "0.2"
-thiserror = "1.0"
+thiserror = "2.0"
 itertools = "0.13"
 rand = "0.8"
 chrono = { version = "0.4", features = ["serde"] }
@@ -74,6 +75,12 @@ strum = { version = "0.26", features = ["derive"] }
 as-any = "0.3"
 dyn-clone = "1.0.17"
 # sorted-vec = "0.8.3"
+
+# BLE can
+[dependencies.ble-copro-stream-server]
+git = "https://github.com/lucasdietrich/zephyr-linux-ble-copro.git"
+rev = "0f06f4d391ce227cd500456494f36a4a3f143c4e"
+optional = true
 
 [build-dependencies]
 tonic-build = { version = "0.11.0", features = ["prost"] }

@@ -4,8 +4,10 @@ use tokio::sync::oneshot;
 
 use crate::{
     caniot,
-    controller::{ControllerError, DeviceAction, DeviceActionResult},
+    controller::{DeviceAction, DeviceActionResult},
 };
+
+use super::caniot_devices_controller::ControllerError;
 
 pub struct PendingAction {
     pub action: DeviceAction,

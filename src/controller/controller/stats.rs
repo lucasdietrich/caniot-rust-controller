@@ -1,9 +1,14 @@
 use serde::Serialize;
 
-use crate::utils::{PrometheusExporterTrait, PrometheusNoLabel};
+use crate::{
+    bus::CanStats,
+    utils::{PrometheusExporterTrait, PrometheusNoLabel},
+};
+
+use super::controller::ControllerCoreStats;
 
 #[derive(Serialize, Debug, Clone, Copy, Default)]
-pub struct ControllerStats {
+pub struct CaniotControllerStats {
     // can interface
     pub iface_rx: usize,
     pub iface_tx: usize,
@@ -19,10 +24,13 @@ pub struct ControllerStats {
     pub pq_timeout: usize,
     pub pq_answered: usize,
     pub pq_duplicate_dropped: usize,
+}
 
-    // Internals
-    pub api_rx: usize,  // Internal API calls
-    pub loop_runs: u64, // Number of times the controller loop has been executed
+#[derive(Serialize, Debug, Clone, Copy, Default)]
+pub struct ControllerStats {
+    pub caniot: CaniotControllerStats,
+    pub core: ControllerCoreStats,
+    pub can: CanStats,
 }
 
 impl<'a> PrometheusExporterTrait<'a> for ControllerStats {
@@ -30,28 +38,36 @@ impl<'a> PrometheusExporterTrait<'a> for ControllerStats {
 
     fn export(&self, _labels: impl AsRef<[&'a Self::Label]>) -> String {
         format!(
-            "controller_iface_rx {}\n\
-            controller_iface_tx {}\n\
-            controller_iface_err {}\n\
-            controller_iface_malformed {}\n\
-            controller_broadcast_tx {}\n\
-            controller_pq_pushed {}\n\
-            controller_pq_timeout {}\n\
-            controller_pq_answered {}\n\
-            controller_pq_duplicate_dropped {}\n\
+            "controller_caniot_iface_rx {}\n\
+            controller_caniot_iface_tx {}\n\
+            controller_caniot_iface_err {}\n\
+            controller_caniot_iface_malformed {}\n\
+            controller_caniot_broadcast_tx {}\n\
+            controller_caniot_pq_pushed {}\n\
+            controller_caniot_pq_timeout {}\n\
+            controller_caniot_pq_answered {}\n\
+            controller_caniot_pq_duplicate_dropped {}\n\
             controller_api_rx {}\n\
-            controller_loop_runs {}\n",
-            self.iface_rx,
-            self.iface_tx,
-            self.iface_err,
-            self.iface_malformed,
-            self.broadcast_tx,
-            self.pq_pushed,
-            self.pq_timeout,
-            self.pq_answered,
-            self.pq_duplicate_dropped,
-            self.api_rx,
-            self.loop_runs
+            controller_loop_runs {}\n\
+            bus_can_rx {}\n\
+            bus_can_tx {}\n\
+            bus_can_err {}\n\
+            bus_can_unhandled {}\n",
+            self.caniot.iface_rx,
+            self.caniot.iface_tx,
+            self.caniot.iface_err,
+            self.caniot.iface_malformed,
+            self.caniot.broadcast_tx,
+            self.caniot.pq_pushed,
+            self.caniot.pq_timeout,
+            self.caniot.pq_answered,
+            self.caniot.pq_duplicate_dropped,
+            self.core.api_rx,
+            self.core.loop_runs,
+            self.can.rx,
+            self.can.tx,
+            self.can.err,
+            self.can.unhandled,
         )
     }
 }

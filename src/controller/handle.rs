@@ -14,7 +14,12 @@ use crate::{
 use serde::Serialize;
 
 use super::{
-    alert, ActionTrait, ControllerError, ControllerStats, Device, DeviceAction, DeviceActionResult,
+    alert,
+    caniot_controller::{
+        caniot_devices_controller::ControllerError, caniot_message::ControllerCaniotMessage,
+    },
+    controller::controller::ControllerCoreStats,
+    ActionTrait, CaniotControllerStats, ControllerStats, Device, DeviceAction, DeviceActionResult,
     DeviceInfos, DeviceStats,
 };
 
@@ -47,38 +52,17 @@ impl DeviceFilter {
 }
 
 pub enum ControllerMessage {
-    GetControllerStats {
-        respond_to: oneshot::Sender<(ControllerStats, CanStats)>,
+    GetStats {
+        respond_to: oneshot::Sender<ControllerStats>,
     },
-    GetDevices {
-        filter: DeviceFilter,
-        respond_to: oneshot::Sender<Vec<DeviceInfos>>,
-    },
-    Query {
-        query: ct::Request,
-        timeout_ms: Option<u32>,
+    CaniotMessage(ControllerCaniotMessage),
+    CoprocessorMessage,
+}
 
-        // If Some, the controller will respond to the sender with the result of the query.
-        // If None, the controller will send the query and not wait for a response.
-        respond_to: Option<oneshot::Sender<Result<ct::Response, ControllerError>>>,
-    },
-    DeviceAction {
-        did: Option<DeviceId>,
-        action: DeviceAction,
-        respond_to: oneshot::Sender<Result<<DeviceAction as ActionTrait>::Result, ControllerError>>,
-        timeout_ms: Option<u32>,
-    },
-    DevicesResetSettings {
-        respond_to: oneshot::Sender<Result<(), ControllerError>>,
-    },
-    #[cfg(feature = "can-tunnel")]
-    EstablishCanTunnel {
-        rx_queue: mpsc::Sender<CanDataFrame>, // Messages received from the bus
-        tx_queue: mpsc::Receiver<CanDataFrame>, // Messages to sent to the bus
-        respond_to: oneshot::Sender<Result<(), ControllerError>>,
-    },
-    #[cfg(feature = "emu")]
-    EmulationRequest { event: EmuRequest },
+impl From<ControllerCaniotMessage> for ControllerMessage {
+    fn from(msg: ControllerCaniotMessage) -> Self {
+        Self::CaniotMessage(msg)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -103,10 +87,13 @@ impl ControllerHandle {
         frame: ct::Request,
         timeout_ms: Option<u32>,
     ) -> Result<ct::Response, ControllerError> {
-        self.query(|sender| ControllerMessage::Query {
-            query: frame,
-            timeout_ms,
-            respond_to: Some(sender),
+        self.query(|sender| {
+            ControllerCaniotMessage::Query {
+                query: frame,
+                timeout_ms,
+                respond_to: Some(sender),
+            }
+            .into()
         })
         .await
     }
@@ -128,31 +115,40 @@ impl ControllerHandle {
         receiver.await.expect("IPC Sender dropped before response")
     }
 
-    pub async fn get_controller_stats(&self) -> (ControllerStats, CanStats) {
-        self.query(|respond_to| ControllerMessage::GetControllerStats { respond_to })
+    pub async fn get_controller_stats(&self) -> ControllerStats {
+        self.query(|respond_to| ControllerMessage::GetStats { respond_to })
             .await
     }
 
     pub async fn get_devices_infos_list(&self) -> Vec<DeviceInfos> {
-        self.query(|respond_to| ControllerMessage::GetDevices {
-            filter: DeviceFilter::All,
-            respond_to,
+        self.query(|respond_to| {
+            ControllerCaniotMessage::GetDevices {
+                filter: DeviceFilter::All,
+                respond_to,
+            }
+            .into()
         })
         .await
     }
 
     pub async fn get_devices_with_active_alert(&self) -> Vec<DeviceInfos> {
-        self.query(|respond_to| ControllerMessage::GetDevices {
-            filter: DeviceFilter::WithActiveAlert,
-            respond_to,
+        self.query(|respond_to| {
+            ControllerCaniotMessage::GetDevices {
+                filter: DeviceFilter::WithActiveAlert,
+                respond_to,
+            }
+            .into()
         })
         .await
     }
 
     pub async fn get_device_infos(&self, did: DeviceId) -> Option<DeviceInfos> {
-        self.query(|respond_to| ControllerMessage::GetDevices {
-            filter: DeviceFilter::ById(did),
-            respond_to,
+        self.query(|respond_to| {
+            ControllerCaniotMessage::GetDevices {
+                filter: DeviceFilter::ById(did),
+                respond_to,
+            }
+            .into()
         })
         .await
         .into_iter()
@@ -168,11 +164,14 @@ impl ControllerHandle {
         action: DeviceAction,
         timeout_ms: Option<u32>,
     ) -> Result<DeviceActionResult, ControllerError> {
-        self.query(|respond_to| ControllerMessage::DeviceAction {
-            did,
-            action,
-            respond_to,
-            timeout_ms,
+        self.query(|respond_to| {
+            ControllerCaniotMessage::DeviceAction {
+                did,
+                action,
+                respond_to,
+                timeout_ms,
+            }
+            .into()
         })
         .await
     }
@@ -209,13 +208,13 @@ impl ControllerHandle {
     pub async fn send_emulation_request(&self, event: EmuRequest) {
         debug!("Sending emulation request to controller: {:?}", event);
         self.sender
-            .send(ControllerMessage::EmulationRequest { event })
+            .send(ControllerCaniotMessage::EmulationRequest { event }.into())
             .await
             .expect("Failed to send emulation request to controller");
     }
 
     pub async fn reset_devices_settings(&self) -> Result<(), ControllerError> {
-        self.query(|respond_to| ControllerMessage::DevicesResetSettings { respond_to })
+        self.query(|respond_to| ControllerCaniotMessage::DevicesResetSettings { respond_to }.into())
             .await
     }
 }

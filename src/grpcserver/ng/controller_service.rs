@@ -3,7 +3,7 @@ use std::ops::BitAnd;
 use tonic::{Request, Response, Result, Status};
 
 use crate::caniot::{self};
-use crate::controller::ControllerError;
+use crate::controller::caniot_controller::caniot_devices_controller::ControllerError;
 use crate::shared::SharedHandle;
 
 use super::model::controller::{

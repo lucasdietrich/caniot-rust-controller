@@ -10,7 +10,7 @@ use super::model::internal::{
 };
 
 use crate::{
-    controller::ControllerStats,
+    controller::{CaniotControllerStats, ControllerStats},
     grpcserver::{systemtime_to_prost_timestamp, utc_to_prost_timestamp},
     internal::{
         firmware::{FirmwareBuildInfos, FirmwareInfos},
@@ -73,17 +73,21 @@ impl Into<m::FirmwareInfos> for &FirmwareInfos {
 impl Into<m::ControllerStats> for &ControllerStats {
     fn into(self) -> m::ControllerStats {
         m::ControllerStats {
-            iface_rx: self.iface_rx as u32,
-            iface_tx: self.iface_tx as u32,
-            iface_err: self.iface_err as u32,
-            iface_malformed: self.iface_malformed as u32,
-            broadcast_tx: self.broadcast_tx as u32,
-            pq_pushed: self.pq_pushed as u32,
-            pq_answered: self.pq_answered as u32,
-            pq_timeout: self.pq_timeout as u32,
-            pq_duplicate_dropped: self.pq_duplicate_dropped as u32,
-            api_rx: self.api_rx as u32,
-            loop_runs: self.loop_runs as u64,
+            iface_rx: self.caniot.iface_rx as u32,
+            iface_tx: self.caniot.iface_tx as u32,
+            iface_err: self.caniot.iface_err as u32,
+            iface_malformed: self.caniot.iface_malformed as u32,
+            broadcast_tx: self.caniot.broadcast_tx as u32,
+            pq_pushed: self.caniot.pq_pushed as u32,
+            pq_answered: self.caniot.pq_answered as u32,
+            pq_timeout: self.caniot.pq_timeout as u32,
+            pq_duplicate_dropped: self.caniot.pq_duplicate_dropped as u32,
+            api_rx: self.core.api_rx as u32,
+            loop_runs: self.core.loop_runs as u64,
+            can_rx: self.can.rx as u32,
+            can_tx: self.can.tx as u32,
+            can_err: self.can.err as u32,
+            can_unhandled: self.can.unhandled as u32,
         }
     }
 }
@@ -187,7 +191,7 @@ impl InternalService for NgInternal {
             firmware: Some((&self.shared.firmware_infos).into()),
             software: Some((&self.shared.software_infos).into()),
             controller_stats: Some(
-                (&self.shared.controller_handle.get_controller_stats().await.0).into(),
+                (&self.shared.controller_handle.get_controller_stats().await).into(),
             ),
         }))
     }
@@ -197,7 +201,7 @@ impl InternalService for NgInternal {
         _request: Request<()>,
     ) -> Result<Response<m::ControllerStats>, Status> {
         Ok(Response::new(
-            (&self.shared.controller_handle.get_controller_stats().await.0).into(),
+            (&self.shared.controller_handle.get_controller_stats().await).into(),
         ))
     }
 }

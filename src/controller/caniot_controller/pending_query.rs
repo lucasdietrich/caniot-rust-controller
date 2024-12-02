@@ -1,8 +1,9 @@
 use std::time::{Duration, Instant};
 
-use super::{ControllerError, PendingAction};
 use crate::{caniot, utils::expirable::ExpirableTrait};
 use tokio::sync::oneshot;
+
+use super::{caniot_devices_controller::ControllerError, pending_action::PendingAction};
 
 /// Initiator of a pending query, it represents the entity that is waiting for the query to be answered
 #[derive(Debug)]

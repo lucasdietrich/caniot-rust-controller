@@ -6,6 +6,8 @@ pub mod bus;
 pub mod caniot;
 pub mod config;
 pub mod controller;
+#[cfg(feature = "ble-copro")]
+pub mod copro;
 pub mod database;
 pub mod grpcserver;
 pub mod init;

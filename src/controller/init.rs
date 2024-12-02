@@ -1,11 +1,8 @@
 use std::sync::Arc;
 
-use tokio::{
-    runtime::Runtime,
-    sync::{broadcast::Sender, RwLock},
-};
+use tokio::{runtime::Runtime, sync::broadcast::Sender};
 
-use super::Controller;
+use super::controller::controller::Controller;
 use crate::{bus::CanInterfaceTrait, config::AppConfig, database::Storage, shutdown::Shutdown};
 
 pub fn init<IF: CanInterfaceTrait>(

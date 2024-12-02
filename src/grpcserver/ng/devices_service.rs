@@ -4,7 +4,9 @@ use crate::{
     caniot as ct,
     controller::{
         alert::{DeviceAlert, DeviceAlertType},
-        auto_attach::{DEVICE_GARAGE_DID, DEVICE_HEATERS_DID, DEVICE_OUTDOOR_ALARM_DID},
+        caniot_controller::auto_attach::{
+            DEVICE_GARAGE_DID, DEVICE_HEATERS_DID, DEVICE_OUTDOOR_ALARM_DID,
+        },
         DeviceAction, DeviceActionResult, DeviceInfos,
     },
     grpcserver::utc_to_prost_timestamp,
