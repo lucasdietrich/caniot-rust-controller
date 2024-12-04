@@ -10,7 +10,7 @@ use super::model::internal::{
 };
 
 use crate::{
-    controller::{CaniotControllerStats, ControllerStats},
+    controller::ControllerStats,
     grpcserver::{systemtime_to_prost_timestamp, utc_to_prost_timestamp},
     internal::{
         firmware::{FirmwareBuildInfos, FirmwareInfos},

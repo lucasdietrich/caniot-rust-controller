@@ -1,45 +1,26 @@
 use std::{sync::Arc, time::Instant};
 
 use chrono::Utc;
-use serde::Serialize;
 use tokio::{select, sync::mpsc, time::sleep};
 
 use crate::{
     bus::CanInterfaceTrait,
     controller::{
         caniot_controller::caniot_devices_controller::{CaniotDevicesController, ControllerError},
+        copro_controller::CoproController,
         handle::{self, ControllerMessage},
         CaniotConfig,
     },
+    coprocessor::CoproHandle,
     database::Storage,
     shutdown::Shutdown,
-    utils::{PrometheusExporterTrait, PrometheusNoLabel},
 };
 
-use super::ControllerStats;
-
-#[derive(Serialize, Debug, Clone, Copy, Default)]
-pub struct ControllerCoreStats {
-    // Internals
-    pub api_rx: usize,  // Internal API calls
-    pub loop_runs: u64, // Number of times the controller loop has been executed
-}
-
-impl<'a> PrometheusExporterTrait<'a> for ControllerCoreStats {
-    type Label = PrometheusNoLabel;
-
-    fn export(&self, _labels: impl AsRef<[&'a Self::Label]>) -> String {
-        format!(
-            "controller_api_rx {}\n\
-            controller_loop_runs {}\n\
-            ",
-            self.api_rx, self.loop_runs,
-        )
-    }
-}
+use super::{ControllerCoreStats, ControllerStats};
 
 pub struct Controller<IF: CanInterfaceTrait> {
     caniot: CaniotDevicesController<IF>,
+    copro: CoproController,
     shutdown: Shutdown,
 
     receiver: mpsc::Receiver<handle::ControllerMessage>,
@@ -53,16 +34,21 @@ const API_CHANNEL_SIZE: u32 = 10;
 impl<IF: CanInterfaceTrait> Controller<IF> {
     pub(crate) fn new(
         iface: IF,
-        config: CaniotConfig,
+        caniot_config: CaniotConfig,
+        copro_handle: CoproHandle,
         storage: Arc<Storage>,
         shutdown: Shutdown,
     ) -> Result<Self, ControllerError> {
-        let (sender, receiver) =
-            mpsc::channel(config.inernal_api_mpsc_size.unwrap_or(API_CHANNEL_SIZE) as usize);
+        let (sender, receiver) = mpsc::channel(
+            caniot_config
+                .inernal_api_mpsc_size
+                .unwrap_or(API_CHANNEL_SIZE) as usize,
+        );
 
         Ok(Self {
-            caniot: CaniotDevicesController::new(iface, config, storage)?,
+            caniot: CaniotDevicesController::new(iface, caniot_config, storage)?,
             handle: handle::ControllerHandle::new(sender),
+            copro: CoproController::new(copro_handle)?,
             receiver,
             shutdown,
             stats: ControllerCoreStats::default(),
@@ -74,7 +60,7 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
     }
 
     pub async fn run(mut self) -> Result<(), ()> {
-        let _ = self.caniot.request_telemetry_broadcast().await;
+        let _ = self.caniot.start().await;
 
         loop {
             let sys_now = Instant::now();
@@ -90,6 +76,9 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
                 },
                 Some(frame) = self.caniot.iface.recv_poll() => {
                     self.caniot.handle_can_frame(frame).await;
+                },
+                Some(copro_message) = self.copro.poll_message() => {
+                    self.copro.handle_message(copro_message).await;
                 },
                 Some(frame) = tunnel_poll_rx => {
                     // If frame is received from tunnel, send it to the bus

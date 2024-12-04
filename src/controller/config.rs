@@ -1,7 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-use super::AlarmConfig;
-
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct CaniotDevicesConfig {
     pub demo_did: Option<u8>,

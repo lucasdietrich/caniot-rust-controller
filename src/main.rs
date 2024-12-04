@@ -8,6 +8,7 @@ mod bus;
 mod caniot;
 mod config;
 mod controller;
+mod coprocessor;
 mod database;
 mod grpcserver;
 mod init;

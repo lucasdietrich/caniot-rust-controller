@@ -18,16 +18,17 @@ use crate::controller::caniot_controller::auto_attach::device_init_controller;
 use crate::controller::caniot_controller::caniot_message::ControllerCaniotMessage;
 use crate::controller::caniot_controller::pending_action::PendingAction;
 use crate::controller::caniot_controller::pending_query::{PendingQuery, PendingQueryTenant};
-use crate::controller::handle::DeviceFilter;
 use crate::controller::{
-    ActionVerdict, CaniotConfig, CaniotControllerStats, CaniotDevicesConfig, Device, DeviceAction,
-    DeviceActionResult, DeviceError, DeviceInfos, ProcessContext, Verdict,
+    ActionVerdict, CaniotConfig, CaniotDevicesConfig, Device, DeviceAction, DeviceActionResult,
+    DeviceError, DeviceInfos, ProcessContext, Verdict,
 };
 use crate::database::{SettingsStore, Storage};
 use crate::utils::expirable::{ttl, ExpirableTrait};
 
 #[cfg(feature = "can-tunnel")]
 use super::can_tunnel::CanTunnelContextServer;
+use super::device_filter::DeviceFilter;
+use super::stats::CaniotControllerStats;
 
 use log::{info, warn};
 
@@ -82,6 +83,10 @@ pub enum ControllerError {
     #[cfg(feature = "can-tunnel")]
     #[error("Can tunnel error: {0}")]
     CanTunnelError(#[from] super::can_tunnel::CanTunnelError),
+
+    #[cfg(feature = "ble-copro")]
+    #[error("BLE copro error: {0}")]
+    BleCoproError(#[from] crate::controller::copro_controller::CoproError),
 }
 
 enum ActionResultOrPending {
@@ -128,6 +133,10 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
             #[cfg(feature = "can-tunnel")]
             tunnel_server: CanTunnelContextServer::default(),
         })
+    }
+
+    pub async fn start(&mut self) -> Result<(), ControllerError> {
+        self.request_telemetry_broadcast().await
     }
 
     pub async fn iface_send_caniot_frame(
@@ -543,7 +552,7 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
         Ok(())
     }
 
-    pub async fn request_telemetry_broadcast(&mut self) -> Result<(), ControllerError> {
+    async fn request_telemetry_broadcast(&mut self) -> Result<(), ControllerError> {
         let frame = RequestData::Telemetry {
             endpoint: caniot::Endpoint::BoardControl,
         }

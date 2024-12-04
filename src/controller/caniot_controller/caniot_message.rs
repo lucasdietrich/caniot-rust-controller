@@ -1,11 +1,12 @@
 use tokio::sync::oneshot;
 
 use crate::caniot::{self as ct, DeviceId};
-use crate::controller::{handle::DeviceFilter, DeviceInfos};
+use crate::controller::DeviceInfos;
 use crate::controller::{ActionTrait, DeviceAction};
 use crate::grpcserver::EmuRequest;
 
 use super::caniot_devices_controller::ControllerError;
+use super::device_filter::DeviceFilter;
 
 pub enum ControllerCaniotMessage {
     GetDevices {

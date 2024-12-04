@@ -2,8 +2,12 @@ use std::sync::Arc;
 
 use tokio::{runtime::Runtime, sync::broadcast::Sender};
 
-use super::controller::controller::Controller;
-use crate::{bus::CanInterfaceTrait, config::AppConfig, database::Storage, shutdown::Shutdown};
+use crate::{
+    bus::CanInterfaceTrait, config::AppConfig, coprocessor::Coprocessor, database::Storage,
+    shutdown::Shutdown,
+};
+
+use super::controller::Controller;
 
 pub fn init<IF: CanInterfaceTrait>(
     rt: &Arc<Runtime>,
@@ -15,9 +19,14 @@ pub fn init<IF: CanInterfaceTrait>(
         .block_on(IF::new(&config.can))
         .expect("Failed to create CAN interface");
 
+    let (coprocessor, copro_handle) = Coprocessor::new(config.copro.clone());
+
+    rt.spawn(coprocessor.run());
+
     Controller::new(
         can_iface,
-        config.caniot_controller.clone(),
+        config.caniot.clone(),
+        copro_handle,
         storage.clone(),
         Shutdown::new(notify_shutdown.subscribe()),
     )

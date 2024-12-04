@@ -2,28 +2,15 @@ use serde::Serialize;
 
 use crate::{
     bus::CanStats,
+    controller::caniot_controller::stats::CaniotControllerStats,
     utils::{PrometheusExporterTrait, PrometheusNoLabel},
 };
 
-use super::controller::ControllerCoreStats;
-
 #[derive(Serialize, Debug, Clone, Copy, Default)]
-pub struct CaniotControllerStats {
-    // can interface
-    pub iface_rx: usize,
-    pub iface_tx: usize,
-    pub iface_err: usize,
-    pub iface_malformed: usize,
-    // dropped ?
-
-    // caniot broadcast
-    pub broadcast_tx: usize,
-
-    // Pending queries
-    pub pq_pushed: usize,
-    pub pq_timeout: usize,
-    pub pq_answered: usize,
-    pub pq_duplicate_dropped: usize,
+pub struct ControllerCoreStats {
+    // Internals
+    pub api_rx: usize,  // Internal API calls
+    pub loop_runs: u64, // Number of times the controller loop has been executed
 }
 
 #[derive(Serialize, Debug, Clone, Copy, Default)]

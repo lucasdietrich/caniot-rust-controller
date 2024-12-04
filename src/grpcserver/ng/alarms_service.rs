@@ -3,8 +3,7 @@ use tonic::{Request, Response, Result, Status};
 
 use crate::{
     controller::{
-        alarms, outdoor, Action, AlarmControllerReport, AlarmEnable, LightAction, LightsActions,
-        SirenAction,
+        alarms, Action, AlarmControllerReport, AlarmEnable, LightAction, LightsActions, SirenAction,
     },
     grpcserver::{naive_time_to_string, string_to_naive_time, utc_to_prost_timestamp},
     shared::SharedHandle,

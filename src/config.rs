@@ -5,6 +5,7 @@ use toml;
 
 use crate::bus::CanConfig;
 use crate::controller::CaniotConfig;
+use crate::coprocessor::CoproConfig;
 use crate::database::DatabaseConfig;
 use crate::webserver::WebserverConfig;
 
@@ -13,7 +14,8 @@ use crate::grpcserver::GrpcConfig;
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct AppConfig {
     pub can: CanConfig,
-    pub caniot_controller: CaniotConfig,
+    pub caniot: CaniotConfig,
+    pub copro: CoproConfig,
     pub web: WebserverConfig,
     pub database: DatabaseConfig,
     pub grpc: GrpcConfig,

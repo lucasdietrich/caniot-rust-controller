@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
 
-use super::alert::{DeviceAlert, DeviceAlertType};
+use crate::controller::alert::{DeviceAlert, DeviceAlertType};
 
 pub enum AlertSeverity {
     #[allow(dead_code)]

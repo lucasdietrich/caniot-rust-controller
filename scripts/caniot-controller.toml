@@ -13,12 +13,16 @@ listen = "[::]:50051"
 [database]
 connection_string = "postgres://caniot:caniot@localhost/caniot"
 
-[caniot_controller]
+[caniot]
 pending_queries_default_timeout = 1000 # ms
 action_default_timeout = 1000          # ms
 inernal_api_mpsc_size = 20             # ms
 
-[caniot_controller.devices]
+[caniot.devices]
 heaters_did = 1
 garage_did = 16
 outdoor_alarm_did = 24
+
+[copro]
+listen_ip = "192.0.3.1"
+listen_port = 4000

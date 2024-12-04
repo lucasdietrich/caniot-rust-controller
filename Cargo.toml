@@ -79,7 +79,7 @@ dyn-clone = "1.0.17"
 # BLE can
 [dependencies.ble-copro-stream-server]
 git = "https://github.com/lucasdietrich/zephyr-linux-ble-copro.git"
-rev = "0f06f4d391ce227cd500456494f36a4a3f143c4e"
+rev = "5df442ccb5e44af04ce375429785687f1e894911"
 optional = true
 
 [build-dependencies]
@@ -87,8 +87,8 @@ tonic-build = { version = "0.11.0", features = ["prost"] }
 
 [profile.release]
 opt-level = "z"
-lto = false
-codegen-units = 256
+lto = true
+codegen-units = 1
 debug = false
 strip = false           # "debuginfo"
 debug-assertions = true
