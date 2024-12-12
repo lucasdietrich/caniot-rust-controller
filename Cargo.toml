@@ -4,6 +4,7 @@ version = "0.2.2"
 edition = "2021"
 description = "CANIOT Rust Controller"
 homepage = "https://github.com/lucasdietrich/caniot-rust-controller.git"
+rust-version = "1.75"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
