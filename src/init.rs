@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
 use log::info;
-use tokio::sync::{broadcast, RwLock};
+use tokio::sync::broadcast;
 use tokio::{self};
 
-use crate::database::{DatabaseType, Storage};
+use crate::database::Storage;
 use crate::internal::firmware::FirmwareInfos;
 use crate::internal::software::SoftwareInfos;
 use crate::shared::Shared;

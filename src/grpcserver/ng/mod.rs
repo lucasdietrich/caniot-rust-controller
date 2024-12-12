@@ -2,6 +2,8 @@ pub mod alarms_service;
 #[cfg(feature = "grpc-can-iface-server")]
 pub mod can_iface_service;
 pub mod controller_service;
+#[cfg(feature = "ble-copro")]
+pub mod copro_service;
 pub mod devices_service;
 pub mod emu_service;
 pub mod garage_service;
@@ -13,6 +15,8 @@ pub use alarms_service::*;
 #[cfg(feature = "grpc-can-iface-server")]
 pub use can_iface_service::*;
 pub use controller_service::*;
+#[cfg(feature = "ble-copro")]
+pub use copro_service::*;
 pub use devices_service::*;
 pub use emu_service::*;
 pub use garage_service::*;
@@ -56,6 +60,11 @@ mod model {
     #[cfg(any(feature = "grpc-can-iface-server", feature = "grpc-can-iface-client"))]
     pub mod can_iface {
         tonic::include_proto!("ng.can_iface");
+    }
+
+    #[cfg(feature = "ble-copro")]
+    pub mod copro {
+        tonic::include_proto!("ng.copro");
     }
 }
 

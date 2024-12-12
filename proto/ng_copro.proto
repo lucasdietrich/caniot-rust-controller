@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package ng.copro;
+
+import "common.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+service CoproService {
+  rpc GetList(google.protobuf.Empty) returns (CoproDevicesList) {}
+}
+
+message CoproDevice {
+  string mac = 1;
+  string type = 2;
+  string name = 3;
+
+  google.protobuf.Timestamp lastSeen = 8;
+  optional uint32 lastSeenFromNow = 9; // seconds
+  bool isSeen = 10;
+
+  CoproDeviceStats stats = 40;
+
+  optional int32 rssi = 30;
+
+  optional float temperature = 20;
+  optional float humidity = 21;
+  optional int32 battery_level = 22;
+  optional float battery_voltage = 23;
+}
+
+message CoproDeviceStats { uint64 rx = 1; }
+
+message CoproDevicesList { repeated CoproDevice devices = 1; }

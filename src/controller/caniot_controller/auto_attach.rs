@@ -3,7 +3,7 @@
 use crate::{
     caniot::DeviceId,
     controller::{
-        AlarmConfig, AlarmController, CaniotDevicesConfig, ConfigTrait, DemoController, Device,
+        AlarmConfig, AlarmController, CaniotDevicesConfig, ConfigTrait, DemoController,
         DeviceControllerTrait, DeviceControllerWrapperTrait, GarageController, HeatersController,
     },
     database::SettingsStore,

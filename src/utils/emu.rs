@@ -2,7 +2,7 @@
 use std::time::Duration;
 
 #[cfg(feature = "emu-delay")]
-const EMU_DELAY_MS: u64 = 200;
+const EMU_DELAY_MS: u64 = 100;
 
 pub async fn emulated_delay_async() {
     #[cfg(feature = "emu-delay")]

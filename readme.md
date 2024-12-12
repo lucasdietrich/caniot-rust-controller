@@ -29,6 +29,9 @@ Requirements:
 - Yocto Poky SDK for Raspberry Pi 2 (_Hypirl_ personnal distribution)
 - `sudo dnf install protobuf-compiler protobuf-devel`
 - `sudo dnf install grpcurl` (optional: for testing purpose)
+- Install nodejs, npm with nvm:
+    - `curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash`
+    - Install node with `nvm install node` then reload the terminal
 
 Configure `~/.cargo/config` with
 

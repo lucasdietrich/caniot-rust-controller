@@ -3,7 +3,7 @@ use std::ops::BitAnd;
 use tonic::{Request, Response, Result, Status};
 
 use crate::caniot::{self};
-use crate::controller::caniot_controller::caniot_devices_controller::ControllerError;
+use crate::controller::caniot_controller::caniot_devices_controller::CaniotControllerError;
 use crate::shared::SharedHandle;
 
 use super::model::controller::{
@@ -54,7 +54,7 @@ impl ControllerService for NgController {
         let reply = self
             .shared
             .controller_handle
-            .device_request(query, req.timeout)
+            .caniot_device_request(query, req.timeout)
             .await;
 
         // Handle request error
@@ -64,7 +64,7 @@ impl ControllerService for NgController {
                 response: None,
                 response_time: 0,
                 status: match err {
-                    ControllerError::Timeout => m::Status::Timeout as i32,
+                    CaniotControllerError::Timeout => m::Status::Timeout as i32,
                     _ => m::Status::Nok as i32,
                 },
                 timestamp: None,

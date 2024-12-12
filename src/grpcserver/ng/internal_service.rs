@@ -137,7 +137,7 @@ impl InternalService for NgInternal {
         success &= self
             .shared
             .controller_handle
-            .reset_devices_settings()
+            .reset_caniot_devices_settings()
             .await
             .is_ok();
         if success {

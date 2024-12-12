@@ -18,6 +18,9 @@ import ControllerStatsCard from "../components/ControllerStatsCard";
 import AlarmDiagWidget from "../components/AlarmDiagWidget";
 import { OutdoorAlarmState } from "@caniot-controller/caniot-api-grpc-web/api/ng_alarms_pb";
 import alarmsStore from "../store/AlarmsStore";
+import { CoproDevicesList } from "@caniot-controller/caniot-api-grpc-web/api/ng_copro_pb";
+import coproStore from "../store/CoproStore";
+import BleDeviceMetricsWidget from "../components/BleDeviceMetricsWidget";
 
 const { Countdown } = Statistic;
 
@@ -47,6 +50,9 @@ function HomeView({ refreshInterval = 5000, isMobile = false, uiDebugMode = fals
   const [outdoorAlarmsDevice, setOutdoorAlarmsDevice] = useState<Device | undefined>(undefined);
   const [outdoorAlarmsLoading, setOutdoorAlarmsLoading] = useState(true);
 
+  const [bleDevicesList, setBleDevicesList] = useState<CoproDevicesList | undefined>(undefined);
+  const [bleDevicesLoading, setBleDevicesLoading] = useState(true);
+
   const [time, setTime] = useState(Date.now());
 
   const navigate = useNavigate();
@@ -59,6 +65,7 @@ function HomeView({ refreshInterval = 5000, isMobile = false, uiDebugMode = fals
     setHeatersLoading(true);
     setOutdoorAlarmsLoading(true);
     setGarageLoading(true);
+    setBleDevicesLoading(true);
 
     devicesStore.getDevicesWithActiveAlert((devices: DevicesList) => {
       setDevicesWithAlert(devices);
@@ -89,6 +96,11 @@ function HomeView({ refreshInterval = 5000, isMobile = false, uiDebugMode = fals
         setOutdoorAlarmState(resp);
         setOutdoorAlarmsLoading(false);
       });
+    });
+
+    coproStore.getList((resp: CoproDevicesList) => {
+      setBleDevicesList(resp);
+      setBleDevicesLoading(false);
     });
 
     const intervalRefresh = setInterval(() => setTime(Date.now()), refreshInterval);
@@ -185,6 +197,19 @@ function HomeView({ refreshInterval = 5000, isMobile = false, uiDebugMode = fals
       <Col xs={12} md={8} xl={6} style={{ marginBottom: 8 }}>
         {heatersMetricsWidget}
       </Col>
+
+      {/* each BLE device gets its own card */}
+      {bleDevicesList &&
+        bleDevicesList.getDevicesList().map((device) => (
+          <Col xs={12} md={8} xl={6} style={{ marginBottom: 8 }} key={device.getMac()}>
+            <BleDeviceMetricsWidget
+              title={device.getName()}
+              device={device}
+              loading={bleDevicesLoading}
+            />
+          </Col>
+        ))}
+
       <Col xs={24} md={8} xl={6} style={{ marginBottom: 8 }}>
         {outdoorAlarmsMetricsWidget}
       </Col>

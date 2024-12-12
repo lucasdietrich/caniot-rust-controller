@@ -119,7 +119,7 @@ impl NgAlarms {
         let result = self
             .shared
             .controller_handle
-            .device_action_inner(None, action, None)
+            .caniot_device_action_inner(None, action, None)
             .await
             .map_err(|e| {
                 Status::internal(format!("Error in get_outdoor_alarm_state: {} ({:?})", e, e))
@@ -181,7 +181,7 @@ impl AlarmsService for NgAlarms {
             let result = self
                 .shared
                 .controller_handle
-                .device_action_inner(None, action, None)
+                .caniot_device_action_inner(None, action, None)
                 .await
                 .map_err(|e| {
                     Status::internal(format!(
@@ -205,7 +205,7 @@ impl AlarmsService for NgAlarms {
         let result = self
             .shared
             .controller_handle
-            .device_action_inner(None, action, None)
+            .caniot_device_action_inner(None, action, None)
             .await
             .map_err(|e| Status::internal(format!("Error in get_config: {} ({:?})", e, e)))?;
 
@@ -220,7 +220,7 @@ impl AlarmsService for NgAlarms {
         let result = self
             .shared
             .controller_handle
-            .device_action_inner(None, action, None)
+            .caniot_device_action_inner(None, action, None)
             .await
             .map_err(|e| Status::internal(format!("Error in set_config: {} ({:?})", e, e)))?;
 

@@ -1,6 +1,6 @@
 [package]
 name = "caniot-controller"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2021"
 description = "CANIOT Rust Controller"
 homepage = "https://github.com/lucasdietrich/caniot-rust-controller.git"
@@ -79,8 +79,10 @@ dyn-clone = "1.0.17"
 # BLE can
 [dependencies.ble-copro-stream-server]
 git = "https://github.com/lucasdietrich/zephyr-linux-ble-copro.git"
-rev = "5df442ccb5e44af04ce375429785687f1e894911"
+rev = "abc4ea18db50b30c05ff697bf583ca2fb4ccaa13"
+# path = "/home/lucas/zephyrproject/zephyr-hypirl-ble-copro/ble-copro-stream-server-rs"
 optional = true
+features = ["chrono"]
 
 [build-dependencies]
 tonic-build = { version = "0.11.0", features = ["prost"] }

@@ -2,7 +2,7 @@ import LoadableCard from "./LoadableCard";
 import { Device } from "@caniot-controller/caniot-api-grpc-web/api/ng_devices_pb";
 import { useNavigate } from "react-router-dom";
 import { Col, Divider, Row } from "antd";
-import TemperatureGaugeStatistic, { TemperatureGaugeText } from "./TemperatureGauges";
+import TemperatureGaugeStatistic, { TemperatureGaugeText } from "./Gauges";
 import LastSeenBadge from "./LastSeenBadge";
 import { TbCpu } from "react-icons/tb";
 

@@ -30,7 +30,12 @@ pub struct NgDevices {
 impl NgDevices {
     async fn get_device_by_did(&self, did: ct::DeviceId) -> Result<Response<m::Device>, Status> {
         emulated_delay_async().await;
-        if let Some(ref infos) = self.shared.controller_handle.get_device_infos(did).await {
+        if let Some(ref infos) = self
+            .shared
+            .controller_handle
+            .get_caniot_device_infos(did)
+            .await
+        {
             Ok(Response::new(infos.into()))
         } else {
             Err(Status::not_found("Device not found"))
@@ -134,7 +139,7 @@ impl CaniotDevicesService for NgDevices {
         let devices: Vec<m::Device> = self
             .shared
             .controller_handle
-            .get_devices_infos_list()
+            .get_caniot_devices_infos_list()
             .await
             .iter()
             .map(|dev| dev.into())
@@ -150,7 +155,7 @@ impl CaniotDevicesService for NgDevices {
         let devices: Vec<m::Device> = self
             .shared
             .controller_handle
-            .get_devices_with_active_alert()
+            .get_caniot_devices_with_active_alert()
             .await
             .iter()
             .map(|dev| dev.into())
@@ -161,7 +166,12 @@ impl CaniotDevicesService for NgDevices {
 
     async fn get(&self, request: Request<ng::DeviceId>) -> Result<Response<m::Device>, Status> {
         let did: ct::DeviceId = request.into_inner().into();
-        if let Some(ref infos) = self.shared.controller_handle.get_device_infos(did).await {
+        if let Some(ref infos) = self
+            .shared
+            .controller_handle
+            .get_caniot_device_infos(did)
+            .await
+        {
             Ok(Response::new(infos.into()))
         } else {
             Err(Status::not_found("Device not found"))
@@ -226,7 +236,7 @@ impl CaniotDevicesService for NgDevices {
         let result = self
             .shared
             .controller_handle
-            .device_action(Some(did), action, None)
+            .caniot_device_action(Some(did), action, None)
             .await
             .map_err(|e| Status::internal(format!("Error in perform_action: {} ({:?})", e, e)))?;
 
@@ -249,7 +259,7 @@ impl CaniotDevicesService for NgDevices {
         let infos = &self
             .shared
             .controller_handle
-            .get_device_infos(did)
+            .get_caniot_device_infos(did)
             .await
             .ok_or(Status::not_found("Device not found"))?;
 

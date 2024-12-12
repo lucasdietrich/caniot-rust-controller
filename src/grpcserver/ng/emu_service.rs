@@ -32,7 +32,7 @@ impl EmulationService for NgEmulation {
             self.shared
                 .controller_handle
                 .clone()
-                .send_emulation_request(emu_req)
+                .send_caniot_emulation_request(emu_req)
                 .await;
         }
 

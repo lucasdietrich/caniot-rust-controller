@@ -56,6 +56,7 @@ impl Device {
         self.last_seen = Some(at);
     }
 
+    // TODO Remove, calculate in UI
     pub fn last_seen_from_now(&self) -> Option<u32> {
         self.last_seen
             .as_ref()

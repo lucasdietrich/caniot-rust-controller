@@ -7,11 +7,11 @@ use crate::{
     controller::{DeviceAction, DeviceActionResult},
 };
 
-use super::caniot_devices_controller::ControllerError;
+use super::caniot_devices_controller::CaniotControllerError;
 
 pub struct PendingAction {
     pub action: DeviceAction,
-    send_to: oneshot::Sender<Result<DeviceActionResult, ControllerError>>,
+    send_to: oneshot::Sender<Result<DeviceActionResult, CaniotControllerError>>,
 
     // Response from the device which completed the action
     pub response: Option<caniot::Response>,
@@ -20,7 +20,7 @@ pub struct PendingAction {
 impl PendingAction {
     pub fn new(
         action: DeviceAction,
-        send_to: oneshot::Sender<Result<DeviceActionResult, ControllerError>>,
+        send_to: oneshot::Sender<Result<DeviceActionResult, CaniotControllerError>>,
     ) -> Self {
         Self {
             action,
@@ -33,7 +33,7 @@ impl PendingAction {
         self.response = Some(response);
     }
 
-    pub fn send(self, result: Result<DeviceActionResult, ControllerError>) {
+    pub fn send(self, result: Result<DeviceActionResult, CaniotControllerError>) {
         let _ = self.send_to.send(result);
     }
 }

@@ -378,9 +378,10 @@ dependencies = [
 [[package]]
 name = "ble-copro-stream-server"
 version = "0.1.0"
-source = "git+https://github.com/lucasdietrich/zephyr-linux-ble-copro.git?rev=5df442ccb5e44af04ce375429785687f1e894911#5df442ccb5e44af04ce375429785687f1e894911"
+source = "git+https://github.com/lucasdietrich/zephyr-linux-ble-copro.git?rev=abc4ea18db50b30c05ff697bf583ca2fb4ccaa13#abc4ea18db50b30c05ff697bf583ca2fb4ccaa13"
 dependencies = [
  "byteorder",
+ "chrono",
  "thiserror 2.0.3",
  "tokio",
 ]
@@ -435,7 +436,7 @@ checksum = "a2bd12c1caf447e69cd4528f47f94d203fd2582878ecb9e9465484c4148a8223"
 
 [[package]]
 name = "caniot-controller"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "as-any",
  "async-std",

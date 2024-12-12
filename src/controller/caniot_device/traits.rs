@@ -59,7 +59,7 @@ impl ConfigTrait for () {
         Ok(())
     }
 
-    async fn load<'a>(stg: &SettingsStore<'a>) -> Result<Self, SettingsError> {
+    async fn load<'a>(_stg: &SettingsStore<'a>) -> Result<Self, SettingsError> {
         Ok(())
     }
 

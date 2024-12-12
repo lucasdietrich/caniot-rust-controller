@@ -1,9 +1,6 @@
 use crate::{caniot::Xps, controller::ActionTrait};
 
-use super::{
-    config::AlarmPartialConfig,
-    outdoor::{self, AlarmControllerReport},
-};
+use super::{config::AlarmPartialConfig, outdoor::AlarmControllerReport};
 
 #[derive(Debug, Clone, Default, Eq, PartialEq)]
 pub enum AlarmEnable {

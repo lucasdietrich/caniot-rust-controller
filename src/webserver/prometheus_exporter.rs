@@ -4,7 +4,10 @@ pub async fn export(shared: &SharedHandle) -> String {
     let mut buf = String::new();
 
     let stats = shared.controller_handle.get_controller_stats().await;
-    let devices_infos = shared.controller_handle.get_devices_infos_list().await;
+    let devices_infos = shared
+        .controller_handle
+        .get_caniot_devices_infos_list()
+        .await;
 
     buf.push_str(&stats.export(&[]));
 

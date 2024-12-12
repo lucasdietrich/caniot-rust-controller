@@ -17,7 +17,6 @@ use crate::{
         DeviceControllerTrait, DeviceError, DeviceJobImpl, PartialConfigTrait, ProcessContext,
         UpdateJobVerdict, Verdict,
     },
-    database::settings_types::SettingTrait,
     utils::{
         format_metric,
         monitorable::{MonitorableResultTrait, ValueMonitor},

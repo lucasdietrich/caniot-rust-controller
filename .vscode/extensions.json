@@ -1,7 +1,6 @@
 {
     "recommendations": [
         "zhangyue.rust-mod-generator",
-        "humao.rest-client",
         "vadimcn.vscode-lldb",
         "samuelcolvin.jinjahtml",
         "dbaeumer.vscode-eslint",

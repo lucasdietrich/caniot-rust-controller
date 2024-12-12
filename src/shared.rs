@@ -1,13 +1,12 @@
-use sqlx::Database;
 use std::sync::Arc;
 use tokio::runtime::Runtime;
-use tokio::sync::{broadcast, RwLock};
+use tokio::sync::broadcast;
 
 use serde::Serialize;
 
 use crate::config::AppConfig;
 use crate::controller::ControllerHandle;
-use crate::database::{DatabaseType, Storage};
+use crate::database::Storage;
 use crate::internal::firmware::FirmwareInfos;
 use crate::internal::software::SoftwareInfos;
 

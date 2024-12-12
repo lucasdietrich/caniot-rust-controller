@@ -3,13 +3,13 @@ use std::time::{Duration, Instant};
 use crate::{caniot, utils::expirable::ExpirableTrait};
 use tokio::sync::oneshot;
 
-use super::{caniot_devices_controller::ControllerError, pending_action::PendingAction};
+use super::{caniot_devices_controller::CaniotControllerError, pending_action::PendingAction};
 
 /// Initiator of a pending query, it represents the entity that is waiting for the query to be answered
 #[derive(Debug)]
 pub enum PendingQueryTenant {
     // channel to reply to when query is answered
-    Query(oneshot::Sender<Result<caniot::Response, ControllerError>>),
+    Query(oneshot::Sender<Result<caniot::Response, CaniotControllerError>>),
 
     // channel to reply when responses are received
     // Broadcast(mpsc::Sender<Result<caniot::Response, ControllerError>>),
@@ -19,7 +19,7 @@ pub enum PendingQueryTenant {
 }
 
 impl PendingQueryTenant {
-    pub fn end_with_error(self, error: ControllerError) -> Option<PendingQueryTenant> {
+    pub fn end_with_error(self, error: CaniotControllerError) -> Option<PendingQueryTenant> {
         match self {
             Self::Query(sender) => {
                 let _ = sender.send(Err(error)); // Do not panic if receiver is dropped
@@ -74,14 +74,14 @@ impl PendingQuery {
         self.tenant.end_with_frame(frame)
     }
 
-    pub fn end_with_error(self, error: ControllerError) -> Option<PendingQueryTenant> {
+    pub fn end_with_error(self, error: CaniotControllerError) -> Option<PendingQueryTenant> {
         self.tenant.end_with_error(error)
     }
 
     #[allow(dead_code)]
     pub fn end(
         self,
-        response: Result<caniot::Response, ControllerError>,
+        response: Result<caniot::Response, CaniotControllerError>,
     ) -> Option<PendingQueryTenant> {
         match response {
             Ok(frame) => self.end_with_frame(frame),

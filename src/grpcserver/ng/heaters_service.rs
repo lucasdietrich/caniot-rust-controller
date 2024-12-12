@@ -33,7 +33,7 @@ impl HeatersService for NgHeaters {
         let action = heaters::HeaterAction::GetStatus;
 
         let result = api
-            .device_action_inner(None, action, None)
+            .caniot_device_action_inner(None, action, None)
             .await
             .map_err(|e| Status::internal(format!("Error in get_state: {} ({:?})", e, e)))?;
 
@@ -52,7 +52,7 @@ impl HeatersService for NgHeaters {
         let action = heaters::HeaterAction::SetStatus(heaters);
 
         let result = api
-            .device_action_inner(None, action, None)
+            .caniot_device_action_inner(None, action, None)
             .await
             .map_err(|e| Status::internal(format!("Error in set_state: {} ({:?})", e, e)))?;
 

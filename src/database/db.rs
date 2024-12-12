@@ -1,13 +1,8 @@
 use std::time::Duration;
 
 use log::{info, warn};
-use rocket::Data;
 use serde::{Deserialize, Serialize};
-use sqlx::{
-    migrate::{Migrate, MigrateDatabase},
-    pool::PoolOptions,
-    Database, Pool, Sqlite,
-};
+use sqlx::{migrate::MigrateDatabase, pool::PoolOptions, Pool, Sqlite};
 use tokio::time::sleep;
 
 use super::{DatabaseType, SettingsStore};

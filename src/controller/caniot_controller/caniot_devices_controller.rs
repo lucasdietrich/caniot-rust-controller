@@ -14,8 +14,8 @@ use tokio::sync::oneshot::Sender;
 use crate::bus::{CanInterfaceError, CanInterfaceTrait, CAN_IOCTL_SEND_EMU_EVENT};
 use crate::caniot::{self, are_requests_concurrent, Frame, RequestData};
 use crate::caniot::{DeviceId, Request};
+use crate::controller::caniot_controller::api_message::CaniotApiMessage;
 use crate::controller::caniot_controller::auto_attach::device_init_controller;
-use crate::controller::caniot_controller::caniot_message::ControllerCaniotMessage;
 use crate::controller::caniot_controller::pending_action::PendingAction;
 use crate::controller::caniot_controller::pending_query::{PendingQuery, PendingQueryTenant};
 use crate::controller::{
@@ -38,7 +38,7 @@ const PENDING_QUERY_DEFAULT_TIMEOUT_MS: u32 = 1000; // 1s
 const ACTION_DEFAULT_TIMEOUT_MS: u32 = PENDING_QUERY_DEFAULT_TIMEOUT_MS; // 1s
 
 #[derive(Error, Debug)]
-pub enum ControllerError {
+pub enum CaniotControllerError {
     #[error("Timeout Error")]
     Timeout,
 
@@ -79,14 +79,6 @@ pub enum ControllerError {
 
     #[error("Device error: {0}")]
     DeviceError(#[from] DeviceError),
-
-    #[cfg(feature = "can-tunnel")]
-    #[error("Can tunnel error: {0}")]
-    CanTunnelError(#[from] super::can_tunnel::CanTunnelError),
-
-    #[cfg(feature = "ble-copro")]
-    #[error("BLE copro error: {0}")]
-    BleCoproError(#[from] crate::controller::copro_controller::CoproError),
 }
 
 enum ActionResultOrPending {
@@ -121,7 +113,7 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
         iface: IF,
         config: CaniotConfig,
         storage: Arc<Storage>,
-    ) -> Result<Self, ControllerError> {
+    ) -> Result<Self, CaniotControllerError> {
         Ok(Self {
             iface,
             storage,
@@ -135,7 +127,7 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
         })
     }
 
-    pub async fn start(&mut self) -> Result<(), ControllerError> {
+    pub async fn start(&mut self) -> Result<(), CaniotControllerError> {
         self.request_telemetry_broadcast().await
     }
 
@@ -143,7 +135,7 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
         iface: &mut impl CanInterfaceTrait,
         stats: &mut CaniotControllerStats,
         request: &caniot::Request,
-    ) -> Result<(), ControllerError> {
+    ) -> Result<(), CaniotControllerError> {
         info!("TX {}", request);
 
         let can_frame = request.into();
@@ -177,7 +169,7 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
     pub async fn send_caniot_frame(
         &mut self,
         request: &caniot::Request,
-    ) -> Result<(), ControllerError> {
+    ) -> Result<(), CaniotControllerError> {
         if request.is_broadcast() {
             self.stats.broadcast_tx += 1;
         } else {
@@ -216,7 +208,7 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
 
         if request.device_id == DeviceId::BROADCAST {
             error!("BROADCAST query not supported");
-            let _ = tenant.end_with_error(ControllerError::UnsupportedQuery);
+            let _ = tenant.end_with_error(CaniotControllerError::UnsupportedQuery);
         } else if self
             .pending_queries
             .iter()
@@ -227,7 +219,7 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
             // be sent as pending queries multiple times.
             error!("Duplicate pending query: response undifferentiable, request not sent");
             self.stats.pq_duplicate_dropped += 1;
-            tenant.end_with_error(ControllerError::UndifferentiablePendingQuery);
+            tenant.end_with_error(CaniotControllerError::UndifferentiablePendingQuery);
         } else if let Err(err) = self.send_caniot_frame(&request).await {
             error!("Failed to send CANIOT frame: {:?}", err);
             let _ = tenant.end_with_error(err);
@@ -259,7 +251,7 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
     pub async fn handle_caniot_frame(
         &mut self,
         frame: caniot::Response,
-    ) -> Result<(), ControllerError> {
+    ) -> Result<(), CaniotControllerError> {
         self.stats.iface_rx += 1;
         // TODO if multiple actions are pending, only the first one will be answered
         // For the other, the channel sender will be dropped and the response will be lost
@@ -345,12 +337,15 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
                 "Pending query {} timed out after {} ms",
                 pq.query, pq.timeout_ms
             );
-            pq.end_with_error(ControllerError::Timeout);
+            pq.end_with_error(CaniotControllerError::Timeout);
         }
     }
 
     // Process all devices expired jobs
-    async fn process_devices_jobs(&mut self, now: &DateTime<Utc>) -> Result<(), ControllerError> {
+    async fn process_devices_jobs(
+        &mut self,
+        now: &DateTime<Utc>,
+    ) -> Result<(), CaniotControllerError> {
         let storage = self.storage.clone();
         for (did, device) in self
             .devices
@@ -401,16 +396,16 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
             .collect()
     }
 
-    fn get_device_by_did(&mut self, did: &DeviceId) -> Result<&mut Device, ControllerError> {
+    fn get_device_by_did(&mut self, did: &DeviceId) -> Result<&mut Device, CaniotControllerError> {
         self.devices
             .get_mut(did)
-            .ok_or(ControllerError::NoSuchDevice)
+            .ok_or(CaniotControllerError::NoSuchDevice)
     }
 
     fn get_device_by_action(
         &mut self,
         action: &DeviceAction,
-    ) -> Result<&mut Device, ControllerError> {
+    ) -> Result<&mut Device, CaniotControllerError> {
         match action {
             DeviceAction::Inner(inner_action) => {
                 let mut devices_candidates: Vec<&mut Device> = self
@@ -420,12 +415,12 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
                     .collect();
 
                 match devices_candidates.len() {
-                    0 => Err(ControllerError::NoSuchDeviceForAction),
+                    0 => Err(CaniotControllerError::NoSuchDeviceForAction),
                     1 => Ok(devices_candidates.swap_remove(0)),
-                    _ => Err(ControllerError::MultipleDevicesForAction),
+                    _ => Err(CaniotControllerError::MultipleDevicesForAction),
                 }
             }
-            _ => Err(ControllerError::GenericDeviceActionNeedsDID),
+            _ => Err(CaniotControllerError::GenericDeviceActionNeedsDID),
         }
     }
 
@@ -433,7 +428,7 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
         &mut self,
         did: Option<DeviceId>,
         action: DeviceAction,
-        respond_to: Sender<Result<DeviceActionResult, ControllerError>>,
+        respond_to: Sender<Result<DeviceActionResult, CaniotControllerError>>,
         timeout_ms: Option<u32>,
     ) {
         let result = self.handle_api_device_action_inner(did, action).await;
@@ -467,7 +462,7 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
         &mut self,
         did: Option<DeviceId>,
         action: DeviceAction,
-    ) -> Result<ActionResultOrPending, ControllerError> {
+    ) -> Result<ActionResultOrPending, CaniotControllerError> {
         let storage = self.storage.clone();
         // Find device by DID or by action
         let device = match did {
@@ -487,7 +482,7 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
             },
             Err(err) => Err(err),
         }
-        .map_err(ControllerError::from);
+        .map_err(CaniotControllerError::from);
 
         Self::device_update_from_context(device, device_ctx).await?;
 
@@ -496,13 +491,13 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
 
     pub async fn handle_api_message(
         &mut self,
-        message: ControllerCaniotMessage,
-    ) -> Result<(), ControllerError> {
+        message: CaniotApiMessage,
+    ) -> Result<(), CaniotControllerError> {
         match message {
-            ControllerCaniotMessage::GetDevices { filter, respond_to } => {
+            CaniotApiMessage::GetDevices { filter, respond_to } => {
                 let _ = respond_to.send(self.get_devices_infos(filter));
             }
-            ControllerCaniotMessage::Query {
+            CaniotApiMessage::Query {
                 query,
                 timeout_ms,
                 respond_to,
@@ -514,7 +509,7 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
                     let _ = self.send_caniot_frame(&query).await;
                 }
             }
-            ControllerCaniotMessage::DeviceAction {
+            CaniotApiMessage::DeviceAction {
                 did,
                 action,
                 respond_to,
@@ -523,7 +518,7 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
                 self.handle_api_device_action(did, action, respond_to, timeout_ms)
                     .await;
             }
-            ControllerCaniotMessage::DevicesResetSettings { respond_to } => {
+            CaniotApiMessage::DevicesResetSettings { respond_to } => {
                 for device in self.devices.values_mut() {
                     let mut ctx = ProcessContext::new(None, self.storage.clone());
                     device.reset_settings(&mut ctx);
@@ -532,7 +527,7 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
                 let _ = respond_to.send(Ok(()));
             }
             #[cfg(feature = "can-tunnel")]
-            ControllerCaniotMessage::EstablishCanTunnel {
+            CaniotApiMessage::EstablishCanTunnel {
                 rx_queue,
                 tx_queue,
                 respond_to,
@@ -544,7 +539,7 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
                 let _ = respond_to.send(result);
             }
             #[cfg(feature = "emu")]
-            ControllerCaniotMessage::EmulationRequest { event } => self
+            CaniotApiMessage::EmulationRequest { event } => self
                 .iface
                 .ioctl(CAN_IOCTL_SEND_EMU_EVENT, Into::<i32>::into(event) as u32)?,
         }
@@ -552,7 +547,7 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
         Ok(())
     }
 
-    async fn request_telemetry_broadcast(&mut self) -> Result<(), ControllerError> {
+    async fn request_telemetry_broadcast(&mut self) -> Result<(), CaniotControllerError> {
         let frame = RequestData::Telemetry {
             endpoint: caniot::Endpoint::BoardControl,
         }

@@ -5,7 +5,7 @@ import ListLabelledItem from "./ListLabelledItem";
 import { Timestamp } from "google-protobuf/google/protobuf/timestamp_pb";
 import LoadableCard from "./LoadableCard";
 import LastSeenBadge from "./LastSeenBadge";
-import { SECONDS_TO_CONSIDER_ONLINE } from "../constants";
+import { SECONDS_TO_CONSIDER_ONLINE_CANIOT } from "../constants";
 
 interface IDeviceStatusCardProps {
   title?: string;
@@ -19,7 +19,7 @@ function DeviceDetailsCard({ title, device, progress }: IDeviceStatusCardProps) 
   }
 
   const isLoaded = device !== undefined;
-  const isOnline = device.getLastseenfromnow() < SECONDS_TO_CONSIDER_ONLINE;
+  const isOnline = device.getLastseenfromnow() < SECONDS_TO_CONSIDER_ONLINE_CANIOT;
 
   return (
     <LoadableCard title={title} status={isOnline} loading={device === undefined}>
@@ -120,7 +120,7 @@ function DeviceStatusCardContent({ device: resp }: IDeviceCardContentProps) {
         <LastSeenBadge
           lastSeenDate={resp.getLastseen()?.toDate()}
           lastSeenValue={resp.getLastseenfromnow()}
-          secondsToConsiderOnline={SECONDS_TO_CONSIDER_ONLINE}
+          secondsToConsiderOnline={SECONDS_TO_CONSIDER_ONLINE_CANIOT}
         />
       </ListLabelledItem>
       <ListLabelledItem label="Contrôleur">

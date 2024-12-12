@@ -12,7 +12,7 @@ import { useState } from "react";
 import DeviceDetailsCard from "./DeviceDetailsCard";
 import { LoadingOutlined } from "@ant-design/icons";
 import LastSeenBadge from "./LastSeenBadge";
-import { SECONDS_TO_CONSIDER_ONLINE } from "../constants";
+import { SECONDS_TO_CONSIDER_ONLINE_CANIOT } from "../constants";
 
 interface IDevicesTableProps {
   devicesList: DevicesList | undefined;
@@ -119,7 +119,7 @@ function DevicesTable({ devicesList }: IDevicesTableProps) {
         <LastSeenBadge
           lastSeenDate={last_seen?.timestamp.toDate()}
           lastSeenValue={last_seen.secondsFromNow}
-          secondsToConsiderOnline={SECONDS_TO_CONSIDER_ONLINE}
+          secondsToConsiderOnline={SECONDS_TO_CONSIDER_ONLINE_CANIOT}
         />
       ),
       sorter: (a, b) => {

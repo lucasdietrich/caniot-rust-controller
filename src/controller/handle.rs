@@ -1,4 +1,4 @@
-use std::{cmp::Ordering, ops::Deref};
+use std::ops::Deref;
 
 use as_any::Downcast;
 use chrono::{DateTime, Utc};
@@ -10,26 +10,28 @@ use crate::caniot::{self as ct, DeviceId};
 use crate::grpcserver::EmuRequest;
 use serde::Serialize;
 
+#[cfg(feature = "ble-copro")]
+use super::copro_controller::devices::BleDevice;
+
 use super::{
-    alert,
     caniot_controller::{
-        caniot_devices_controller::ControllerError, caniot_message::ControllerCaniotMessage,
+        api_message::CaniotApiMessage, caniot_devices_controller::CaniotControllerError,
         device_filter::DeviceFilter,
     },
-    ActionTrait, ControllerStats, Device, DeviceAction, DeviceActionResult, DeviceInfos,
-    DeviceStats,
+    copro_controller::api_message::CoproApiMessage,
+    ActionTrait, ControllerStats, DeviceAction, DeviceActionResult, DeviceInfos, DeviceStats,
 };
 
 pub enum ControllerMessage {
     GetStats {
         respond_to: oneshot::Sender<ControllerStats>,
     },
-    CaniotMessage(ControllerCaniotMessage),
-    CoprocessorMessage,
+    CaniotMessage(CaniotApiMessage),
+    CoprocessorMessage(CoproApiMessage),
 }
 
-impl From<ControllerCaniotMessage> for ControllerMessage {
-    fn from(msg: ControllerCaniotMessage) -> Self {
+impl From<CaniotApiMessage> for ControllerMessage {
+    fn from(msg: CaniotApiMessage) -> Self {
         Self::CaniotMessage(msg)
     }
 }
@@ -51,13 +53,13 @@ impl ControllerHandle {
         Self { sender }
     }
 
-    pub async fn device_request(
+    pub async fn caniot_device_request(
         &self,
         frame: ct::Request,
         timeout_ms: Option<u32>,
-    ) -> Result<ct::Response, ControllerError> {
-        self.query(|sender| {
-            ControllerCaniotMessage::Query {
+    ) -> Result<ct::Response, CaniotControllerError> {
+        self.caniot_query(|sender| {
+            CaniotApiMessage::Query {
                 query: frame,
                 timeout_ms,
                 respond_to: Some(sender),
@@ -71,7 +73,7 @@ impl ControllerHandle {
     ///
     /// Create a one-shot channel, embed it in a message using the provided closure, and send the
     /// message to the controller actor. Wait for the response and return it.
-    async fn query<R>(
+    async fn caniot_query<R>(
         &self,
         build_message_closure: impl FnOnce(oneshot::Sender<R>) -> ControllerMessage,
     ) -> R {
@@ -85,13 +87,13 @@ impl ControllerHandle {
     }
 
     pub async fn get_controller_stats(&self) -> ControllerStats {
-        self.query(|respond_to| ControllerMessage::GetStats { respond_to })
+        self.caniot_query(|respond_to| ControllerMessage::GetStats { respond_to })
             .await
     }
 
-    pub async fn get_devices_infos_list(&self) -> Vec<DeviceInfos> {
-        self.query(|respond_to| {
-            ControllerCaniotMessage::GetDevices {
+    pub async fn get_caniot_devices_infos_list(&self) -> Vec<DeviceInfos> {
+        self.caniot_query(|respond_to| {
+            CaniotApiMessage::GetDevices {
                 filter: DeviceFilter::All,
                 respond_to,
             }
@@ -100,9 +102,9 @@ impl ControllerHandle {
         .await
     }
 
-    pub async fn get_devices_with_active_alert(&self) -> Vec<DeviceInfos> {
-        self.query(|respond_to| {
-            ControllerCaniotMessage::GetDevices {
+    pub async fn get_caniot_devices_with_active_alert(&self) -> Vec<DeviceInfos> {
+        self.caniot_query(|respond_to| {
+            CaniotApiMessage::GetDevices {
                 filter: DeviceFilter::WithActiveAlert,
                 respond_to,
             }
@@ -111,9 +113,9 @@ impl ControllerHandle {
         .await
     }
 
-    pub async fn get_device_infos(&self, did: DeviceId) -> Option<DeviceInfos> {
-        self.query(|respond_to| {
-            ControllerCaniotMessage::GetDevices {
+    pub async fn get_caniot_device_infos(&self, did: DeviceId) -> Option<DeviceInfos> {
+        self.caniot_query(|respond_to| {
+            CaniotApiMessage::GetDevices {
                 filter: DeviceFilter::ById(did),
                 respond_to,
             }
@@ -127,14 +129,14 @@ impl ControllerHandle {
     // Send a generic device action to the controller of the device.
     // Some actions are unique to a specific device, so the device id is optional.
     // For generic actions, the device id is required.
-    pub async fn device_action(
+    pub async fn caniot_device_action(
         &self,
         did: Option<DeviceId>,
         action: DeviceAction,
         timeout_ms: Option<u32>,
-    ) -> Result<DeviceActionResult, ControllerError> {
-        self.query(|respond_to| {
-            ControllerCaniotMessage::DeviceAction {
+    ) -> Result<DeviceActionResult, CaniotControllerError> {
+        self.caniot_query(|respond_to| {
+            CaniotApiMessage::DeviceAction {
                 did,
                 action,
                 respond_to,
@@ -146,12 +148,12 @@ impl ControllerHandle {
     }
 
     // Send a specific (typed) device action to the controller of the device.
-    pub async fn device_action_inner<A: ActionTrait>(
+    pub async fn caniot_device_action_inner<A: ActionTrait>(
         &self,
         did: Option<DeviceId>,
         action: A,
         timeout_ms: Option<u32>,
-    ) -> Result<A::Result, ControllerError>
+    ) -> Result<A::Result, CaniotControllerError>
     // # IMPORTANT NOTE: TODO
     // The A::Result type which is returned by the action must implement the Clone trait.
     // check if A::Result can be constrained to implement Clone
@@ -162,7 +164,7 @@ impl ControllerHandle {
         A::Result: Clone,
     {
         let action = DeviceAction::new_inner(action);
-        let result = self.device_action(did, action, timeout_ms).await?;
+        let result = self.caniot_device_action(did, action, timeout_ms).await?;
         match result {
             DeviceActionResult::Inner(inner) => match inner.deref().downcast_ref::<A::Result>() {
                 Some(result) => Ok(result.clone()),
@@ -174,16 +176,28 @@ impl ControllerHandle {
     }
 
     #[cfg(feature = "emu")]
-    pub async fn send_emulation_request(&self, event: EmuRequest) {
+    pub async fn send_caniot_emulation_request(&self, event: EmuRequest) {
         debug!("Sending emulation request to controller: {:?}", event);
         self.sender
-            .send(ControllerCaniotMessage::EmulationRequest { event }.into())
+            .send(CaniotApiMessage::EmulationRequest { event }.into())
             .await
             .expect("Failed to send emulation request to controller");
     }
 
-    pub async fn reset_devices_settings(&self) -> Result<(), ControllerError> {
-        self.query(|respond_to| ControllerCaniotMessage::DevicesResetSettings { respond_to }.into())
+    pub async fn reset_caniot_devices_settings(&self) -> Result<(), CaniotControllerError> {
+        self.caniot_query(|respond_to| CaniotApiMessage::DevicesResetSettings { respond_to }.into())
             .await
+    }
+
+    #[cfg(feature = "ble-copro")]
+    pub async fn get_copro_devices_list(&self) -> Vec<BleDevice> {
+        let (respond_to, receiver) = oneshot::channel();
+        let message =
+            ControllerMessage::CoprocessorMessage(CoproApiMessage::GetDevices { respond_to });
+        self.sender
+            .send(message)
+            .await
+            .expect("Failed to send IPC message to controller");
+        receiver.await.expect("IPC Sender dropped before response")
     }
 }

@@ -62,7 +62,7 @@ impl GarageService for NgGarage {
         let action = garage::GarageAction::GetStatus;
 
         let result = api
-            .device_action_inner(None, action, None)
+            .caniot_device_action_inner(None, action, None)
             .await
             .map_err(|e| Status::internal(format!("Error in get_state: {} ({:?})", e, e)))?;
 
@@ -83,7 +83,7 @@ impl GarageService for NgGarage {
         };
         let action = garage::GarageAction::SetStatus(command);
         let result = api
-            .device_action_inner(None, action, None)
+            .caniot_device_action_inner(None, action, None)
             .await
             .map_err(|e| {
                 Status::internal(format!(

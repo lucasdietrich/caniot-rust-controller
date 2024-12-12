@@ -142,10 +142,6 @@ impl DeviceJobsContext {
         self.definitions.len()
     }
 
-    pub fn iter_jobs_definitions(&mut self) -> impl Iterator<Item = &mut DeviceJobWrapper> {
-        self.definitions.iter_mut()
-    }
-
     pub fn retain_jobs_definitions(&mut self, f: impl FnMut(&mut DeviceJobWrapper) -> bool) {
         self.definitions.retain_mut(f);
     }

@@ -4,11 +4,7 @@ use crate::{
         alert::DeviceAlert, ActionResultTrait, ActionTrait, ActionVerdict, DeviceControllerInfos,
         DeviceControllerTrait, DeviceError, Verdict,
     },
-    utils::{
-        format_metric,
-        monitorable::{MonitorableResultTrait, ValueMonitor},
-        SensorLabel,
-    },
+    utils::{format_metric, monitorable::ValueMonitor, SensorLabel},
 };
 
 use self::traits::ClassCommandTrait;

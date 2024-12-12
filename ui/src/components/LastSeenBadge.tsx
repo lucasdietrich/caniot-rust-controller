@@ -1,7 +1,7 @@
 import { Badge } from "antd";
 import React, { useEffect, useState } from "react";
 import LastSeenSecondsCounter from "./LastSeenSecondsCounter";
-import { SECONDS_TO_CONSIDER_ONLINE } from "../constants";
+import { SECONDS_TO_CONSIDER_ONLINE_CANIOT } from "../constants";
 
 interface ILastSeenBadge {
   lastSeenDate?: Date;
@@ -14,7 +14,7 @@ interface ILastSeenBadge {
 function LastSeenBadge({
   lastSeenDate,
   lastSeenValue = undefined,
-  secondsToConsiderOnline = SECONDS_TO_CONSIDER_ONLINE,
+  secondsToConsiderOnline = SECONDS_TO_CONSIDER_ONLINE_CANIOT,
   minimalDisplay = false,
   counterPrefix = undefined,
 }: ILastSeenBadge) {

@@ -1,7 +1,7 @@
-use caniot_controller::controller::caniot_controller::caniot_devices_controller::ControllerError;
+use caniot_controller::controller::caniot_controller::caniot_devices_controller::CaniotControllerError;
 
 fn main() {
-    let err = ControllerError::UndifferentiablePendingQuery;
+    let err = CaniotControllerError::UndifferentiablePendingQuery;
     let msg = format!("{}", err);
 
     println!("{}", msg);

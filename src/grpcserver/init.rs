@@ -7,6 +7,7 @@ use thiserror::Error;
 use super::ng::get_ng_internal_server;
 use crate::{
     grpcserver::{
+        get_ng_copro_server,
         legacy::get_legacy_caniot_controller,
         ng::{
             get_ng_alarms_server, get_ng_controller_server, get_ng_devices_server,
@@ -55,6 +56,8 @@ pub async fn grpc_server(shared: SharedHandle) -> Result<(), GrpcServerInitError
     let legacy_controller = get_legacy_caniot_controller(shared.clone());
     #[cfg(feature = "grpc-can-iface-server")]
     let ng_can_iface = get_ng_can_iface_server(shared.clone());
+    #[cfg(feature = "ble-copro")]
+    let ng_copro = get_ng_copro_server(shared.clone());
 
     let mut shutdown = Shutdown::new(shared.notify_shutdown.subscribe());
 
@@ -73,6 +76,9 @@ pub async fn grpc_server(shared: SharedHandle) -> Result<(), GrpcServerInitError
 
     #[cfg(feature = "grpc-can-iface-server")]
     let builder = { builder.add_service(tonic_web::enable(ng_can_iface)) };
+
+    #[cfg(feature = "ble-copro")]
+    let builder = { builder.add_service(tonic_web::enable(ng_copro)) };
 
     // Start
     builder

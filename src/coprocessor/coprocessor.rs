@@ -1,6 +1,9 @@
 use std::time::Duration;
 
-use ble_copro_stream_server::{stream_message::ChannelMessage, xiaomi::XiaomiRecord, StreamServer};
+use ble_copro_stream_server::{
+    stream_message::ChannelMessage, xiaomi::XiaomiRecord, StreamServer, Timestamp,
+};
+use chrono::Utc;
 use rocket::error;
 use tokio::{sync::mpsc, time::sleep};
 
@@ -64,7 +67,13 @@ impl Coprocessor {
                 }
                 State::Connected(ref server) => {
                     if let Some(mut client) = server.accept().await.ok() {
-                        while let Ok(ChannelMessage::Xiaomi(xiaomi_record)) = client.next().await {
+                        while let Ok(ChannelMessage::Xiaomi(mut xiaomi_record)) =
+                            client.next().await
+                        {
+                            // override xiaomi_record timestamp with current time
+                            // TODO this needs to be changed to use Copro timestamp when available
+                            xiaomi_record.timestamp = Timestamp::Utc(Utc::now());
+
                             let _ = self
                                 .sender
                                 .send(CoproMessage::XiaomiRecord(xiaomi_record))

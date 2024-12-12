@@ -1,12 +1,15 @@
 use std::{sync::Arc, time::Instant};
 
 use chrono::Utc;
+use thiserror::Error;
 use tokio::{select, sync::mpsc, time::sleep};
 
 use crate::{
     bus::CanInterfaceTrait,
     controller::{
-        caniot_controller::caniot_devices_controller::{CaniotDevicesController, ControllerError},
+        caniot_controller::caniot_devices_controller::{
+            CaniotControllerError, CaniotDevicesController,
+        },
         copro_controller::CoproController,
         handle::{self, ControllerMessage},
         CaniotConfig,
@@ -18,9 +21,24 @@ use crate::{
 
 use super::{ControllerCoreStats, ControllerStats};
 
+#[derive(Error, Debug)]
+pub enum ControllerError {
+    #[error("Caniot controller error: {0}")]
+    CaniotError(#[from] CaniotControllerError),
+
+    #[cfg(feature = "can-tunnel")]
+    #[error("Can tunnel error: {0}")]
+    CanTunnelError(#[from] super::can_tunnel::CanTunnelError),
+
+    #[cfg(feature = "ble-copro")]
+    #[error("BLE copro error: {0}")]
+    BleCoproError(#[from] crate::controller::copro_controller::CoproError),
+}
+
 pub struct Controller<IF: CanInterfaceTrait> {
     caniot: CaniotDevicesController<IF>,
     copro: CoproController,
+
     shutdown: Shutdown,
 
     receiver: mpsc::Receiver<handle::ControllerMessage>,
@@ -116,7 +134,9 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
             ControllerMessage::CaniotMessage(caniot_message) => {
                 self.caniot.handle_api_message(caniot_message).await?;
             }
-            ControllerMessage::CoprocessorMessage => {}
+            ControllerMessage::CoprocessorMessage(copro_message) => {
+                self.copro.handle_api_message(copro_message).await?;
+            }
         }
 
         Ok(())
