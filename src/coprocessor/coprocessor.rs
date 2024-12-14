@@ -60,13 +60,15 @@ impl Coprocessor {
                             self.state = State::Connected(server);
                         }
                         Err(e) => {
-                            eprintln!("Failed to start server: {}", e);
+                            error!("Failed to start server: {}", e);
                             sleep(COPRO_SERVER_INIT_RETRY_INTERVAL).await;
                         }
                     }
                 }
                 State::Connected(ref server) => {
                     if let Some(mut client) = server.accept().await.ok() {
+                        info!("Coprocessor stream accepted");
+
                         while let Ok(ChannelMessage::Xiaomi(mut xiaomi_record)) =
                             client.next().await
                         {
@@ -79,6 +81,8 @@ impl Coprocessor {
                                 .send(CoproMessage::XiaomiRecord(xiaomi_record))
                                 .await;
                         }
+
+                        info!("Connection closed");
                     } else {
                         error!("Failed to accept connection");
                         sleep(COPRO_SERVER_ACCEPT_RETRY_INTERVAL).await;

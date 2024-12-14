@@ -95,7 +95,7 @@ impl BleDevice {
             last_seen: measurement_timestamp,
             last_measurement: measurement.into(),
             name: default_name,
-            stats: Stats { rx_packets: 0 },
+            stats: Stats { rx_packets: 1 }, // At least one packet received
         }
     }
 

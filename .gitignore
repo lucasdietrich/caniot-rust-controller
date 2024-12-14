@@ -1,3 +1,4 @@
 /target
 caniot-controller_*.bb
 /caniot.db*
+/.cargo

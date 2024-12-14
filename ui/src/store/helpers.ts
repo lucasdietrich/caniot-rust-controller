@@ -17,7 +17,7 @@ export function HandleError(e: RpcError) {
   console.log("API error: ", e);
   console.log("API: ", e.code, e.message, e.metadata);
 
-  if (!SHOW_RPC_UNKNOWN_ERROR && e.code == StatusCode.UNKNOWN) {
+  if (!SHOW_RPC_UNKNOWN_ERROR && e.code != StatusCode.INTERNAL) {
     return;
   }
 

@@ -30,26 +30,34 @@ Requirements:
 - `sudo dnf install protobuf-compiler protobuf-devel`
 - `sudo dnf install grpcurl` (optional: for testing purpose)
 - Install nodejs, npm with nvm:
-    - `curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash`
-    - Install node with `nvm install node` then reload the terminal
+  - `curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash`
+  - Install node with `nvm install node` then reload the terminal
 
-Configure `~/.cargo/config` with
+Configure `.cargo/config.toml` with
 
 ```
 [target.armv7-unknown-linux-gnueabihf]
-linker = "/opt/poky/hypirl-rpi-1.0/sysroots/x86_64-pokysdk-linux/usr/bin/arm-poky-linux-gnueabi/arm-poky-linux-gnueabi-gcc"
+linker = "/opt/hypirl/1.0/sysroots/x86_64-pokysdk-linux/usr/bin/arm-poky-linux-gnueabi/arm-poky-linux-gnueabi-gcc"
 rustflags = [
-"-C", "link-arg=-mthumb",
-"-C", "link-arg=-mfpu=neon-vfpv4",
-"-C", "link-arg=-mfloat-abi=hard",
-"-C", "link-arg=-mcpu=cortex-a7",
-"-C", "link-arg=-fstack-protector-strong",
-"-C", "link-arg=-O2",
-"-C", "link-arg=-D_FORTIFY_SOURCE=2",
-"-C", "link-arg=-Wformat",
-"-C", "link-arg=-Wformat-security",
-"-C", "link-arg=--sysroot=/opt/poky/hypirl-rpi-1.0/sysroots/cortexa7t2hf-neon-vfpv4-poky-linux-gnueabi",
+    "-C", "link-arg=-mthumb",
+    "-C", "link-arg=-mfpu=neon-vfpv4",
+    "-C", "link-arg=-mfloat-abi=hard",
+    "-C", "link-arg=-mcpu=cortex-a7",
+    "-C", "link-arg=-fstack-protector-strong",
+    "-C", "link-arg=-O2",
+    "-C", "link-arg=-D_FORTIFY_SOURCE=2",
+    "-C", "link-arg=-Wformat",
+    "-C", "link-arg=-Wformat-security",
+    "-C", "link-arg=--sysroot=/opt/hypirl/1.0/sysroots/cortexa7t2hf-neon-vfpv4-poky-linux-gnueabi",
 ]
+
+[env]
+LIBSQLITE3_SYS_USE_PKG_CONFIG = ""
+
+PKG_CONFIG_SYSROOT_DIR_armv7-unknown-linux-gnueabihf = "/opt/hypirl/1.0/sysroots/cortexa7t2hf-neon-vfpv4-poky-linux-gnueabi/usr/lib/"
+PKG_CONFIG_PATH_armv7-unknown-linux-gnueabihf = "/opt/hypirl/1.0/sysroots/cortexa7t2hf-neon-vfpv4-poky-linux-gnueabi/usr/lib/pkgconfig/"
+PKG_CONFIG_armv7-unknown-linux-gnueabihf = "/opt/hypirl/1.0/sysroots/x86_64-pokysdk-linux/usr/bin/pkg-config"
+
 ```
 
 Build with

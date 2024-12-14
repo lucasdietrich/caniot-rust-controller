@@ -35,12 +35,12 @@ futures = "0.3"
 futures-util = "0.3"
 
 # CAN interface
+
 socketcan = { git = "https://github.com/socketcan-rs/socketcan-rs.git", rev = "c3004f0d7c600cd3964cd8655fd26f670d7c87e7", features = [
     "tokio",
     "async-std",
 ] }
 embedded-can = "0.4"
-
 # grpc
 tonic = "0.11.0"
 tonic-web = "0.11"
@@ -48,7 +48,7 @@ prost = "0.12"
 prost-types = "0.12"
 
 # database
-sqlx = { version = "0.7.4", features = ["runtime-tokio", "macros"] }
+sqlx = { version = "0.8.2", features = ["runtime-tokio", "macros"] }
 
 # Webserver
 rocket = { version = "0.5.1", features = ["json"] }
