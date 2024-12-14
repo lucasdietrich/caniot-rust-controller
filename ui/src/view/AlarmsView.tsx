@@ -185,6 +185,7 @@ function AlarmsView({
             setLoading(true);
             setTime(Date.now());
           }}
+          isMobile={isMobile}
         >
           <DeviceAlert alert={outdoorAlarmDevice?.getActiveAlert()} />
 
@@ -483,7 +484,11 @@ function AlarmsView({
             />
           </Col>
           <Col xl={10} xs={24}>
-            <DeviceDetailsCard title="Alarme extérieure" device={outdoorAlarmDevice} />
+            <DeviceDetailsCard
+              title="Alarme extérieure"
+              device={outdoorAlarmDevice}
+              isMobile={isMobile}
+            />
           </Col>
         </>
       )}

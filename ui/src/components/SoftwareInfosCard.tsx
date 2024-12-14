@@ -6,11 +6,17 @@ import LoadableCard from "./LoadableCard";
 
 interface SoftwareInfosCardProps {
   infos?: SoftwareInfos;
+  isMobile?: boolean;
 }
 
-function SoftwareInfosCard({ infos }: SoftwareInfosCardProps) {
+function SoftwareInfosCard({ infos, isMobile = false }: SoftwareInfosCardProps) {
   return (
-    <LoadableCard loading={infos === undefined} title="Logiciel" bordered={false}>
+    <LoadableCard
+      loading={infos === undefined}
+      title="Logiciel"
+      bordered={false}
+      isMobile={isMobile}
+    >
       <List>
         <ListLabelledItem label="Status">
           <Typography.Text type="success">Running</Typography.Text>

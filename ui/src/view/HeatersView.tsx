@@ -105,6 +105,7 @@ function HeatersView({
                   setLoading(true);
                   setTime(Date.now());
                 }}
+                isMobile={isMobile}
               >
                 <Row>
                   <Col span={24}>
@@ -158,7 +159,7 @@ function HeatersView({
         </Col>
         {uiDebugMode && (
           <Col xl={10} xs={24}>
-            <DeviceDetailsCard title="Chauffage" device={heatersDevice} />
+            <DeviceDetailsCard title="Chauffage" device={heatersDevice} isMobile={isMobile} />
           </Col>
         )}
       </Row>

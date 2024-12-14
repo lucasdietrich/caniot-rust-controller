@@ -6,11 +6,12 @@ import LoadableCard from "./LoadableCard";
 
 interface FirmwareInfosCardProps {
   infos?: FirmwareInfos;
+  isMobile?: boolean;
 }
 
-function FirmwareInfosCard({ infos }: FirmwareInfosCardProps) {
+function FirmwareInfosCard({ infos, isMobile = false }: FirmwareInfosCardProps) {
   return (
-    <LoadableCard loading={!infos} title="Firmware" bordered={false}>
+    <LoadableCard loading={!infos} title="Firmware" bordered={false} isMobile={isMobile}>
       <List>
         <ListLabelledItem label="Distribution">
           {infos?.getBuild()?.getDistro() ?? "N/A"}

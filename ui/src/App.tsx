@@ -168,6 +168,7 @@ const App: React.FC = () => {
                     setDarkMode={onDarkModeChange}
                     setDebugMode={onDebugModeChange}
                     setSettingsReset={onSettingsReset}
+                    isMobile={isMobile}
                   />
                 }
               />

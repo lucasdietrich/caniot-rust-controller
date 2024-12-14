@@ -31,6 +31,7 @@ function AlarmDiagWidget({
       loading={loading}
       status={alarm !== undefined}
       bordered={false}
+      isMobile={isMobile}
     >
       <Row gutter={2}>
         <Col span={6}>

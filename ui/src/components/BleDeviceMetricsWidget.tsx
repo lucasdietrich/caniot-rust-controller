@@ -19,6 +19,8 @@ interface BleDeviceMetricsWidgetProps {
   device?: CoproDevice;
   loading: boolean;
   navigateTo?: string;
+  small?: boolean;
+  debug?: boolean;
 }
 
 function BleDeviceMetricsWidget({
@@ -26,8 +28,22 @@ function BleDeviceMetricsWidget({
   device,
   loading,
   navigateTo,
+  small = false,
+  debug = false,
 }: BleDeviceMetricsWidgetProps) {
   const navigate = useNavigate();
+
+  let width_edges;
+  let width_center;
+
+  // (span_edge, span_center) = (12, 6) is a tuple
+  if (debug) {
+    width_edges = 6;
+    width_center = 12;
+  } else {
+    width_edges = 8;
+    width_center = 8;
+  }
 
   return (
     <LoadableCard
@@ -39,6 +55,7 @@ function BleDeviceMetricsWidget({
       cardStyle={{
         opacity: (device?.getLastseenfromnow() ?? 0) > SECONDS_TO_CONSIDER_ONLINE_BLE ? 0.5 : 1,
       }}
+      isMobile={small}
     >
       <Row gutter={2}>
         <Col span={12}>
@@ -57,27 +74,23 @@ function BleDeviceMetricsWidget({
 
         <Divider style={{ margin: 5 }} />
 
-        <Col span={6}>
-          <>
-            <BatteryGaugeText
-              battery_level={device?.getBatteryLevel()}
-              battery_voltage={device?.getBatteryVoltage()}
-              showIcon={true}
-            />
-          </>
+        <Col span={width_edges}>
+          <BatteryGaugeText
+            battery_level={device?.getBatteryLevel()}
+            battery_voltage={device?.getBatteryVoltage()}
+            showIcon={true}
+          />
         </Col>
 
-        <Col span={12}>
-          <>
-            <BleStatisticsText
-              rssi={device?.getRssi()}
-              rx={device?.getStats()?.getRx()}
-              showIcon={true}
-            />
-          </>
+        <Col span={width_center}>
+          <BleStatisticsText
+            rssi={device?.getRssi()}
+            rx={debug ? device?.getStats()?.getRx() : undefined}
+            showIcon={true}
+          />
         </Col>
 
-        <Col span={6}>
+        <Col span={width_edges}>
           <LastSeenBadge
             lastSeenDate={device?.getLastseen()?.toDate()}
             lastSeenValue={device?.getLastseenfromnow() || 0}

@@ -77,6 +77,7 @@ function GarageDoorsView({
             setLoading(true);
             setTime(Date.now());
           }}
+          isMobile={isMobile}
         >
           <GarageDoorsStatus
             garageState={garageState}
@@ -86,13 +87,17 @@ function GarageDoorsView({
           ></GarageDoorsStatus>
 
           <Row style={{ paddingTop: 20 }}>
-            <DeviceDetailsCard device={undefined} title="Garage Doors" />
+            <DeviceDetailsCard device={undefined} title="Garage Doors" isMobile={isMobile} />
           </Row>
         </LoadableCard>
       </Col>
       {uiDebugMode && (
         <Col xl={10} xs={24}>
-          <DeviceDetailsCard title="Contrôleur portes de garage" device={garageDevice} />
+          <DeviceDetailsCard
+            title="Contrôleur portes de garage"
+            device={garageDevice}
+            isMobile={isMobile}
+          />
         </Col>
       )}
     </Row>

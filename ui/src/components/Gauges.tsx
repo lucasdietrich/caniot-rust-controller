@@ -215,15 +215,17 @@ function BleStatisticsText({
   rx: number | undefined;
   showIcon: boolean;
 }) {
+  const statsRx = rx ? `/ ${rx}p` : "";
+
   return rssi ? (
     <span>
       {showIcon && <LuBluetoothConnected />}
-      {rssi} dBm / {rx}p
+      {rssi} dBm {statsRx}
     </span>
   ) : (
     <span>
       {showIcon && <MdSignalCellularConnectedNoInternet4Bar />}
-      N/A dBm / {rx}p
+      N/A dBm {statsRx}
     </span>
   );
 }

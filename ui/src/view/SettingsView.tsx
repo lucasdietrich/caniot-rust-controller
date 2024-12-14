@@ -20,6 +20,8 @@ interface ISettingsProps {
   setDarkMode?: (darkMode: boolean) => void;
   setDebugMode?: (debugMode: boolean) => void;
   setSettingsReset?: () => void;
+
+  isMobile?: boolean;
 }
 
 function SettingsView({
@@ -29,6 +31,7 @@ function SettingsView({
   setDarkMode = () => {},
   setDebugMode = () => {},
   setSettingsReset = () => {},
+  isMobile = false,
 }: ISettingsProps) {
   const loading = settings === undefined;
 
@@ -36,7 +39,7 @@ function SettingsView({
     <Row gutter={24}>
       <Col xl={14} xs={24}>
         {" "}
-        <LoadableCard title="Settings" loading={loading}>
+        <LoadableCard title="Settings" loading={loading} isMobile={isMobile}>
           <List>
             <List.Item>
               <span style={{ fontWeight: "bold" }}>Général (UI)</span>

@@ -116,6 +116,7 @@ function HomeView({ refreshInterval = 5000, isMobile = false, uiDebugMode = fals
       loading={garageLoading}
       status={garageDevice !== undefined}
       bordered={false}
+      isMobile={isMobile}
     >
       <GarageDoorsStatus height="100px" garageState={garageState} />
     </LoadableCard>
@@ -127,6 +128,7 @@ function HomeView({ refreshInterval = 5000, isMobile = false, uiDebugMode = fals
       loading={garageLoading}
       device={garageDevice}
       navigateTo="/devices/garage"
+      isMobile={isMobile}
     />
   );
 
@@ -136,6 +138,7 @@ function HomeView({ refreshInterval = 5000, isMobile = false, uiDebugMode = fals
       loading={heatersLoading}
       device={heatersDevice}
       navigateTo="/devices/heaters"
+      isMobile={isMobile}
     />
   );
 
@@ -145,6 +148,7 @@ function HomeView({ refreshInterval = 5000, isMobile = false, uiDebugMode = fals
       loading={outdoorAlarmsLoading}
       device={outdoorAlarmsDevice}
       navigateTo="/devices/alarms"
+      isMobile={isMobile}
     />
   );
 
@@ -160,7 +164,12 @@ function HomeView({ refreshInterval = 5000, isMobile = false, uiDebugMode = fals
 
   const hasAlertsActive = devicesWithAlert && devicesWithAlert.getDevicesList().length > 0;
   const devicesActiveAlerts = (
-    <LoadableCard title="Alertes actives" loading={devicesWithAlertLoading} bordered={false}>
+    <LoadableCard
+      title="Alertes actives"
+      loading={devicesWithAlertLoading}
+      bordered={false}
+      isMobile={isMobile}
+    >
       {devicesWithAlert && devicesWithAlert.getDevicesList().length ? (
         devicesWithAlert
           .getDevicesList()
@@ -201,11 +210,13 @@ function HomeView({ refreshInterval = 5000, isMobile = false, uiDebugMode = fals
       {/* each BLE device gets its own card */}
       {bleDevicesList &&
         bleDevicesList.getDevicesList().map((device) => (
-          <Col xs={12} md={8} xl={6} style={{ marginBottom: 8 }} key={device.getMac()}>
+          <Col xs={24} md={12} xl={6} style={{ marginBottom: 8 }} key={device.getMac()}>
             <BleDeviceMetricsWidget
               title={device.getName()}
               device={device}
               loading={bleDevicesLoading}
+              small={isMobile}
+              debug={uiDebugMode}
             />
           </Col>
         ))}
@@ -217,13 +228,13 @@ function HomeView({ refreshInterval = 5000, isMobile = false, uiDebugMode = fals
       {uiDebugMode && (
         <>
           <Col xs={24} xl={12} style={{ marginBottom: 8 }}>
-            <SoftwareInfosCard infos={infos?.getSoftware()} />
+            <SoftwareInfosCard infos={infos?.getSoftware()} isMobile={isMobile} />
           </Col>
           <Col xs={24} xl={12} style={{ marginBottom: 8 }}>
-            <FirmwareInfosCard infos={infos?.getFirmware()} />
+            <FirmwareInfosCard infos={infos?.getFirmware()} isMobile={isMobile} />
           </Col>
           <Col xs={24} xl={12} style={{ marginBottom: 8 }}>
-            <ControllerStatsCard stats={infos?.getControllerStats()} />
+            <ControllerStatsCard stats={infos?.getControllerStats()} isMobile={isMobile} />
           </Col>
         </>
       )}

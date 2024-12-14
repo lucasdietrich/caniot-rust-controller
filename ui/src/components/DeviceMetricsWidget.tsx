@@ -11,9 +11,16 @@ interface DeviceMetricsWidgetProps {
   device?: Device;
   loading: boolean;
   navigateTo: string;
+  isMobile?: boolean;
 }
 
-function DeviceMetricsWidget({ title, device, loading, navigateTo }: DeviceMetricsWidgetProps) {
+function DeviceMetricsWidget({
+  title,
+  device,
+  loading,
+  navigateTo,
+  isMobile = false,
+}: DeviceMetricsWidgetProps) {
   const navigate = useNavigate();
 
   return (
@@ -23,6 +30,7 @@ function DeviceMetricsWidget({ title, device, loading, navigateTo }: DeviceMetri
       loading={loading}
       status={device !== undefined}
       bordered={false}
+      isMobile={isMobile}
     >
       <Row gutter={2}>
         <Col span={24}>

@@ -23,6 +23,8 @@ interface ICardLoadableProps {
   onGoto?: () => void;
 
   bordered?: boolean;
+  isMobile?: boolean;
+
   cardStyle?: React.CSSProperties;
 }
 
@@ -35,6 +37,7 @@ function LoadableCard({
   onGoto = undefined,
   cardStyle = undefined,
   bordered = true,
+  isMobile = false,
   children,
 }: PropsWithChildren<ICardLoadableProps>) {
   let titleComponent = (
@@ -97,6 +100,7 @@ function LoadableCard({
       }
       extra={extra}
       style={cardStyle}
+      size={isMobile ? "small" : "default"}
     >
       {children}
     </Card>

@@ -11,9 +11,10 @@ interface IDeviceStatusCardProps {
   title?: string;
   device: Device | undefined;
   progress?: number;
+  isMobile?: boolean;
 }
 
-function DeviceDetailsCard({ title, device, progress }: IDeviceStatusCardProps) {
+function DeviceDetailsCard({ title, device, progress, isMobile = false }: IDeviceStatusCardProps) {
   if (device === undefined) {
     return undefined;
   }
@@ -22,7 +23,12 @@ function DeviceDetailsCard({ title, device, progress }: IDeviceStatusCardProps) 
   const isOnline = device.getLastseenfromnow() < SECONDS_TO_CONSIDER_ONLINE_CANIOT;
 
   return (
-    <LoadableCard title={title} status={isOnline} loading={device === undefined}>
+    <LoadableCard
+      title={title}
+      status={isOnline}
+      loading={device === undefined}
+      isMobile={isMobile}
+    >
       <DeviceStatusCardContent device={device} />
     </LoadableCard>
   );

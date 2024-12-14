@@ -6,11 +6,17 @@ import LoadableCard from "./LoadableCard";
 
 interface ControllerStatsSardProps {
   stats?: ControllerStats;
+  isMobile?: boolean;
 }
 
-function ControllerStatsCard({ stats }: ControllerStatsSardProps) {
+function ControllerStatsCard({ stats, isMobile = false }: ControllerStatsSardProps) {
   return (
-    <LoadableCard loading={!stats} title="Statistiques du contrôleur" bordered={false}>
+    <LoadableCard
+      loading={!stats}
+      title="Statistiques du contrôleur"
+      bordered={false}
+      isMobile={isMobile}
+    >
       <List>
         <ListLabelledItem label="CAN Interface RX">{stats?.getIfaceRx() ?? "N/A"}</ListLabelledItem>
         <ListLabelledItem label="CAN Interface TX">{stats?.getIfaceTx() ?? "N/A"}</ListLabelledItem>
