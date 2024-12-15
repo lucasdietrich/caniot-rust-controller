@@ -8,6 +8,7 @@ import coproStore from "../store/CoproStore";
 import BleDeviceMetricsWidget from "../components/BleDeviceMetricsWidget";
 import LoadableCard from "../components/LoadableCard";
 import DeviceAlert from "../components/DeviceAlert";
+import { DeviceAlertType } from "@caniot-controller/caniot-api-grpc-web/api/common_pb";
 
 interface IBleDevicesViewProps {
   refreshInterval?: number;
@@ -45,7 +46,16 @@ function BleDevicesView({
     };
   }, [time]);
 
-  const hasCoproAlertActive = coproAlert?.hasActiveAlert() ?? false;
+  let hasCoproAlertActive = false;
+  if (
+    coproAlert?.hasActiveAlert() &&
+    (coproAlert?.getActiveAlert()?.getAlertType() == DeviceAlertType.OK ||
+      coproAlert?.getActiveAlert()?.getAlertType() == DeviceAlertType.NOTIFICATION)
+  ) {
+    hasCoproAlertActive = uiDebugMode;
+  }
+
+  // const hasCoproAlertActive = coproAlert?.hasActiveAlert() ?? false;
   const bleDevicesWithAlerts = bleDevicesList
     ? bleDevicesList.getDevicesList().filter((device) => device.hasActiveAlert())
     : [];

@@ -31,13 +31,43 @@ listen_ip = "192.0.3.1"
 listen_port = 4000
 
 [[copro.devices]]
-name = "Salon"
+name = "Salon"            # RDC
 mac = "a4:c1:38:68:05:63"
+ui_display_order = 1
 
 [[copro.devices]]
-name = "Chambre Parents"
+name = "Chambre"          # Etage
 mac = "a4:c1:38:8d:ba:b4"
+ui_display_order = 2
 
 [[copro.devices]]
-name = "Chambre Lucas"
+name = "Chambre Lucas"    # Combles
 mac = "a4:c1:38:ec:1c:6d"
+ui_display_order = 3
+
+[[copro.devices]]
+name = "Bureau Papa"
+mac = "a4:c1:38:3c:d3:21"
+ui_display_order = 7
+
+[[copro.devices]]
+name = "Chambre Marie"
+mac = "a4:c1:38:a7:30:c4"
+ui_display_order = 4
+
+[[copro.devices]]
+name = "Salle de bain RDC"
+mac = "a4:c1:38:28:17:e3"
+ui_display_order = 5
+
+[[copro.devices]]
+name = "Bureau Maman"
+mac = "a4:c1:38:56:5e:ce"
+ui_display_order = 8
+
+# DOING
+
+# TODO
+# [[copro.devices]]
+# name = "---"
+# mac = "a4:c1:38:d5:08:40"

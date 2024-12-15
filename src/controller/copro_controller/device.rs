@@ -1,4 +1,7 @@
-use std::fmt::{Debug, Display};
+use std::{
+    fmt::{Debug, Display},
+    u32,
+};
 
 use ble_copro_stream_server::ble::BleAddress;
 use chrono::{DateTime, Utc};
@@ -86,6 +89,8 @@ pub struct BleDevice {
     pub last_seen: DateTime<Utc>,
     pub last_measurement: BleMeasurement,
     pub stats: Stats,
+
+    ui_display_order: u32,
 }
 
 impl BleDevice {
@@ -103,6 +108,7 @@ impl BleDevice {
             last_measurement: measurement.into(),
             name,
             stats: Stats { rx_packets: 1 }, // At least one packet received
+            ui_display_order: u32::MAX,
         }
     }
 
@@ -146,40 +152,48 @@ impl BleDevice {
     }
 
     pub fn get_alert(&self) -> Option<DeviceAlert> {
-        if self.is_low_battery().unwrap_or(false) {
-            Some(DeviceAlert::new_warning(
-                format!(
-                    "{} is low on battery: {}% ({} V)",
-                    self.name,
-                    self.last_measurement.battery_level.unwrap_or(0),
-                    self.last_measurement.battery_mv.unwrap_or(0) as f32 / 1000.0
-                )
-                .as_str(),
-            ))
-        } else if self.is_battery_critical().unwrap_or(false) {
+        if self.is_battery_critical().unwrap_or(false) {
             Some(DeviceAlert::new_error(
                 format!(
-                    "{} is critically low on battery: {}% ({} V)",
+                    "L'état de la batterie du périphérique \"{}\" est critique: {}% ({} V)",
                     self.name,
                     self.last_measurement.battery_level.unwrap_or(0),
                     self.last_measurement.battery_mv.unwrap_or(0) as f32 / 1000.0
                 )
                 .as_str(),
             ))
-        } else if self.is_offline() {
-            Some(DeviceAlert::new_warning(
-                format!("{} is offline", self.name).as_str(),
-            ))
-        } else if self.is_bad_rssi() {
+        } else if self.is_low_battery().unwrap_or(false) {
             Some(DeviceAlert::new_warning(
                 format!(
-                    "{} has bad signal strength: {} dBm",
+                    "L'état de la batterie du périphérique \"{}\" est faible: {}% ({} V)",
+                    self.name,
+                    self.last_measurement.battery_level.unwrap_or(0),
+                    self.last_measurement.battery_mv.unwrap_or(0) as f32 / 1000.0
+                )
+                .as_str(),
+            ))
+        } else if self.is_bad_rssi() {
+            Some(DeviceAlert::new_notification(
+                format!(
+                    "Le signal RSSI du périphérique \"{}\" est faible: {} dBm",
                     self.name, self.last_measurement.rssi
                 )
                 .as_str(),
             ))
+        } else if self.is_offline() {
+            Some(DeviceAlert::new_notification(
+                format!("Le périphérique \"{}\" est hors ligne", self.name).as_str(),
+            ))
         } else {
             None
         }
+    }
+
+    pub fn set_ui_display_order(&mut self, order: u32) {
+        self.ui_display_order = order;
+    }
+
+    pub fn get_ui_display_order(&self) -> u32 {
+        self.ui_display_order
     }
 }

@@ -39,7 +39,7 @@ pub struct NgCopro {
 impl CoproService for NgCopro {
     async fn get_list(
         &self,
-        _req: tonic::Request<()>,
+        req: tonic::Request<()>,
     ) -> Result<tonic::Response<m::CoproDevicesList>, tonic::Status> {
         let devices: Vec<m::CoproDevice> = self
             .shared

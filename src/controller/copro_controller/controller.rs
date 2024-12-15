@@ -7,7 +7,7 @@ use chrono::Utc;
 use log::info;
 use thiserror::Error;
 
-use super::{api_message::CoproApiMessage, device::BleDevice, CoproDeviceConfig};
+use super::{api_message::CoproApiMessage, device::BleDevice};
 
 pub struct CoproController {
     handle: CoproHandle,
@@ -45,29 +45,33 @@ impl CoproController {
                 {
                     let _ = device.handle_received_frame(record_timestamp, record);
                 } else {
-                    // Set name for the device
-                    let name = self
+                    let device_config = self
                         .handle
                         .devices_config
                         .iter()
-                        .find_map(|config| {
-                            if config.mac == record.ble_addr.mac_string() {
-                                Some(config.name.clone())
-                            } else {
-                                None
-                            }
-                        })
+                        .find(|config| config.mac == record.ble_addr.mac_string());
+
+                    // Set name for the device
+                    let name = device_config
+                        .map(|config| config.name.clone())
                         .unwrap_or_else(|| {
                             BleDevice::default_name(&BleDeviceType::Xiaomi, &record.ble_addr)
                         });
 
-                    let device = BleDevice::new(
+                    let mut device = BleDevice::new(
                         record.ble_addr,
                         name,
                         BleDeviceType::Xiaomi,
                         record_timestamp,
                         record,
                     );
+
+                    // Set display order for the device
+                    let ui_display_order = device_config
+                        .map(|config| config.ui_display_order)
+                        .unwrap_or(0);
+                    device.set_ui_display_order(ui_display_order);
+
                     info!("new device: {:?}", device);
                     self.devices.push(device);
                 }
@@ -94,7 +98,9 @@ impl CoproController {
     pub async fn handle_api_message(&mut self, message: CoproApiMessage) -> Result<(), CoproError> {
         match message {
             CoproApiMessage::GetDevices { respond_to } => {
-                respond_to.send(self.devices.clone()).ok();
+                let mut devices = self.devices.clone();
+                devices.sort_by_key(|dev| dev.get_ui_display_order());
+                respond_to.send(devices).ok();
             }
             CoproApiMessage::GetAlert { respond_to } => {
                 respond_to.send(self.get_controller_alert()).ok();

@@ -2,7 +2,7 @@ import { Row, Col, Statistic } from "antd";
 import { useEffect, useState } from "react";
 import { Device, DevicesList } from "@caniot-controller/caniot-api-grpc-web/api/ng_devices_pb";
 import devicesStore from "../store/DevicesStore";
-import { DeviceId } from "@caniot-controller/caniot-api-grpc-web/api/common_pb";
+import { DeviceAlertType, DeviceId } from "@caniot-controller/caniot-api-grpc-web/api/common_pb";
 import GarageDoorsStatus from "../components/GarageDoorsStatus";
 import LoadableCard from "../components/LoadableCard";
 import { useNavigate } from "react-router-dom";
@@ -183,7 +183,15 @@ function HomeView({
     />
   );
 
-  const hasCoproAlertActive = coproAlert?.hasActiveAlert() ?? false;
+  let hasCoproAlertActive = false;
+  if (
+    coproAlert?.hasActiveAlert() &&
+    (coproAlert?.getActiveAlert()?.getAlertType() == DeviceAlertType.OK ||
+      coproAlert?.getActiveAlert()?.getAlertType() == DeviceAlertType.NOTIFICATION)
+  ) {
+    hasCoproAlertActive = uiDebugMode;
+  }
+
   const hasDevicesAlertsActive = devicesWithAlert && devicesWithAlert.getDevicesList().length > 0;
   const hasAlertsActive = hasCoproAlertActive || hasDevicesAlertsActive;
 
@@ -227,7 +235,7 @@ function HomeView({
   return (
     <Row gutter={16}>
       {hasAlertsActive && (
-        <Col xs={24} md={12} xl={12} style={{ marginBottom: 8 }}>
+        <Col xs={24} md={24} xl={12} style={{ marginBottom: 8 }}>
           {devicesActiveAlerts}
         </Col>
       )}
