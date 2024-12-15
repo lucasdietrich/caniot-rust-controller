@@ -46,20 +46,32 @@ function BleDevicesView({
     };
   }, [time]);
 
+  // Determine if the copro device has an active alert that should be displayed
   let hasCoproAlertActive = false;
-  if (
-    coproAlert?.hasActiveAlert() &&
-    (coproAlert?.getActiveAlert()?.getAlertType() == DeviceAlertType.OK ||
-      coproAlert?.getActiveAlert()?.getAlertType() == DeviceAlertType.NOTIFICATION)
-  ) {
-    hasCoproAlertActive = uiDebugMode;
+  if (coproAlert?.hasActiveAlert()) {
+    const alertType = coproAlert.getActiveAlert()?.getAlertType();
+    // Show copro alert if in debug mode or if alert is not OK/NOTIFICATION
+    hasCoproAlertActive =
+      uiDebugMode ||
+      (alertType !== DeviceAlertType.OK && alertType !== DeviceAlertType.NOTIFICATION);
   }
 
-  // const hasCoproAlertActive = coproAlert?.hasActiveAlert() ?? false;
+  // Filter BLE devices to only those with active alerts
   const bleDevicesWithAlerts = bleDevicesList
     ? bleDevicesList.getDevicesList().filter((device) => device.hasActiveAlert())
     : [];
-  const hasBleDevicesAlertsActive = bleDevicesWithAlerts.length > 0;
+
+  // Filter out OK and NOTIFICATION alerts, unless in debug mode
+  const bleDevicesWithNonOkAlerts = bleDevicesWithAlerts.filter((device) => {
+    const alertType = device.getActiveAlert()?.getAlertType();
+    return (
+      uiDebugMode ||
+      (alertType !== DeviceAlertType.OK && alertType !== DeviceAlertType.NOTIFICATION)
+    );
+  });
+
+  // Determine if there are any BLE alerts to display
+  const hasBleDevicesAlertsActive = bleDevicesWithNonOkAlerts.length > 0;
 
   const bleDevicesActiveAlerts = (
     <LoadableCard
@@ -70,16 +82,16 @@ function BleDevicesView({
     >
       {hasCoproAlertActive || hasBleDevicesAlertsActive ? (
         <>
-          {hasCoproAlertActive && (
+          {hasCoproAlertActive && coproAlert?.getActiveAlert() && (
             <DeviceAlert
               key="coproAlert"
-              alert={coproAlert?.getActiveAlert()}
+              alert={coproAlert.getActiveAlert()}
               closable={false}
               isMobile={isMobile}
             />
           )}
           {hasBleDevicesAlertsActive &&
-            bleDevicesWithAlerts.map((device) => (
+            bleDevicesWithNonOkAlerts.map((device) => (
               <DeviceAlert
                 key={device.getName()}
                 alert={device.getActiveAlert()}
