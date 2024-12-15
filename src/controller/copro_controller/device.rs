@@ -82,26 +82,26 @@ pub struct Stats {
 pub struct BleDevice {
     pub device_type: BleDeviceType,
     pub ble_addr: BleAddress,
+    pub name: String,
     pub last_seen: DateTime<Utc>,
     pub last_measurement: BleMeasurement,
-    pub name: String,
     pub stats: Stats,
 }
 
 impl BleDevice {
     pub fn new(
         mac: BleAddress,
+        name: String,
         device_type: BleDeviceType,
         measurement_timestamp: DateTime<Utc>,
         measurement: impl Into<BleMeasurement>,
     ) -> Self {
-        let default_name = BleDevice::default_name(&device_type, &mac);
         Self {
             device_type,
             ble_addr: mac,
             last_seen: measurement_timestamp,
             last_measurement: measurement.into(),
-            name: default_name,
+            name,
             stats: Stats { rx_packets: 1 }, // At least one packet received
         }
     }

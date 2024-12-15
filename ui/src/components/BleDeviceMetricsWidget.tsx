@@ -1,7 +1,7 @@
 import LoadableCard from "./LoadableCard";
 import { Device } from "@caniot-controller/caniot-api-grpc-web/api/ng_devices_pb";
 import { useNavigate } from "react-router-dom";
-import { Col, Divider, Row } from "antd";
+import { Col, Divider, Row, Tooltip } from "antd";
 import TemperatureGaugeStatistic, {
   BatteryGaugeText,
   HumidityGaugeStatistic,
@@ -48,6 +48,13 @@ function BleDeviceMetricsWidget({
   return (
     <LoadableCard
       title={title}
+      extraLabel={
+        <Tooltip title={device?.getType() + " " + device?.getMac()}>
+          <span style={{ color: "#777777", fontStyle: "italic" }}>
+            {device?.getType() + " " + device?.getMac().trimStart().slice(9)}
+          </span>
+        </Tooltip>
+      }
       onGoto={navigateTo ? () => navigate(navigateTo) : undefined}
       loading={loading}
       status={device !== undefined}

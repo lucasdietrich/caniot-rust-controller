@@ -7,7 +7,7 @@ use chrono::Utc;
 use log::info;
 use thiserror::Error;
 
-use super::{api_message::CoproApiMessage, device::BleDevice};
+use super::{api_message::CoproApiMessage, device::BleDevice, CoproDeviceConfig};
 
 pub struct CoproController {
     handle: CoproHandle,
@@ -45,8 +45,25 @@ impl CoproController {
                 {
                     let _ = device.handle_received_frame(record_timestamp, record);
                 } else {
+                    // Set name for the device
+                    let name = self
+                        .handle
+                        .devices_config
+                        .iter()
+                        .find_map(|config| {
+                            if config.mac == record.ble_addr.mac_string() {
+                                Some(config.name.clone())
+                            } else {
+                                None
+                            }
+                        })
+                        .unwrap_or_else(|| {
+                            BleDevice::default_name(&BleDeviceType::Xiaomi, &record.ble_addr)
+                        });
+
                     let device = BleDevice::new(
                         record.ble_addr,
+                        name,
                         BleDeviceType::Xiaomi,
                         record_timestamp,
                         record,

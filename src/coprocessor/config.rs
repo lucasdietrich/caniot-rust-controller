@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 
 pub use ble_copro_stream_server::{DEFAULT_LISTEN_IP, DEFAULT_LISTEN_PORT};
 
+use crate::controller::copro_controller::CoproDeviceConfig;
+
 fn default_listen_ip() -> String {
     DEFAULT_LISTEN_IP.to_string()
 }
@@ -16,4 +18,7 @@ pub struct CoproConfig {
     pub listen_ip: String,
     #[serde(default = "default_listen_port")]
     pub listen_port: u16,
+    /// BLE coprocessor devices configuration
+    #[serde(default)]
+    pub devices: Vec<CoproDeviceConfig>,
 }

@@ -29,3 +29,15 @@ outdoor_alarm_did = 24
 [copro]
 listen_ip = "192.0.3.1"
 listen_port = 4000
+
+[[copro.devices]]
+name = "Salon"
+mac = "a4:c1:38:68:05:63"
+
+[[copro.devices]]
+name = "Chambre Parents"
+mac = "a4:c1:38:8d:ba:b4"
+
+[[copro.devices]]
+name = "Chambre Lucas"
+mac = "a4:c1:38:ec:1c:6d"

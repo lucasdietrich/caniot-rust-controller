@@ -8,6 +8,8 @@ use chrono::Utc;
 use rocket::error;
 use tokio::{sync::mpsc, time::sleep};
 
+use crate::controller::copro_controller::CoproDeviceConfig;
+
 use super::CoproConfig;
 
 const COPRO_MSG_CHANNEL_SIZE: usize = 10;
@@ -29,7 +31,8 @@ pub enum CoproMessage {
 
 pub struct Coprocessor {
     sender: mpsc::Sender<CoproMessage>,
-    config: CoproConfig,
+    listen_ip: String,
+    listen_port: u16,
     state: State,
 }
 
@@ -41,19 +44,23 @@ enum State {
 
 pub struct CoproHandle {
     pub receiver: mpsc::Receiver<CoproMessage>,
+    pub devices_config: Vec<CoproDeviceConfig>,
 }
 
 impl Coprocessor {
     pub fn new(config: CoproConfig) -> (Self, CoproHandle) {
         let (sender, receiver) = mpsc::channel(COPRO_MSG_CHANNEL_SIZE);
-
         (
             Self {
                 sender,
-                config,
+                listen_ip: config.listen_ip,
+                listen_port: config.listen_port,
                 state: State::Uninitialized,
             },
-            CoproHandle { receiver },
+            CoproHandle {
+                receiver,
+                devices_config: config.devices,
+            },
         )
     }
 
@@ -67,24 +74,23 @@ impl Coprocessor {
     async fn run_state(
         state: State,
         sender: &mut mpsc::Sender<CoproMessage>,
-        config: &CoproConfig,
+        listen_ip: &str,
+        listen_port: u16,
     ) -> State {
         match state {
-            State::Uninitialized => {
-                match StreamServer::init(config.listen_ip.as_str(), config.listen_port).await {
-                    Ok(server) => State::Listening(server),
-                    Err(e) => {
-                        error!("Failed to start server: {}", e);
-                        Self::notify_stream_channel_status(
-                            sender,
-                            CoproStreamChannelStatus::Error("Failed to start server".to_string()),
-                        )
-                        .await;
-                        sleep(COPRO_SERVER_INIT_RETRY_INTERVAL).await;
-                        state
-                    }
+            State::Uninitialized => match StreamServer::init(listen_ip, listen_port).await {
+                Ok(server) => State::Listening(server),
+                Err(e) => {
+                    error!("Failed to start server: {}", e);
+                    Self::notify_stream_channel_status(
+                        sender,
+                        CoproStreamChannelStatus::Error("Failed to start server".to_string()),
+                    )
+                    .await;
+                    sleep(COPRO_SERVER_INIT_RETRY_INTERVAL).await;
+                    state
                 }
-            }
+            },
             State::Listening(server) => match server.accept().await.ok() {
                 Some(channel) => {
                     Self::notify_stream_channel_status(sender, CoproStreamChannelStatus::Connected)
@@ -122,7 +128,13 @@ impl Coprocessor {
 
     pub async fn run(mut self) {
         loop {
-            self.state = Self::run_state(self.state, &mut self.sender, &self.config).await;
+            self.state = Self::run_state(
+                self.state,
+                &mut self.sender,
+                &self.listen_ip,
+                self.listen_port,
+            )
+            .await;
         }
     }
 }

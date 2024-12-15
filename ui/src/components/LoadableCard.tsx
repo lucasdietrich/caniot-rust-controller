@@ -22,6 +22,8 @@ interface ICardLoadableProps {
   // Button to go to a specific page
   onGoto?: () => void;
 
+  extraLabel?: React.ReactNode;
+
   bordered?: boolean;
   isMobile?: boolean;
 
@@ -37,6 +39,7 @@ function LoadableCard({
   onRefresh = undefined,
   progress = undefined,
   onGoto = undefined,
+  extraLabel = undefined,
   cardStyle = undefined,
   bordered = true,
   isMobile = false,
@@ -85,6 +88,7 @@ function LoadableCard({
   // Build extra
   const extra = (
     <>
+      {extraLabel}
       {refreshButton}
       {gotoButton}
     </>
