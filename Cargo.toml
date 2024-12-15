@@ -80,10 +80,10 @@ dyn-clone = "1.0.17"
 # BLE can
 [dependencies.ble-copro-stream-server]
 git = "https://github.com/lucasdietrich/zephyr-linux-ble-copro.git"
-rev = "abc4ea18db50b30c05ff697bf583ca2fb4ccaa13"
+rev = "d003d303169fb21a0ee4956531362db2b9f4448e"
 # path = "/home/lucas/zephyrproject/zephyr-hypirl-ble-copro/ble-copro-stream-server-rs"
 optional = true
-features = ["chrono"]
+features = ["tcp-keep-alive", "chrono"]
 
 [build-dependencies]
 tonic-build = { version = "0.11.0", features = ["prost"] }
