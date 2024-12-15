@@ -72,20 +72,6 @@ function AppMenu({ isMobile = false, uiDebugMode = false }: IMenuProps) {
       label: "Misc",
       children: [
         { key: "devices", label: <Link to="/devices">Appareils</Link>, title: titleTooltipEnable },
-
-        {
-          key: "debug",
-          label: <Link to="/debug">Debug</Link>,
-          icon: <ControlOutlined />,
-          title: titleTooltipEnable,
-        },
-        { key: "demo", label: <Link to="/demo">Ant Demos</Link>, title: titleTooltipEnable },
-        {
-          key: "measures",
-          icon: <PercentageOutlined />,
-          label: <Link to="/sensors">Mesures</Link>,
-          title: titleTooltipEnable,
-        },
         {
           key: "emulation",
           icon: <ImLab />,

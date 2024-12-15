@@ -68,9 +68,9 @@ impl CoproController {
             CoproStreamChannelStatus::Disconnected => Some(DeviceAlert::new_warning(
                 "BLE Coprocessor dongle undetected",
             )),
-            CoproStreamChannelStatus::Connected => Some(DeviceAlert::new_notification(
-                "BLE Coprocessor dongle connected",
-            )),
+            CoproStreamChannelStatus::Connected => {
+                Some(DeviceAlert::new_ok("BLE Coprocessor dongle connected"))
+            }
         }
     }
 
