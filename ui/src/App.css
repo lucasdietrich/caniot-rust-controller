@@ -46,3 +46,13 @@ body {
         padding: 24px !important;
     }
 }
+
+.loadable-card .ant-card-body {
+    /* min-height: 145px; */
+}
+
+.loadable-card.no-vertical-padding .ant-card-body {
+    padding-top: 0px !important;
+    padding-bottom: 0px !important;
+    min-height: 145px;
+}

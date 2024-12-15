@@ -1,4 +1,4 @@
-import { Statistic } from "antd";
+import { Statistic, Tooltip } from "antd";
 import React from "react";
 import {
   BsBatteryFull,
@@ -20,10 +20,11 @@ import {
   FaTemperatureEmpty,
   FaTemperatureHalf,
 } from "react-icons/fa6";
-import { LuBluetoothConnected } from "react-icons/lu";
+import { LuBluetooth } from "react-icons/lu";
 import { MdSignalCellularConnectedNoInternet4Bar } from "react-icons/md";
 
-const ROUND_PRECISION = 1;
+const TEMPERATURE_ROUND_PRECISION = 1;
+const HUMIDITY_ROUND_PRECISION = 0;
 
 // Yeaye ! Thx chatgpt, i don't understand anything in this function but it works :D
 /**
@@ -102,14 +103,16 @@ interface TemperatureGaugeProps {
 
 function TemperatureGaugeStatistic({ title, temperature, showIcon = true }: TemperatureGaugeProps) {
   return temperature !== undefined ? (
-    <Statistic
-      title={title}
-      value={temperature}
-      precision={ROUND_PRECISION}
-      valueStyle={{ color: GetTemperatureColor(temperature) }}
-      prefix={showIcon && GetTemperatureIcon(temperature)}
-      suffix="°C"
-    ></Statistic>
+    <Tooltip title={`${Math.round(temperature * 100) / 100} °C`} placement="topLeft">
+      <Statistic
+        title={title}
+        value={temperature}
+        precision={TEMPERATURE_ROUND_PRECISION}
+        valueStyle={{ color: GetTemperatureColor(temperature) }}
+        prefix={showIcon && GetTemperatureIcon(temperature)}
+        suffix="°C"
+      ></Statistic>
+    </Tooltip>
   ) : (
     <Statistic
       title={title}
@@ -157,13 +160,16 @@ export function GetHumidityColor(humidity: number) {
 
 function HumidityGaugeStatistic({ title, humidity, showIcon = true }: HumidityGaugeProps) {
   return humidity !== undefined ? (
-    <Statistic
-      title={title}
-      value={Math.round(humidity * 10) / 10}
-      valueStyle={{ color: GetHumidityColor(humidity) }}
-      prefix={showIcon && GetHumidityIcon(humidity)}
-      suffix="%"
-    ></Statistic>
+    <Tooltip title={`${Math.round(humidity * 10) / 10}%`} placement="topLeft">
+      <Statistic
+        title={title}
+        value={humidity}
+        valueStyle={{ color: GetHumidityColor(humidity) }}
+        prefix={showIcon && GetHumidityIcon(humidity)}
+        suffix="%"
+        precision={HUMIDITY_ROUND_PRECISION}
+      ></Statistic>
+    </Tooltip>
   ) : (
     <Statistic
       title={title}
@@ -219,7 +225,7 @@ function BleStatisticsText({
 
   return rssi ? (
     <span>
-      {showIcon && <LuBluetoothConnected />}
+      {showIcon && <LuBluetooth />}
       {rssi} dBm {statsRx}
     </span>
   ) : (

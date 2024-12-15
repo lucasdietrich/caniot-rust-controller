@@ -2,7 +2,7 @@ import { StopOutlined } from "@ant-design/icons";
 import {
   DeviceAlertType,
   DeviceAlert as gDeviceAlert,
-} from "@caniot-controller/caniot-api-grpc-web/api/ng_devices_pb";
+} from "@caniot-controller/caniot-api-grpc-web/api/common_pb";
 import { Alert, Button } from "antd";
 import React from "react";
 import { useNavigate } from "react-router-dom";
@@ -11,6 +11,7 @@ interface DeviceAlertProps {
   alert?: gDeviceAlert;
   navigateToController?: string;
   closable?: boolean;
+  isMobile?: boolean;
 }
 
 const alertTypeMapping: { [key in DeviceAlertType]?: "info" | "success" | "warning" | "error" } = {
@@ -25,6 +26,7 @@ function DeviceAlert({
   alert,
   navigateToController = undefined,
   closable = true,
+  isMobile = false,
 }: DeviceAlertProps) {
   const navigate = useNavigate();
 
@@ -38,6 +40,17 @@ function DeviceAlert({
 
   if (!alert || !alertType) {
     return null;
+  }
+
+  let marginBottom = 10;
+  let paddingTopBottom = 8;
+
+  if (isMobile) {
+    marginBottom = 5;
+
+    if (!alert.hasDescription()) {
+      paddingTopBottom = 2;
+    }
   }
 
   return (
@@ -56,7 +69,9 @@ function DeviceAlert({
         )
       }
       style={{
-        marginBottom: 10,
+        marginBottom,
+        paddingTop: paddingTopBottom,
+        paddingBottom: paddingTopBottom,
       }}
     />
   );

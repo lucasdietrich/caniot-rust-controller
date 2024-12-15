@@ -13,8 +13,17 @@ const COPRO_MSG_CHANNEL_SIZE: usize = 10;
 const COPRO_SERVER_INIT_RETRY_INTERVAL: Duration = Duration::from_secs(5);
 const COPRO_SERVER_ACCEPT_RETRY_INTERVAL: Duration = Duration::from_secs(5);
 
+#[derive(Debug)]
+pub enum CoproStreamChannelStatus {
+    Disconnected,
+    Connected,
+    Error(String),
+}
+
+#[derive(Debug)]
 pub enum CoproMessage {
     XiaomiRecord(XiaomiRecord),
+    Status(CoproStreamChannelStatus),
 }
 
 pub struct Coprocessor {
@@ -46,6 +55,10 @@ impl Coprocessor {
         )
     }
 
+    async fn notify_stream_channel_status(&mut self, status: CoproStreamChannelStatus) {
+        let _ = self.sender.send(CoproMessage::Status(status)).await;
+    }
+
     pub async fn run(mut self) {
         loop {
             match self.state {
@@ -58,9 +71,14 @@ impl Coprocessor {
                     {
                         Ok(server) => {
                             self.state = State::Connected(server);
+                            self.notify_stream_channel_status(CoproStreamChannelStatus::Connected)
+                                .await;
                         }
                         Err(e) => {
                             error!("Failed to start server: {}", e);
+                            self.notify_stream_channel_status(CoproStreamChannelStatus::Error(
+                                "Failed to start server".to_string(),
+                            ));
                             sleep(COPRO_SERVER_INIT_RETRY_INTERVAL).await;
                         }
                     }
@@ -83,8 +101,16 @@ impl Coprocessor {
                         }
 
                         info!("Connection closed");
+
+                        self.state = State::Disconnected;
+                        self.notify_stream_channel_status(CoproStreamChannelStatus::Connected)
+                            .await;
                     } else {
                         error!("Failed to accept connection");
+                        self.notify_stream_channel_status(CoproStreamChannelStatus::Error(
+                            "Failed to accept connection".to_string(),
+                        ))
+                        .await;
                         sleep(COPRO_SERVER_ACCEPT_RETRY_INTERVAL).await;
                     }
                 }

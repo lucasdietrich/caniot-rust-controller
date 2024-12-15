@@ -3,7 +3,7 @@ use chrono::{DateTime, Utc};
 use crate::{
     caniot::{self, BoardClassTelemetry, Endpoint, HeatingMode, Response},
     controller::{
-        alert::DeviceAlert, ActionResultTrait, ActionTrait, ActionVerdict, DeviceControllerInfos,
+        ActionResultTrait, ActionTrait, ActionVerdict, DeviceAlert, DeviceControllerInfos,
         DeviceControllerTrait, DeviceError, DeviceJobImpl, ProcessContext, Verdict,
     },
 };
@@ -129,7 +129,12 @@ impl DeviceControllerTrait for HeatersController {
                 DeviceAlert::new_warning("Chauffage non alimenté")
                     .with_description("Pas de présence tension sur le chauffage"),
             )
-        } else if self.status.heaters.iter().any(|&mode| mode.heater_on()) {
+        } else if self
+            .status
+            .heaters
+            .iter()
+            .any(|&mode| mode.heater_on(false))
+        {
             Some(
                 DeviceAlert::new_notification("Chauffage allumé")
                     .with_description("Au moins un chauffage est allumé"),

@@ -109,7 +109,7 @@ function HeatersView({
               >
                 <Row>
                   <Col span={24}>
-                    <DeviceAlert alert={heatersDevice?.getActiveAlert()} />
+                    <DeviceAlert alert={heatersDevice?.getActiveAlert()} isMobile={isMobile} />
                   </Col>
                   <Col span={24} style={{ marginTop: 20 }}>
                     <HeaterModeSelector

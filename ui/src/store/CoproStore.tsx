@@ -14,7 +14,10 @@ import {
 
 import { CoproServiceClient } from "@caniot-controller/caniot-api-grpc-web/api/Ng_coproServiceClientPb";
 import { DeviceId } from "@caniot-controller/caniot-api-grpc-web/api/common_pb";
-import { CoproDevicesList } from "@caniot-controller/caniot-api-grpc-web/api/ng_copro_pb";
+import {
+  CoproAlert,
+  CoproDevicesList,
+} from "@caniot-controller/caniot-api-grpc-web/api/ng_copro_pb";
 
 class CoproStore extends EventEmitter {
   client: CoproServiceClient;
@@ -32,6 +35,19 @@ class CoproStore extends EventEmitter {
       }
 
       HandleSuccess("CoproStore::GetList succeeded");
+
+      callbackFunc(resp);
+    });
+  };
+
+  getCoproAlert = (callbackFunc: (resp: CoproAlert) => void) => {
+    this.client.getCoproAlert(new Empty(), null, (err, resp) => {
+      if (err !== null) {
+        HandleError(err);
+        return;
+      }
+
+      HandleSuccess("CoproStore::GetCoproAlert succeeded");
 
       callbackFunc(resp);
     });

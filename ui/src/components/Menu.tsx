@@ -9,7 +9,7 @@ import {
   PlusOutlined,
 } from "@ant-design/icons";
 import { Settings } from "@caniot-controller/caniot-api-grpc-web/api/ng_internal_pb";
-import { LuSiren } from "react-icons/lu";
+import { LuBluetooth, LuBluetoothConnected, LuSiren } from "react-icons/lu";
 import { MdOutlineGarage } from "react-icons/md";
 import { LiaTemperatureLowSolid } from "react-icons/lia";
 import { ImLab } from "react-icons/im";
@@ -31,6 +31,12 @@ function AppMenu({ isMobile = false, uiDebugMode = false }: IMenuProps) {
       key: "home",
       icon: <HomeOutlined />,
       label: <Link to="/">Aperçu</Link>,
+      title: titleTooltipEnable,
+    },
+    {
+      key: "ble",
+      label: <Link to="/ble">capteurs BLE</Link>,
+      icon: <LuBluetooth />,
       title: titleTooltipEnable,
     },
     {

@@ -7,13 +7,12 @@ use crate::{
         self, classes, BoardClassTelemetry, DeviceId, Endpoint, Response, ResponseData, SysCtrl,
         TSP,
     },
-    controller::{ActionTrait, JobTrait},
+    controller::{ActionTrait, DeviceAlert, JobTrait},
     utils::expirable::ExpirableTrait,
 };
 
 use super::{
     actions::{DeviceAction, DeviceActionResult},
-    alert::DeviceAlert,
     context::ProcessContext,
     traits::ActionWrapperTrait,
     verdict::{ActionVerdict, Verdict},

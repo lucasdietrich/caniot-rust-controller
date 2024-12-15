@@ -8,6 +8,8 @@ import "google/protobuf/empty.proto";
 
 service CoproService {
   rpc GetList(google.protobuf.Empty) returns (CoproDevicesList) {}
+
+  rpc GetCoproAlert(google.protobuf.Empty) returns (CoproAlert) {}
 }
 
 message CoproDevice {
@@ -20,6 +22,7 @@ message CoproDevice {
   bool isSeen = 10;
 
   CoproDeviceStats stats = 40;
+  optional DeviceAlert active_alert = 41;
 
   optional int32 rssi = 30;
 
@@ -32,3 +35,5 @@ message CoproDevice {
 message CoproDeviceStats { uint64 rx = 1; }
 
 message CoproDevicesList { repeated CoproDevice devices = 1; }
+
+message CoproAlert { optional DeviceAlert active_alert = 1; }

@@ -1,6 +1,6 @@
 use ble_copro_stream_server::xiaomi::XiaomiRecord;
 
-use super::devices::BleMeasurement;
+use super::device::BleMeasurement;
 
 impl Into<BleMeasurement> for XiaomiRecord {
     fn into(self) -> BleMeasurement {

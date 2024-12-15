@@ -5,7 +5,7 @@ use std::{
 
 use crate::{
     caniot::{self, BoardClassTelemetry, Response},
-    controller::JobTrait,
+    controller::{DeviceAlert, JobTrait},
     database::{SettingsError, SettingsStore},
 };
 
@@ -15,7 +15,6 @@ use log::debug;
 use serde::{Deserialize, Serialize};
 
 use super::{
-    alert::DeviceAlert,
     verdict::{ActionVerdict, ActionVerdictWrapper, Verdict},
     DeviceError, DeviceJobImpl, DeviceJobWrapper, ProcessContext, UpdateJobVerdict,
 };

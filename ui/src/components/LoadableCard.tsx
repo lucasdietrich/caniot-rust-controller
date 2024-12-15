@@ -25,6 +25,8 @@ interface ICardLoadableProps {
   bordered?: boolean;
   isMobile?: boolean;
 
+  className?: string;
+
   cardStyle?: React.CSSProperties;
 }
 
@@ -38,6 +40,7 @@ function LoadableCard({
   cardStyle = undefined,
   bordered = true,
   isMobile = false,
+  className = undefined,
   children,
 }: PropsWithChildren<ICardLoadableProps>) {
   let titleComponent = (
@@ -101,6 +104,7 @@ function LoadableCard({
       extra={extra}
       style={cardStyle}
       size={isMobile ? "small" : "default"}
+      className={className + " loadable-card"}
     >
       {children}
     </Card>

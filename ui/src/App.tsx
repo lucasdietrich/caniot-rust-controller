@@ -23,6 +23,7 @@ import {
 import internalStore from "./store/InternalStore";
 import sessionStore from "./store/SessionStore";
 import EmulationView from "./view/EmulationView";
+import BleDevicesView from "./view/BleDevicesView";
 
 const { Content, Sider } = Layout;
 
@@ -33,6 +34,7 @@ const App: React.FC = () => {
   const [width, setWidth] = useState<number>(window.innerWidth);
   const [UIDarkMode, setUIDarkMode] = useState(false);
   const [UIDebugMode, setUIDebugMode] = useState(false);
+  const [UIHomeBLEDevices, setUIHomeBLEDevices] = useState(false);
 
   function handleWindowSizeChange() {
     setWidth(window.innerWidth);
@@ -48,6 +50,7 @@ const App: React.FC = () => {
 
     setUIDarkMode(sessionStore.getUIDarkMode() || false);
     setUIDebugMode(sessionStore.getUIDebugMode() || false);
+    setUIHomeBLEDevices(sessionStore.getUIHomeBLEDevices() || false);
 
     internalStore.getSettings((resp) => {
       setSettings(resp);
@@ -66,6 +69,11 @@ const App: React.FC = () => {
   const onDebugModeChange = (checked: boolean) => {
     setUIDebugMode(checked);
     sessionStore.setUIDebugMode(checked);
+  };
+
+  const onHomeBLEDevicesChange = (checked: boolean) => {
+    setUIHomeBLEDevices(checked);
+    sessionStore.setUIHomeBLEDevices(checked);
   };
 
   const onSettingsReset = () => {
@@ -124,7 +132,13 @@ const App: React.FC = () => {
             <Routes>
               <Route
                 path="/"
-                element={<HomeView isMobile={isMobile} uiDebugMode={UIDebugMode} />}
+                element={
+                  <HomeView
+                    isMobile={isMobile}
+                    uiDebugMode={UIDebugMode}
+                    uiHomeBLEDevices={UIHomeBLEDevices}
+                  />
+                }
               />
               <Route path="/devices" element={<DevicesView />} />
               <Route path="/about" element={<About />} />
@@ -159,15 +173,27 @@ const App: React.FC = () => {
                 element={<AlarmsView isMobile={isMobile} uiDebugMode={UIDebugMode} />}
               />
               <Route
+                path="/ble"
+                element={
+                  <BleDevicesView
+                    isMobile={isMobile}
+                    uiDebugMode={UIDebugMode}
+                    refreshInterval={5000}
+                  />
+                }
+              />
+              <Route
                 path="/settings"
                 element={
                   <SettingsView
                     settings={settings}
                     UIDarkMode={UIDarkMode}
                     UIDebugMode={UIDebugMode}
+                    UIHomeBLEDevices={UIHomeBLEDevices}
                     setDarkMode={onDarkModeChange}
                     setDebugMode={onDebugModeChange}
                     setSettingsReset={onSettingsReset}
+                    setUIHomeBLEDevices={onHomeBLEDevicesChange}
                     isMobile={isMobile}
                   />
                 }

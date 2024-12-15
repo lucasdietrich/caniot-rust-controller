@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package ng;
 
+import "google/protobuf/timestamp.proto";
+
 message DeviceIdInfos {
   DeviceId obj = 1;
 
@@ -29,4 +31,19 @@ enum TwoStatePulse {
 message CaniotFrame {
   DeviceId did = 1;
   repeated uint32 payload = 2;
+}
+
+enum DeviceAlertType {
+  OK = 0;
+  NOTIFICATION = 1;
+  WARNING = 2;
+  INERROR = 3;
+  INHIBITTED = 4;
+}
+
+message DeviceAlert {
+  string message = 1;
+  DeviceAlertType alert_type = 2;
+  google.protobuf.Timestamp timestamp = 3;
+  optional string description = 4;
 }

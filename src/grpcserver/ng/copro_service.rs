@@ -1,5 +1,5 @@
 use crate::{
-    controller::copro_controller::devices::BleDevice, grpcserver::utc_to_prost_timestamp,
+    controller::copro_controller::device::BleDevice, grpcserver::utc_to_prost_timestamp,
     shared::SharedHandle,
 };
 
@@ -25,6 +25,7 @@ impl Into<m::CoproDevice> for &BleDevice {
             stats: Some(m::CoproDeviceStats {
                 rx: self.stats.rx_packets,
             }),
+            active_alert: self.get_alert().as_ref().map(|a| a.into()),
         }
     }
 }
@@ -50,6 +51,18 @@ impl CoproService for NgCopro {
             .collect();
 
         Ok(tonic::Response::new(m::CoproDevicesList { devices }))
+    }
+
+    async fn get_copro_alert(
+        &self,
+        _req: tonic::Request<()>,
+    ) -> Result<tonic::Response<m::CoproAlert>, tonic::Status> {
+        let alert = self.shared.controller_handle.get_copro_alert().await;
+
+        Ok(tonic::Response::new(m::CoproAlert {
+            active_alert: alert.as_ref().map(|a| a.into()),
+            ..Default::default()
+        }))
     }
 }
 

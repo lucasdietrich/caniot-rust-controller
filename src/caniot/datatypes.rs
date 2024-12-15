@@ -223,10 +223,11 @@ pub enum HeatingMode {
 }
 
 impl HeatingMode {
-    pub fn heater_on(&self) -> bool {
+    pub fn heater_on(&self, include_low_power_modes: bool) -> bool {
         match self {
             HeatingMode::None | HeatingMode::Stop => false,
-            _ => true,
+            HeatingMode::Comfort | HeatingMode::ComfortMin1 | HeatingMode::ComfortMin2 => true,
+            HeatingMode::EnergySaving | HeatingMode::FrostProtection => include_low_power_modes,
         }
     }
 }

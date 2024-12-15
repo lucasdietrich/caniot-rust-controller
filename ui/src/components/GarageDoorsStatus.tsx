@@ -3,7 +3,7 @@ import React from "react";
 import GarageDoorStatus from "./GarageDoorStatus";
 import GarageGateStatus from "./GarageGateStatus";
 import { DoorState, Status } from "@caniot-controller/caniot-api-grpc-web/api/ng_garage_pb";
-import { DeviceAlert as gDeviceAlert } from "@caniot-controller/caniot-api-grpc-web/api/ng_devices_pb";
+import { DeviceAlert as gDeviceAlert } from "@caniot-controller/caniot-api-grpc-web/api/common_pb";
 import DeviceAlert from "./DeviceAlert";
 
 interface IGarageDoorsStatusProps {
@@ -15,6 +15,7 @@ interface IGarageDoorsStatusProps {
 
   // style
   height?: string;
+  isMobile?: boolean;
 }
 
 function GarageDoorsStatus({
@@ -23,11 +24,12 @@ function GarageDoorsStatus({
   onLeftDoorClick = undefined,
   onRightDoorClick = undefined,
   height = undefined,
+  isMobile = false,
 }: IGarageDoorsStatusProps) {
   return (
     <Row>
       <Col span={24}>
-        <DeviceAlert alert={alert} />
+        <DeviceAlert alert={alert} isMobile={isMobile} />
       </Col>
       <Col span={24} style={{ marginTop: 10 }}>
         <Row gutter={0} style={{ maxWidth: 700 }}>

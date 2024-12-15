@@ -4,11 +4,13 @@ use chrono::{DateTime, Utc};
 use serde::Serialize;
 
 use crate::{
-    caniot, impl_display_for_enum,
+    caniot,
+    controller::DeviceAlert,
+    impl_display_for_enum,
     utils::{join_labels, PrometheusExporterTrait},
 };
 
-use super::{alert::DeviceAlert, Device, DeviceStats};
+use super::{Device, DeviceStats};
 
 #[derive(Debug, Clone, Serialize)]
 pub struct DeviceInfos {

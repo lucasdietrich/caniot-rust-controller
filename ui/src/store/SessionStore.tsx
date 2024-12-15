@@ -2,6 +2,7 @@ import EventEmitter from "events";
 
 const UIDarkModeKey = "UIDarkMode";
 const UIdebugModeKey = "UIdebugMode";
+const UIHomeBLEDevicesKey = "UIHomeBLEDevices";
 
 // Store local data in the user's session (localStorage)
 // These settings are specific to the user
@@ -24,6 +25,14 @@ class SessionStore extends EventEmitter {
 
   setUIDebugMode = (debugMode: boolean) => {
     localStorage.setItem(UIdebugModeKey, debugMode.toString());
+  };
+
+  getUIHomeBLEDevices = (): boolean | null => {
+    return localStorage.getItem(UIHomeBLEDevicesKey) === "true";
+  };
+
+  setUIHomeBLEDevices = (homeBLEDevices: boolean) => {
+    localStorage.setItem(UIHomeBLEDevicesKey, homeBLEDevices.toString());
   };
 }
 

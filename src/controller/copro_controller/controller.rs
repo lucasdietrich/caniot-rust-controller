@@ -1,17 +1,18 @@
 use crate::{
-    controller::copro_controller::devices::BleDeviceType,
-    coprocessor::{CoproHandle, CoproMessage},
+    controller::{copro_controller::device::BleDeviceType, DeviceAlert},
+    coprocessor::{coprocessor::CoproStreamChannelStatus, CoproHandle, CoproMessage},
 };
 
 use chrono::Utc;
 use log::info;
 use thiserror::Error;
 
-use super::{api_message::CoproApiMessage, devices::BleDevice};
+use super::{api_message::CoproApiMessage, device::BleDevice};
 
 pub struct CoproController {
     handle: CoproHandle,
     devices: Vec<BleDevice>,
+    copro_status: CoproStreamChannelStatus,
 }
 
 #[derive(Debug, Error)]
@@ -22,6 +23,7 @@ impl CoproController {
         Ok(CoproController {
             handle,
             devices: Vec::new(),
+            copro_status: CoproStreamChannelStatus::Disconnected,
         })
     }
 
@@ -53,6 +55,22 @@ impl CoproController {
                     self.devices.push(device);
                 }
             }
+            CoproMessage::Status(status) => {
+                info!("Coprocessor status changed: {:?}", status);
+                self.copro_status = status;
+            }
+        }
+    }
+
+    fn get_controller_alert(&self) -> Option<DeviceAlert> {
+        match self.copro_status {
+            CoproStreamChannelStatus::Error(ref msg) => Some(DeviceAlert::new_error(msg)),
+            CoproStreamChannelStatus::Disconnected => Some(DeviceAlert::new_warning(
+                "BLE Coprocessor dongle undetected",
+            )),
+            CoproStreamChannelStatus::Connected => Some(DeviceAlert::new_notification(
+                "BLE Coprocessor dongle connected",
+            )),
         }
     }
 
@@ -60,6 +78,9 @@ impl CoproController {
         match message {
             CoproApiMessage::GetDevices { respond_to } => {
                 respond_to.send(self.devices.clone()).ok();
+            }
+            CoproApiMessage::GetAlert { respond_to } => {
+                respond_to.send(self.get_controller_alert()).ok();
             }
         }
 

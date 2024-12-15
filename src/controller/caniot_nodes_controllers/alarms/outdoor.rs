@@ -12,10 +12,9 @@ use crate::{
     caniot::{self, RequestData, Response, Xps},
     controller::{
         alarms::{actions::SirenAction, types::OutdoorAlarmCommand},
-        alert::DeviceAlert,
-        ActionResultTrait, ActionTrait, ActionVerdict, ConfigTrait, DeviceControllerInfos,
-        DeviceControllerTrait, DeviceError, DeviceJobImpl, PartialConfigTrait, ProcessContext,
-        UpdateJobVerdict, Verdict,
+        ActionResultTrait, ActionTrait, ActionVerdict, ConfigTrait, DeviceAlert,
+        DeviceControllerInfos, DeviceControllerTrait, DeviceError, DeviceJobImpl,
+        PartialConfigTrait, ProcessContext, UpdateJobVerdict, Verdict,
     },
     utils::{
         format_metric,

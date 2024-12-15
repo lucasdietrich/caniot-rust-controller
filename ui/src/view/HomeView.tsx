@@ -18,7 +18,10 @@ import ControllerStatsCard from "../components/ControllerStatsCard";
 import AlarmDiagWidget from "../components/AlarmDiagWidget";
 import { OutdoorAlarmState } from "@caniot-controller/caniot-api-grpc-web/api/ng_alarms_pb";
 import alarmsStore from "../store/AlarmsStore";
-import { CoproDevicesList } from "@caniot-controller/caniot-api-grpc-web/api/ng_copro_pb";
+import {
+  CoproAlert,
+  CoproDevicesList,
+} from "@caniot-controller/caniot-api-grpc-web/api/ng_copro_pb";
 import coproStore from "../store/CoproStore";
 import BleDeviceMetricsWidget from "../components/BleDeviceMetricsWidget";
 
@@ -28,9 +31,15 @@ interface HomeProps {
   refreshInterval?: number;
   isMobile?: boolean;
   uiDebugMode?: boolean;
+  uiHomeBLEDevices?: boolean;
 }
 
-function HomeView({ refreshInterval = 5000, isMobile = false, uiDebugMode = false }: HomeProps) {
+function HomeView({
+  refreshInterval = 5000,
+  isMobile = false,
+  uiDebugMode = false,
+  uiHomeBLEDevices = false,
+}: HomeProps) {
   const [infosLoading, setInfosLoading] = useState(true);
   const [infos, setInfos] = useState<Infos | undefined>(undefined);
 
@@ -53,6 +62,8 @@ function HomeView({ refreshInterval = 5000, isMobile = false, uiDebugMode = fals
   const [bleDevicesList, setBleDevicesList] = useState<CoproDevicesList | undefined>(undefined);
   const [bleDevicesLoading, setBleDevicesLoading] = useState(true);
 
+  const [coproAlert, setCoproAlert] = useState<CoproAlert | undefined>(undefined);
+
   const [time, setTime] = useState(Date.now());
 
   const navigate = useNavigate();
@@ -65,7 +76,10 @@ function HomeView({ refreshInterval = 5000, isMobile = false, uiDebugMode = fals
     setHeatersLoading(true);
     setOutdoorAlarmsLoading(true);
     setGarageLoading(true);
-    setBleDevicesLoading(true);
+    setDevicesWithAlertLoading(true);
+    if (uiHomeBLEDevices) {
+      setBleDevicesLoading(true);
+    }
 
     devicesStore.getDevicesWithActiveAlert((devices: DevicesList) => {
       setDevicesWithAlert(devices);
@@ -98,9 +112,15 @@ function HomeView({ refreshInterval = 5000, isMobile = false, uiDebugMode = fals
       });
     });
 
-    coproStore.getList((resp: CoproDevicesList) => {
-      setBleDevicesList(resp);
-      setBleDevicesLoading(false);
+    if (uiHomeBLEDevices) {
+      coproStore.getList((resp: CoproDevicesList) => {
+        setBleDevicesList(resp);
+        setBleDevicesLoading(false);
+      });
+    }
+
+    coproStore.getCoproAlert((resp: CoproAlert) => {
+      setCoproAlert(resp);
     });
 
     const intervalRefresh = setInterval(() => setTime(Date.now()), refreshInterval);
@@ -117,8 +137,9 @@ function HomeView({ refreshInterval = 5000, isMobile = false, uiDebugMode = fals
       status={garageDevice !== undefined}
       bordered={false}
       isMobile={isMobile}
+      className="no-vertical-padding"
     >
-      <GarageDoorsStatus height="100px" garageState={garageState} />
+      <GarageDoorsStatus height="100px" garageState={garageState} isMobile={isMobile} />
     </LoadableCard>
   );
 
@@ -162,7 +183,10 @@ function HomeView({ refreshInterval = 5000, isMobile = false, uiDebugMode = fals
     />
   );
 
-  const hasAlertsActive = devicesWithAlert && devicesWithAlert.getDevicesList().length > 0;
+  const hasCoproAlertActive = coproAlert?.hasActiveAlert() ?? false;
+  const hasDevicesAlertsActive = devicesWithAlert && devicesWithAlert.getDevicesList().length > 0;
+  const hasAlertsActive = hasCoproAlertActive || hasDevicesAlertsActive;
+
   const devicesActiveAlerts = (
     <LoadableCard
       title="Alertes actives"
@@ -170,17 +194,30 @@ function HomeView({ refreshInterval = 5000, isMobile = false, uiDebugMode = fals
       bordered={false}
       isMobile={isMobile}
     >
-      {devicesWithAlert && devicesWithAlert.getDevicesList().length ? (
-        devicesWithAlert
-          .getDevicesList()
-          .map((device) => (
+      {hasAlertsActive ? (
+        <>
+          {hasCoproAlertActive && (
             <DeviceAlert
-              key={device.getDid()?.getDid()}
-              alert={device.getActiveAlert()}
-              navigateToController={"devices/" + device.getUiViewName()}
+              key="coproAlert"
+              alert={coproAlert?.getActiveAlert()}
+              navigateToController="ble"
               closable={false}
+              isMobile={isMobile}
             />
-          ))
+          )}
+          {hasDevicesAlertsActive &&
+            devicesWithAlert
+              .getDevicesList()
+              .map((device) => (
+                <DeviceAlert
+                  key={device.getDid()?.getDid()}
+                  alert={device.getActiveAlert()}
+                  navigateToController={`devices/${device.getUiViewName()}`}
+                  closable={false}
+                  isMobile={isMobile}
+                />
+              ))}
+        </>
       ) : (
         <p>Aucune alerte active</p>
       )}
@@ -189,7 +226,7 @@ function HomeView({ refreshInterval = 5000, isMobile = false, uiDebugMode = fals
 
   return (
     <Row gutter={16}>
-      {(!isMobile || hasAlertsActive) && (
+      {hasAlertsActive && (
         <Col xs={24} md={12} xl={12} style={{ marginBottom: 8 }}>
           {devicesActiveAlerts}
         </Col>
@@ -217,6 +254,7 @@ function HomeView({ refreshInterval = 5000, isMobile = false, uiDebugMode = fals
               loading={bleDevicesLoading}
               small={isMobile}
               debug={uiDebugMode}
+              navigateTo="/ble"
             />
           </Col>
         ))}

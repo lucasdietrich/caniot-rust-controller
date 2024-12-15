@@ -11,7 +11,7 @@ use crate::grpcserver::EmuRequest;
 use serde::Serialize;
 
 #[cfg(feature = "ble-copro")]
-use super::copro_controller::devices::BleDevice;
+use super::copro_controller::device::BleDevice;
 
 use super::{
     caniot_controller::{
@@ -19,7 +19,8 @@ use super::{
         device_filter::DeviceFilter,
     },
     copro_controller::api_message::CoproApiMessage,
-    ActionTrait, ControllerStats, DeviceAction, DeviceActionResult, DeviceInfos, DeviceStats,
+    ActionTrait, ControllerStats, DeviceAction, DeviceActionResult, DeviceAlert, DeviceInfos,
+    DeviceStats,
 };
 
 pub enum ControllerMessage {
@@ -194,6 +195,18 @@ impl ControllerHandle {
         let (respond_to, receiver) = oneshot::channel();
         let message =
             ControllerMessage::CoprocessorMessage(CoproApiMessage::GetDevices { respond_to });
+        self.sender
+            .send(message)
+            .await
+            .expect("Failed to send IPC message to controller");
+        receiver.await.expect("IPC Sender dropped before response")
+    }
+
+    #[cfg(feature = "ble-copro")]
+    pub async fn get_copro_alert(&self) -> Option<DeviceAlert> {
+        let (respond_to, receiver) = oneshot::channel();
+        let message =
+            ControllerMessage::CoprocessorMessage(CoproApiMessage::GetAlert { respond_to });
         self.sender
             .send(message)
             .await

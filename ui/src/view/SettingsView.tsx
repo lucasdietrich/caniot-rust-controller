@@ -16,9 +16,11 @@ interface ISettingsProps {
 
   UIDarkMode?: boolean;
   UIDebugMode?: boolean;
+  UIHomeBLEDevices?: boolean;
 
   setDarkMode?: (darkMode: boolean) => void;
   setDebugMode?: (debugMode: boolean) => void;
+  setUIHomeBLEDevices?: (homeBLEDevices: boolean) => void;
   setSettingsReset?: () => void;
 
   isMobile?: boolean;
@@ -28,9 +30,11 @@ function SettingsView({
   settings,
   UIDarkMode = false,
   UIDebugMode = false,
+  UIHomeBLEDevices = false,
   setDarkMode = () => {},
   setDebugMode = () => {},
   setSettingsReset = () => {},
+  setUIHomeBLEDevices = () => {},
   isMobile = false,
 }: ISettingsProps) {
   const loading = settings === undefined;
@@ -49,6 +53,12 @@ function SettingsView({
             </ListGridItem>
             <ListGridItem label="Mode nuit" description="Active le dark mode">
               <Switch checked={UIDarkMode} onChange={setDarkMode} />
+            </ListGridItem>
+            <ListGridItem
+              label="Accueil BLE"
+              description="Affiche les devices BLE sur la page d'accueil"
+            >
+              <Switch checked={UIHomeBLEDevices} onChange={setUIHomeBLEDevices} />
             </ListGridItem>
             {UIDebugMode && (
               <>

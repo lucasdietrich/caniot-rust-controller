@@ -1,5 +1,4 @@
 pub mod actions;
-pub mod alert;
 pub mod context;
 pub mod device;
 pub mod device_infos;

@@ -3,6 +3,13 @@ use std::fmt::{Debug, Display};
 use ble_copro_stream_server::ble::BleAddress;
 use chrono::{DateTime, Utc};
 
+use crate::controller::DeviceAlert;
+
+pub const BLE_LOW_BATTERY_THRESHOLD: u8 = 20; // %
+pub const BLE_CRITICAL_BATTERY_THRESHOLD: u8 = 5; // %
+pub const BLE_TIME_TO_CONSIDER_OFFLINE: u32 = 3600; // seconds
+pub const BLE_BAD_RSSI_THRESHOLD: i8 = -80; // dBm
+
 #[derive(Debug, Clone)]
 pub enum BleDeviceType {
     Xiaomi,
@@ -116,5 +123,63 @@ impl BleDevice {
 
     pub fn default_name(device_type: &BleDeviceType, ble_addr: &BleAddress) -> String {
         format!("{} {}", device_type, ble_addr.mac_manufacturer_part())
+    }
+
+    pub fn is_low_battery(&self) -> Option<bool> {
+        self.last_measurement
+            .battery_level
+            .map(|level| level < BLE_LOW_BATTERY_THRESHOLD)
+    }
+
+    pub fn is_battery_critical(&self) -> Option<bool> {
+        self.last_measurement
+            .battery_level
+            .map(|level| level < BLE_CRITICAL_BATTERY_THRESHOLD)
+    }
+
+    pub fn is_offline(&self) -> bool {
+        self.last_seen_from_now() > BLE_TIME_TO_CONSIDER_OFFLINE
+    }
+
+    pub fn is_bad_rssi(&self) -> bool {
+        self.last_measurement.rssi < BLE_BAD_RSSI_THRESHOLD
+    }
+
+    pub fn get_alert(&self) -> Option<DeviceAlert> {
+        if self.is_low_battery().unwrap_or(false) {
+            Some(DeviceAlert::new_warning(
+                format!(
+                    "{} is low on battery: {}% ({} V)",
+                    self.name,
+                    self.last_measurement.battery_level.unwrap_or(0),
+                    self.last_measurement.battery_mv.unwrap_or(0) as f32 / 1000.0
+                )
+                .as_str(),
+            ))
+        } else if self.is_battery_critical().unwrap_or(false) {
+            Some(DeviceAlert::new_error(
+                format!(
+                    "{} is critically low on battery: {}% ({} V)",
+                    self.name,
+                    self.last_measurement.battery_level.unwrap_or(0),
+                    self.last_measurement.battery_mv.unwrap_or(0) as f32 / 1000.0
+                )
+                .as_str(),
+            ))
+        } else if self.is_offline() {
+            Some(DeviceAlert::new_warning(
+                format!("{} is offline", self.name).as_str(),
+            ))
+        } else if self.is_bad_rssi() {
+            Some(DeviceAlert::new_warning(
+                format!(
+                    "{} has bad signal strength: {} dBm",
+                    self.name, self.last_measurement.rssi
+                )
+                .as_str(),
+            ))
+        } else {
+            None
+        }
     }
 }

@@ -187,7 +187,7 @@ function AlarmsView({
           }}
           isMobile={isMobile}
         >
-          <DeviceAlert alert={outdoorAlarmDevice?.getActiveAlert()} />
+          <DeviceAlert alert={outdoorAlarmDevice?.getActiveAlert()} isMobile={isMobile} />
 
           <List>
             <List.Item>

@@ -3,7 +3,6 @@ use tonic::{Request, Response, Result, Status};
 use crate::{
     caniot as ct,
     controller::{
-        alert::{DeviceAlert, DeviceAlertType},
         caniot_controller::auto_attach::{
             DEVICE_GARAGE_DID, DEVICE_HEATERS_DID, DEVICE_OUTDOOR_ALARM_DID,
         },
@@ -79,23 +78,6 @@ impl Into<m::device::Measures> for ct::classes::BoardClassTelemetry {
         match self {
             ct::BoardClassTelemetry::Class0(t) => m::device::Measures::Class0(t.into()),
             ct::BoardClassTelemetry::Class1(t) => m::device::Measures::Class1(t.into()),
-        }
-    }
-}
-
-impl Into<m::DeviceAlert> for &DeviceAlert {
-    fn into(self) -> m::DeviceAlert {
-        m::DeviceAlert {
-            message: self.name.clone(),
-            timestamp: Some(utc_to_prost_timestamp(&self.timestamp)),
-            alert_type: match self.alert_type {
-                DeviceAlertType::Ok => m::DeviceAlertType::Ok as i32,
-                DeviceAlertType::Notification => m::DeviceAlertType::Notification as i32,
-                DeviceAlertType::Warning => m::DeviceAlertType::Warning as i32,
-                DeviceAlertType::Error => m::DeviceAlertType::Inerror as i32,
-                DeviceAlertType::Inhibitted => m::DeviceAlertType::Inhibitted as i32,
-            },
-            description: self.description.clone(),
         }
     }
 }

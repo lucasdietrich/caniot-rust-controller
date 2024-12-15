@@ -1,7 +1,7 @@
 use crate::{
     caniot::Xps,
     controller::{
-        alert::DeviceAlert, ActionResultTrait, ActionTrait, ActionVerdict, DeviceControllerInfos,
+        ActionResultTrait, ActionTrait, ActionVerdict, DeviceAlert, DeviceControllerInfos,
         DeviceControllerTrait, DeviceError, Verdict,
     },
     utils::{format_metric, monitorable::ValueMonitor, SensorLabel},

@@ -61,21 +61,6 @@ message Class1Telemetry {
   optional float ext_temp2 = 12;
 }
 
-enum DeviceAlertType {
-  OK = 0;
-  NOTIFICATION = 1;
-  WARNING = 2;
-  INERROR = 3;
-  INHIBITTED = 4;
-}
-
-message DeviceAlert {
-  string message = 1;
-  DeviceAlertType alert_type = 2;
-  google.protobuf.Timestamp timestamp = 3;
-  optional string description = 4;
-}
-
 message Device {
   DeviceIdInfos did = 1;
 

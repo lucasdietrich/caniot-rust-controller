@@ -84,6 +84,7 @@ function GarageDoorsView({
             alert={garageDevice?.getActiveAlert()}
             onLeftDoorClick={onLeftDoorClick}
             onRightDoorClick={onRightDoorClick}
+            isMobile={isMobile}
           ></GarageDoorsStatus>
 
           <Row style={{ paddingTop: 20 }}>
