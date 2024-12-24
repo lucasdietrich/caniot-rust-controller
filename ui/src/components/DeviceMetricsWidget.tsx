@@ -5,13 +5,14 @@ import { Col, Divider, Row } from "antd";
 import TemperatureGaugeStatistic, { TemperatureGaugeText } from "./Gauges";
 import LastSeenBadge from "./LastSeenBadge";
 import { TbCpu } from "react-icons/tb";
+import { AppContext } from "../App";
 
 interface DeviceMetricsWidgetProps {
   title?: string;
   device?: Device;
   loading: boolean;
   navigateTo: string;
-  isMobile?: boolean;
+  appContext: AppContext;
 }
 
 function DeviceMetricsWidget({
@@ -19,7 +20,7 @@ function DeviceMetricsWidget({
   device,
   loading,
   navigateTo,
-  isMobile = false,
+  appContext,
 }: DeviceMetricsWidgetProps) {
   const navigate = useNavigate();
 
@@ -30,13 +31,15 @@ function DeviceMetricsWidget({
       loading={loading}
       status={device !== undefined}
       bordered={false}
-      isMobile={isMobile}
+      isMobile={appContext.isMobile}
     >
       <Row gutter={2}>
         <Col span={24}>
           <TemperatureGaugeStatistic
             title="Température ext"
             temperature={device?.hasOutsideTemp() ? device.getOutsideTemp() : undefined}
+            indoor={false}
+            summer={appContext.isSummer}
           />
         </Col>
 
@@ -46,7 +49,11 @@ function DeviceMetricsWidget({
           <>
             {/* <HiOutlineCpuChip />  is bugged, i.e. console error */}
             <TbCpu />
-            <TemperatureGaugeText temperature={device?.getBoardTemp()} showIcon={false} />
+            <TemperatureGaugeText
+              temperature={device?.getBoardTemp()}
+              showIcon={false}
+              indoor={true}
+            />
           </>
         </Col>
 

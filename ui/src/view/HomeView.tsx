@@ -24,22 +24,17 @@ import {
 } from "@caniot-controller/caniot-api-grpc-web/api/ng_copro_pb";
 import coproStore from "../store/CoproStore";
 import BleDeviceMetricsWidget from "../components/BleDeviceMetricsWidget";
+import { AppContext } from "../App";
 
 const { Countdown } = Statistic;
 
 interface HomeProps {
+  appContext: AppContext;
   refreshInterval?: number;
-  isMobile?: boolean;
-  uiDebugMode?: boolean;
   uiHomeBLEDevices?: boolean;
 }
 
-function HomeView({
-  refreshInterval = 5000,
-  isMobile = false,
-  uiDebugMode = false,
-  uiHomeBLEDevices = false,
-}: HomeProps) {
+function HomeView({ appContext, refreshInterval = 5000, uiHomeBLEDevices = false }: HomeProps) {
   const [infosLoading, setInfosLoading] = useState(true);
   const [infos, setInfos] = useState<Infos | undefined>(undefined);
 
@@ -136,10 +131,10 @@ function HomeView({
       loading={garageLoading}
       status={garageDevice !== undefined}
       bordered={false}
-      isMobile={isMobile}
+      isMobile={appContext.isMobile}
       className="no-vertical-padding"
     >
-      <GarageDoorsStatus height="100px" garageState={garageState} isMobile={isMobile} />
+      <GarageDoorsStatus height="100px" garageState={garageState} isMobile={appContext.isMobile} />
     </LoadableCard>
   );
 
@@ -149,7 +144,7 @@ function HomeView({
       loading={garageLoading}
       device={garageDevice}
       navigateTo="/devices/garage"
-      isMobile={isMobile}
+      appContext={appContext}
     />
   );
 
@@ -159,7 +154,7 @@ function HomeView({
       loading={heatersLoading}
       device={heatersDevice}
       navigateTo="/devices/heaters"
-      isMobile={isMobile}
+      appContext={appContext}
     />
   );
 
@@ -169,7 +164,7 @@ function HomeView({
       loading={outdoorAlarmsLoading}
       device={outdoorAlarmsDevice}
       navigateTo="/devices/alarms"
-      isMobile={isMobile}
+      appContext={appContext}
     />
   );
 
@@ -179,7 +174,7 @@ function HomeView({
       alarm={outdoorAlarmState}
       loading={outdoorAlarmsLoading}
       navigateTo="/devices/alarms"
-      isMobile={isMobile}
+      isMobile={appContext.isMobile}
     />
   );
 
@@ -189,7 +184,7 @@ function HomeView({
     (coproAlert?.getActiveAlert()?.getAlertType() == DeviceAlertType.OK ||
       coproAlert?.getActiveAlert()?.getAlertType() == DeviceAlertType.NOTIFICATION)
   ) {
-    hasCoproAlertActive = uiDebugMode;
+    hasCoproAlertActive = appContext.uiDebugMode;
   }
 
   const hasDevicesAlertsActive = devicesWithAlert && devicesWithAlert.getDevicesList().length > 0;
@@ -200,7 +195,7 @@ function HomeView({
       title="Alertes actives"
       loading={devicesWithAlertLoading}
       bordered={false}
-      isMobile={isMobile}
+      isMobile={appContext.isMobile}
     >
       {hasAlertsActive ? (
         <>
@@ -210,7 +205,7 @@ function HomeView({
               alert={coproAlert?.getActiveAlert()}
               navigateToController="ble"
               closable={false}
-              isMobile={isMobile}
+              isMobile={appContext.isMobile}
             />
           )}
           {hasDevicesAlertsActive &&
@@ -222,7 +217,7 @@ function HomeView({
                   alert={device.getActiveAlert()}
                   navigateToController={`devices/${device.getUiViewName()}`}
                   closable={false}
-                  isMobile={isMobile}
+                  isMobile={appContext.isMobile}
                 />
               ))}
         </>
@@ -260,8 +255,8 @@ function HomeView({
               title={device.getName()}
               device={device}
               loading={bleDevicesLoading}
-              small={isMobile}
-              debug={uiDebugMode}
+              small={appContext.isMobile}
+              debug={appContext.uiDebugMode}
               navigateTo="/ble"
             />
           </Col>
@@ -271,16 +266,19 @@ function HomeView({
         {outdoorAlarmsMetricsWidget}
       </Col>
 
-      {uiDebugMode && (
+      {appContext.uiDebugMode && (
         <>
           <Col xs={24} xl={12} style={{ marginBottom: 8 }}>
-            <SoftwareInfosCard infos={infos?.getSoftware()} isMobile={isMobile} />
+            <SoftwareInfosCard infos={infos?.getSoftware()} isMobile={appContext.isMobile} />
           </Col>
           <Col xs={24} xl={12} style={{ marginBottom: 8 }}>
-            <FirmwareInfosCard infos={infos?.getFirmware()} isMobile={isMobile} />
+            <FirmwareInfosCard infos={infos?.getFirmware()} isMobile={appContext.isMobile} />
           </Col>
           <Col xs={24} xl={12} style={{ marginBottom: 8 }}>
-            <ControllerStatsCard stats={infos?.getControllerStats()} isMobile={isMobile} />
+            <ControllerStatsCard
+              stats={infos?.getControllerStats()}
+              isMobile={appContext.isMobile}
+            />
           </Col>
         </>
       )}

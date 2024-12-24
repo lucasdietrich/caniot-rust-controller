@@ -29,6 +29,12 @@ const { Content, Sider } = Layout;
 
 const MobileMaxSize = 700;
 
+interface AppContext {
+  isMobile: boolean;
+  uiDebugMode: boolean;
+  isSummer: boolean;
+}
+
 const App: React.FC = () => {
   const [settings, setSettings] = useState<Settings | undefined>(undefined);
   const [width, setWidth] = useState<number>(window.innerWidth);
@@ -40,7 +46,12 @@ const App: React.FC = () => {
     setWidth(window.innerWidth);
   }
 
-  const isMobile = width <= MobileMaxSize;
+  const now = new Date();
+  const appContext: AppContext = {
+    isMobile: width <= MobileMaxSize,
+    uiDebugMode: UIDebugMode,
+    isSummer: now.getMonth() >= 4 && now.getMonth() <= 9,
+  };
 
   useEffect(() => {
     // set page title
@@ -108,16 +119,16 @@ const App: React.FC = () => {
             overflow: "auto",
             height: "100vh",
           }}
-          collapsed={isMobile}
+          collapsed={appContext.isMobile}
           collapsedWidth={SiderMobileWidth}
           width={SiderWidth}
         >
-          <AppMenu isMobile={isMobile} uiDebugMode={UIDebugMode} />
+          <AppMenu isMobile={appContext.isMobile} uiDebugMode={appContext.uiDebugMode} />
         </Sider>
         <Layout
           style={{
-            padding: isMobile ? "8px 8px 8px" : "24px 24px 24px",
-            marginLeft: isMobile ? SiderMobileWidth : SiderWidth,
+            padding: appContext.isMobile ? "8px 8px 8px" : "24px 24px 24px",
+            marginLeft: appContext.isMobile ? SiderMobileWidth : SiderWidth,
           }}
         >
           <Content
@@ -132,27 +143,26 @@ const App: React.FC = () => {
             <Routes>
               <Route
                 path="/"
-                element={
-                  <HomeView
-                    isMobile={isMobile}
-                    uiDebugMode={UIDebugMode}
-                    uiHomeBLEDevices={UIHomeBLEDevices}
-                  />
-                }
+                element={<HomeView appContext={appContext} uiHomeBLEDevices={UIHomeBLEDevices} />}
               />
               <Route path="/devices" element={<DevicesView />} />
               <Route path="/about" element={<About />} />
               {UIDebugMode && <Route path="/debug" element={<Debug />} />}
               <Route
                 path="/devices/heaters"
-                element={<HeatersView isMobile={isMobile} uiDebugMode={UIDebugMode} />}
+                element={
+                  <HeatersView
+                    isMobile={appContext.isMobile}
+                    uiDebugMode={appContext.uiDebugMode}
+                  />
+                }
               />
               <Route
                 path="/devices/garage"
                 element={
                   <GarageDoorsView
-                    isMobile={isMobile}
-                    uiDebugMode={UIDebugMode}
+                    isMobile={appContext.isMobile}
+                    uiDebugMode={appContext.uiDebugMode}
                     refreshInterval={1000}
                   />
                 }
@@ -161,8 +171,8 @@ const App: React.FC = () => {
                 path="/garage"
                 element={
                   <GarageDoorsView
-                    isMobile={isMobile}
-                    uiDebugMode={UIDebugMode}
+                    isMobile={appContext.isMobile}
+                    uiDebugMode={appContext.uiDebugMode}
                     refreshInterval={1000}
                   />
                 }
@@ -170,17 +180,13 @@ const App: React.FC = () => {
               {/* Alias to keep compat with caniot-pycontroller */}
               <Route
                 path="/devices/alarms"
-                element={<AlarmsView isMobile={isMobile} uiDebugMode={UIDebugMode} />}
+                element={
+                  <AlarmsView isMobile={appContext.isMobile} uiDebugMode={appContext.uiDebugMode} />
+                }
               />
               <Route
                 path="/ble"
-                element={
-                  <BleDevicesView
-                    isMobile={isMobile}
-                    uiDebugMode={UIDebugMode}
-                    refreshInterval={5000}
-                  />
-                }
+                element={<BleDevicesView refreshInterval={5000} appContext={appContext} />}
               />
               <Route
                 path="/settings"
@@ -188,18 +194,18 @@ const App: React.FC = () => {
                   <SettingsView
                     settings={settings}
                     UIDarkMode={UIDarkMode}
-                    UIDebugMode={UIDebugMode}
+                    UIDebugMode={appContext.uiDebugMode}
                     UIHomeBLEDevices={UIHomeBLEDevices}
                     setDarkMode={onDarkModeChange}
                     setDebugMode={onDebugModeChange}
                     setSettingsReset={onSettingsReset}
                     setUIHomeBLEDevices={onHomeBLEDevicesChange}
-                    isMobile={isMobile}
+                    isMobile={appContext.isMobile}
                   />
                 }
               />
               <Route path="/demo" element={<DemoView />} />
-              <Route path="/emulation" element={<EmulationView isMobile={isMobile} />} />
+              <Route path="/emulation" element={<EmulationView isMobile={appContext.isMobile} />} />
               <Route path="*" element={<NoMatch />} />
             </Routes>
           </Content>
@@ -211,3 +217,4 @@ const App: React.FC = () => {
 
 export default App;
 export { MobileMaxSize };
+export type { AppContext };

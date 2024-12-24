@@ -1,5 +1,6 @@
-import React from "react";
-import { Button, Card, DatePicker, Form, TimePicker } from "antd";
+import React, { useState } from "react";
+import { Button, Card, Checkbox, Col, DatePicker, Form, Row, Slider, TimePicker } from "antd";
+import TemperatureGaugeStatistic from "../components/Gauges";
 
 const { RangePicker } = DatePicker;
 
@@ -15,15 +16,11 @@ const formItemLayout = {
 };
 
 const config = {
-  rules: [
-    { type: "object" as const, required: true, message: "Please select time!" },
-  ],
+  rules: [{ type: "object" as const, required: true, message: "Please select time!" }],
 };
 
 const rangeConfig = {
-  rules: [
-    { type: "array" as const, required: true, message: "Please select time!" },
-  ],
+  rules: [{ type: "array" as const, required: true, message: "Please select time!" }],
 };
 
 const onFinish = (fieldsValue: any) => {
@@ -33,14 +30,9 @@ const onFinish = (fieldsValue: any) => {
   const values = {
     ...fieldsValue,
     "date-picker": fieldsValue["date-picker"].format("YYYY-MM-DD"),
-    "date-time-picker": fieldsValue["date-time-picker"].format(
-      "YYYY-MM-DD HH:mm:ss"
-    ),
+    "date-time-picker": fieldsValue["date-time-picker"].format("YYYY-MM-DD HH:mm:ss"),
     "month-picker": fieldsValue["month-picker"].format("YYYY-MM"),
-    "range-picker": [
-      rangeValue[0].format("YYYY-MM-DD"),
-      rangeValue[1].format("YYYY-MM-DD"),
-    ],
+    "range-picker": [rangeValue[0].format("YYYY-MM-DD"), rangeValue[1].format("YYYY-MM-DD")],
     "range-time-picker": [
       rangeTimeValue[0].format("YYYY-MM-DD HH:mm:ss"),
       rangeTimeValue[1].format("YYYY-MM-DD HH:mm:ss"),
@@ -51,52 +43,51 @@ const onFinish = (fieldsValue: any) => {
 };
 
 function DemoView() {
+  const [temperature, setTemperature] = useState(20);
+  const [indoor, setIndoor] = useState(false);
+  const [summer, setSummer] = useState(false);
+
   return (
-    <Card title="Date and times pickers">
-      <Form
-        name="time_related_controls"
-        {...formItemLayout}
-        onFinish={onFinish}
-        style={{ maxWidth: 600 }}
-      >
-        <Form.Item name="date-picker" label="DatePicker" {...config}>
-          <DatePicker />
-        </Form.Item>
-        <Form.Item
-          name="date-time-picker"
-          label="DatePicker[showTime]"
-          {...config}
-        >
-          <DatePicker showTime format="YYYY-MM-DD HH:mm:ss" />
-        </Form.Item>
-        <Form.Item name="month-picker" label="MonthPicker" {...config}>
-          <DatePicker picker="month" />
-        </Form.Item>
-        <Form.Item name="range-picker" label="RangePicker" {...rangeConfig}>
-          <RangePicker />
-        </Form.Item>
-        <Form.Item
-          name="range-time-picker"
-          label="RangePicker[showTime]"
-          {...rangeConfig}
-        >
-          <RangePicker showTime format="YYYY-MM-DD HH:mm:ss" />
-        </Form.Item>
-        <Form.Item name="time-picker" label="TimePicker" {...config}>
-          <TimePicker />
-        </Form.Item>
-        <Form.Item
-          wrapperCol={{
-            xs: { span: 24, offset: 0 },
-            sm: { span: 16, offset: 8 },
-          }}
-        >
-          <Button type="primary" htmlType="submit">
-            Submit
-          </Button>
-        </Form.Item>
-      </Form>
-    </Card>
+    <>
+      <Card title="Temperatures gauges">
+        <Row>
+          <Col span={3}>
+            <TemperatureGaugeStatistic
+              title="indoor very hot"
+              temperature={temperature}
+              indoor={indoor}
+              summer={summer}
+            />
+          </Col>
+          <Col span={19}>
+            {" "}
+            <Slider
+              defaultValue={20}
+              min={-5}
+              max={40}
+              onChange={(value) => setTemperature(value)}
+              step={0.5}
+              marks={{
+                0: "0 °C",
+                10: "10 °C",
+                15: "15 °C",
+                20: "20 °C",
+                25: "25 °C",
+                30: "30 °C",
+              }}
+            />
+          </Col>
+          <Col span={2}>
+            <Checkbox checked={indoor} onChange={(e) => setIndoor(e.target.checked)}>
+              Indoor
+            </Checkbox>
+            <Checkbox checked={summer} onChange={(e) => setSummer(e.target.checked)}>
+              Summer
+            </Checkbox>
+          </Col>
+        </Row>
+      </Card>
+    </>
   );
 }
 

@@ -21,6 +21,7 @@ interface BleDeviceMetricsWidgetProps {
   navigateTo?: string;
   small?: boolean;
   debug?: boolean;
+  isSummer?: boolean;
 }
 
 function BleDeviceMetricsWidget({
@@ -30,6 +31,7 @@ function BleDeviceMetricsWidget({
   navigateTo,
   small = false,
   debug = false,
+  isSummer = false,
 }: BleDeviceMetricsWidgetProps) {
   const navigate = useNavigate();
 
@@ -69,6 +71,8 @@ function BleDeviceMetricsWidget({
           <TemperatureGaugeStatistic
             title="Température"
             temperature={device?.hasTemperature() ? device.getTemperature() : undefined}
+            indoor={true}
+            summer={isSummer}
           />
         </Col>
 

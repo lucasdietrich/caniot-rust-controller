@@ -9,18 +9,14 @@ import BleDeviceMetricsWidget from "../components/BleDeviceMetricsWidget";
 import LoadableCard from "../components/LoadableCard";
 import DeviceAlert from "../components/DeviceAlert";
 import { DeviceAlertType } from "@caniot-controller/caniot-api-grpc-web/api/common_pb";
+import { AppContext } from "../App";
 
 interface IBleDevicesViewProps {
   refreshInterval?: number;
-  isMobile?: boolean;
-  uiDebugMode?: boolean;
+  appContext: AppContext;
 }
 
-function BleDevicesView({
-  refreshInterval = 5000,
-  isMobile = false,
-  uiDebugMode = false,
-}: IBleDevicesViewProps) {
+function BleDevicesView({ refreshInterval = 5000, appContext }: IBleDevicesViewProps) {
   const [bleDevicesList, setBleDevicesList] = useState<CoproDevicesList | undefined>(undefined);
   const [bleDevicesLoading, setBleDevicesLoading] = useState(true);
 
@@ -52,7 +48,7 @@ function BleDevicesView({
     const alertType = coproAlert.getActiveAlert()?.getAlertType();
     // Show copro alert if in debug mode or if alert is not OK/NOTIFICATION
     hasCoproAlertActive =
-      uiDebugMode ||
+      appContext.uiDebugMode ||
       (alertType !== DeviceAlertType.OK && alertType !== DeviceAlertType.NOTIFICATION);
   }
 
@@ -65,7 +61,7 @@ function BleDevicesView({
   const bleDevicesWithNonOkAlerts = bleDevicesWithAlerts.filter((device) => {
     const alertType = device.getActiveAlert()?.getAlertType();
     return (
-      uiDebugMode ||
+      appContext.uiDebugMode ||
       (alertType !== DeviceAlertType.OK && alertType !== DeviceAlertType.NOTIFICATION)
     );
   });
@@ -78,7 +74,7 @@ function BleDevicesView({
       title="Alertes BLE actives"
       loading={bleDevicesLoading}
       bordered={false}
-      isMobile={isMobile}
+      isMobile={appContext.isMobile}
     >
       {hasCoproAlertActive || hasBleDevicesAlertsActive ? (
         <>
@@ -87,7 +83,7 @@ function BleDevicesView({
               key="coproAlert"
               alert={coproAlert.getActiveAlert()}
               closable={false}
-              isMobile={isMobile}
+              isMobile={appContext.isMobile}
             />
           )}
           {hasBleDevicesAlertsActive &&
@@ -96,7 +92,7 @@ function BleDevicesView({
                 key={device.getName()}
                 alert={device.getActiveAlert()}
                 closable={false}
-                isMobile={isMobile}
+                isMobile={appContext.isMobile}
               />
             ))}
         </>
@@ -120,8 +116,9 @@ function BleDevicesView({
                 title={device.getName()}
                 device={device}
                 loading={bleDevicesLoading}
-                small={isMobile}
-                debug={uiDebugMode}
+                small={appContext.isMobile}
+                debug={appContext.uiDebugMode}
+                isSummer={appContext.isSummer}
               />
             </Col>
           ))}

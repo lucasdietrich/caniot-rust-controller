@@ -26,6 +26,9 @@ import { MdSignalCellularConnectedNoInternet4Bar } from "react-icons/md";
 const TEMPERATURE_ROUND_PRECISION = 1;
 const HUMIDITY_ROUND_PRECISION = 0;
 
+const WINTER_SUMMER_TEMP_FEELING_DIFF_INDOOR = 3; // °C
+const WINTER_SUMMER_TEMP_FEELING_DIFF_OUTDOOR = 6; // °C
+
 // Yeaye ! Thx chatgpt, i don't understand anything in this function but it works :D
 /**
  * Interpolates between two hex colors and returns the resulting color as a hex string.
@@ -65,51 +68,115 @@ export function interpolateColor(colorFrom: string, colorTo: string, weight: num
   return `#${rr}${gg}${bb}`;
 }
 
-export function GetTemperatureColor(temp: number) {
-  if (temp < 0) {
-    return "#AAF7FF";
-  } else if (temp < 14) {
-    return "#3FA0FF";
-  } else if (temp < 22) {
-    return "#2cde73";
-  } else if (temp < 30) {
-    return "#ffad72";
-  } else if (temp < 40) {
-    return "#f76d5e";
-  } else {
-    return "#D82632";
+const OUTDOOR_TEMPERATURES = [
+  {
+    boundary: 0,
+    color: "#AAF7FF",
+    icon: <BsThermometerSnow />,
+  },
+  {
+    boundary: 14,
+    color: "#3FA0FF",
+    icon: <BsThermometerLow />,
+  },
+  {
+    boundary: 22,
+    color: "#2cde73",
+    icon: <BsThermometerHalf />,
+  },
+  {
+    boundary: 30,
+    color: "#ffad72",
+    icon: <BsThermometerHigh />,
+  },
+  {
+    boundary: 33,
+    color: "#f76d5e",
+    icon: <BsThermometerSun />,
+  },
+];
+
+const INDOOR_TEMPERATURES = [
+  {
+    boundary: 15,
+    color: "#AAF7FF",
+    icon: <BsThermometerSnow />,
+  },
+  {
+    boundary: 19,
+    color: "#3FA0FF",
+    icon: <BsThermometerLow />,
+  },
+  {
+    boundary: 22,
+    color: "#2cde73",
+    icon: <BsThermometerHalf />,
+  },
+  {
+    boundary: 23,
+    color: "#ffad72",
+    icon: <BsThermometerHigh />,
+  },
+  {
+    boundary: 25,
+    color: "#f76d5e",
+    icon: <BsThermometerSun />,
+  },
+];
+
+export function GetTemperatureColor(
+  temp: number,
+  indoor: boolean = false,
+  summer: boolean = false
+) {
+  if (summer) {
+    if (indoor) {
+      temp -= WINTER_SUMMER_TEMP_FEELING_DIFF_INDOOR;
+    } else {
+      temp -= WINTER_SUMMER_TEMP_FEELING_DIFF_OUTDOOR;
+    }
   }
+  const map = indoor ? INDOOR_TEMPERATURES : OUTDOOR_TEMPERATURES;
+  const step = map.find((entry) => temp < entry.boundary);
+  return step ? step.color : "#D82632";
 }
 
-export function GetTemperatureIcon(temp: number) {
-  if (temp < 0) {
-    return <BsThermometerSnow />;
-  } else if (temp < 14) {
-    return <BsThermometerLow />;
-  } else if (temp < 22) {
-    return <BsThermometerHalf />;
-  } else if (temp < 30) {
-    return <BsThermometerHigh />;
-  } else {
-    return <BsThermometerSun />;
+export function GetTemperatureIcon(temp: number, indoor: boolean = false, summer: boolean = false) {
+  if (summer) {
+    if (indoor) {
+      temp -= WINTER_SUMMER_TEMP_FEELING_DIFF_INDOOR;
+    } else {
+      temp -= WINTER_SUMMER_TEMP_FEELING_DIFF_OUTDOOR;
+    }
   }
+  const map = indoor ? INDOOR_TEMPERATURES : OUTDOOR_TEMPERATURES;
+  const step = map.find((entry) => temp < entry.boundary);
+  return step ? step.icon : <BsThermometerSun />;
 }
 
 interface TemperatureGaugeProps {
   title?: string;
   temperature?: number;
+  indoor?: boolean;
+  summer?: boolean;
   showIcon?: boolean;
 }
 
-function TemperatureGaugeStatistic({ title, temperature, showIcon = true }: TemperatureGaugeProps) {
+function TemperatureGaugeStatistic({
+  title,
+  temperature,
+  indoor = false,
+  summer = false,
+  showIcon = true,
+}: TemperatureGaugeProps) {
   return temperature !== undefined ? (
     <Tooltip title={`${Math.round(temperature * 100) / 100} °C`} placement="topLeft">
       <Statistic
         title={title}
         value={temperature}
         precision={TEMPERATURE_ROUND_PRECISION}
-        valueStyle={{ color: GetTemperatureColor(temperature) }}
-        prefix={showIcon && GetTemperatureIcon(temperature)}
+        valueStyle={{ color: GetTemperatureColor(temperature, indoor, summer) }}
+        prefix={showIcon && GetTemperatureIcon(temperature, indoor, summer)}
         suffix="°C"
       ></Statistic>
     </Tooltip>
@@ -124,10 +191,16 @@ function TemperatureGaugeStatistic({ title, temperature, showIcon = true }: Temp
   );
 }
 
-function TemperatureGaugeText({ temperature, showIcon = true }: TemperatureGaugeProps) {
+function TemperatureGaugeText({
+  temperature,
+  showIcon = true,
+  indoor = false,
+  summer = false,
+}: TemperatureGaugeProps) {
   return temperature ? (
     <span>
-      {showIcon && GetTemperatureIcon(temperature)} {Math.round(temperature * 10) / 10} °C
+      {showIcon && GetTemperatureIcon(temperature, indoor, summer)}{" "}
+      {Math.round(temperature * 10) / 10} °C
     </span>
   ) : (
     <span>{showIcon && <FaTemperatureEmpty />} N/A °C</span>

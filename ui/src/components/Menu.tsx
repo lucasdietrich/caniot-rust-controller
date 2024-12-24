@@ -78,6 +78,11 @@ function AppMenu({ isMobile = false, uiDebugMode = false }: IMenuProps) {
           label: <Link to="/emulation">Simulation</Link>,
           title: titleTooltipEnable,
         },
+        {
+          key: "demo",
+          label: <Link to="/demo">Démo</Link>,
+          title: titleTooltipEnable,
+        },
       ],
     });
   }
