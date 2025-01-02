@@ -1,6 +1,7 @@
 use crate::{
-    controller::{copro_controller::device::BleDeviceType, DeviceAlert},
+    controller::{copro_controller::device::BleDeviceType, ControllerStats, DeviceAlert},
     coprocessor::{coprocessor::CoproStreamChannelStatus, CoproHandle, CoproMessage},
+    utils::{PrometheusExporterTrait, PrometheusNoLabel},
 };
 
 use chrono::Utc;
@@ -13,10 +14,28 @@ pub struct CoproController {
     handle: CoproHandle,
     devices: Vec<BleDevice>,
     copro_status: CoproStreamChannelStatus,
+    stats: CoproControllerStats,
 }
 
 #[derive(Debug, Error)]
 pub enum CoproError {}
+
+#[derive(Debug, Default, Clone)]
+pub struct CoproControllerStats {
+    pub rx_packets: u64,
+}
+
+impl<'a> PrometheusExporterTrait<'a> for CoproControllerStats {
+    type Label = PrometheusNoLabel;
+
+    fn export(&self, _labels: impl AsRef<[&'a Self::Label]>) -> String {
+        format!(
+            "controller_copro_iface_rx {}\n\
+            ",
+            self.rx_packets,
+        )
+    }
+}
 
 impl CoproController {
     pub fn new(handle: CoproHandle) -> Result<CoproController, CoproError> {
@@ -24,6 +43,7 @@ impl CoproController {
             handle,
             devices: Vec::new(),
             copro_status: CoproStreamChannelStatus::Disconnected,
+            stats: CoproControllerStats::default(),
         })
     }
 
@@ -35,6 +55,7 @@ impl CoproController {
         match message {
             CoproMessage::XiaomiRecord(record) => {
                 info!("ble xiaomi {}", record);
+                self.stats.rx_packets += 1;
 
                 let record_timestamp = record.timestamp.to_utc().unwrap_or(Utc::now());
 
@@ -104,6 +125,9 @@ impl CoproController {
             }
             CoproApiMessage::GetAlert { respond_to } => {
                 respond_to.send(self.get_controller_alert()).ok();
+            }
+            CoproApiMessage::GetStats { respond_to } => {
+                respond_to.send(self.stats.clone()).ok();
             }
         }
 

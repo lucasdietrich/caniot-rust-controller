@@ -61,6 +61,18 @@ pub fn format_metric<'a>(
     }
 }
 
+#[derive(Clone)]
+pub enum DeviceLabel {
+    Name(String),
+    Controller(String),
+    Medium(String),
+    Mac(String),
+    Class(u8),
+    SubId(u8),
+}
+
+impl_display_for_enum!(DeviceLabel { Name(String), Controller(String), Medium(String), Mac(String), Class(String), SubId(String) });
+
 // prometheus library
 #[derive(Clone)]
 pub enum SensorLabel {

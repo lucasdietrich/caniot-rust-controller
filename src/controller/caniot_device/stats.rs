@@ -1,8 +1,6 @@
 use serde::Serialize;
 
-use crate::utils::{join_labels, PrometheusExporterTrait};
-
-use super::DeviceLabel;
+use crate::utils::{join_labels, DeviceLabel, PrometheusExporterTrait};
 
 #[derive(Serialize, Debug, Clone, Copy, Default)]
 pub struct DeviceStats {

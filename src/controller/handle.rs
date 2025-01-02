@@ -11,6 +11,8 @@ use crate::grpcserver::EmuRequest;
 use serde::Serialize;
 
 #[cfg(feature = "ble-copro")]
+use super::copro_controller::controller::CoproControllerStats;
+#[cfg(feature = "ble-copro")]
 use super::copro_controller::device::BleDevice;
 
 use super::{
@@ -207,6 +209,18 @@ impl ControllerHandle {
         let (respond_to, receiver) = oneshot::channel();
         let message =
             ControllerMessage::CoprocessorMessage(CoproApiMessage::GetAlert { respond_to });
+        self.sender
+            .send(message)
+            .await
+            .expect("Failed to send IPC message to controller");
+        receiver.await.expect("IPC Sender dropped before response")
+    }
+
+    #[cfg(feature = "ble-copro")]
+    pub async fn get_copro_controller_stats(&self) -> CoproControllerStats {
+        let (respond_to, receiver) = oneshot::channel();
+        let message =
+            ControllerMessage::CoprocessorMessage(CoproApiMessage::GetStats { respond_to });
         self.sender
             .send(message)
             .await

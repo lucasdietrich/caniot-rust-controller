@@ -6,8 +6,7 @@ use serde::Serialize;
 use crate::{
     caniot,
     controller::DeviceAlert,
-    impl_display_for_enum,
-    utils::{join_labels, PrometheusExporterTrait},
+    utils::{join_labels, DeviceLabel, PrometheusExporterTrait},
 };
 
 use super::{Device, DeviceStats};
@@ -72,17 +71,6 @@ impl Into<DeviceInfos> for &Device {
         }
     }
 }
-
-#[derive(Clone)]
-pub enum DeviceLabel {
-    Controller(String),
-    Medium(String),
-    Mac(String),
-    Class(u8),
-    SubId(u8),
-}
-
-impl_display_for_enum!(DeviceLabel { Controller(String), Medium(String), Mac(String), Class(String), SubId(String) });
 
 impl<'a> PrometheusExporterTrait<'a> for DeviceInfos {
     type Label = DeviceLabel;
