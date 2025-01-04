@@ -24,6 +24,8 @@ function DeviceMetricsWidget({
 }: DeviceMetricsWidgetProps) {
   const navigate = useNavigate();
 
+  const showMinMaxColor = true;
+
   return (
     <LoadableCard
       title={title}
@@ -42,9 +44,31 @@ function DeviceMetricsWidget({
             summer={appContext.isSummer}
           />
         </Col>
-
-        <Divider style={{ margin: 5 }} />
-
+      </Row>
+      <Row gutter={2}>
+        <Col span={12}>
+          <TemperatureGaugeStatistic
+            title="Min"
+            temperature={device?.hasOutsideTempMin() ? device.getOutsideTempMin() : undefined}
+            indoor={false}
+            summer={appContext.isSummer}
+            showColor={showMinMaxColor}
+            small
+          />
+        </Col>
+        <Col span={12}>
+          <TemperatureGaugeStatistic
+            title="Max"
+            temperature={device?.hasOutsideTempMax() ? device.getOutsideTempMax() : undefined}
+            indoor={false}
+            summer={appContext.isSummer}
+            showColor={showMinMaxColor}
+            small
+          />
+        </Col>
+      </Row>
+      <Divider style={{ margin: 5 }} />
+      <Row gutter={2}>
         <Col span={12}>
           <>
             {/* <HiOutlineCpuChip />  is bugged, i.e. console error */}
@@ -56,7 +80,6 @@ function DeviceMetricsWidget({
             />
           </>
         </Col>
-
         <Col span={12}>
           <LastSeenBadge
             lastSeenDate={device?.getLastseen()?.toDate()}

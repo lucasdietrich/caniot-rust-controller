@@ -518,6 +518,11 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
                 self.handle_api_device_action(did, action, respond_to, timeout_ms)
                     .await;
             }
+            CaniotApiMessage::DevicesResetMeasuresStats => {
+                for device in self.devices.values_mut() {
+                    device.reset_controller_measures_stats();
+                }
+            }
             CaniotApiMessage::DevicesResetSettings { respond_to } => {
                 for device in self.devices.values_mut() {
                     let mut ctx = ProcessContext::new(None, self.storage.clone());

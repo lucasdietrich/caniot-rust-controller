@@ -150,6 +150,13 @@ impl ControllerHandle {
         .await
     }
 
+    pub async fn caniot_reset_devices_measures_stats(&self) {
+        self.sender
+            .send(CaniotApiMessage::DevicesResetMeasuresStats.into())
+            .await
+            .expect("Failed to send IPC message to controller");
+    }
+
     // Send a specific (typed) device action to the controller of the device.
     pub async fn caniot_device_action_inner<A: ActionTrait>(
         &self,
@@ -226,5 +233,15 @@ impl ControllerHandle {
             .await
             .expect("Failed to send IPC message to controller");
         receiver.await.expect("IPC Sender dropped before response")
+    }
+
+    #[cfg(feature = "ble-copro")]
+    pub async fn reset_copro_devices_measures_stats(&self) {
+        let message =
+            ControllerMessage::CoprocessorMessage(CoproApiMessage::ResetDevicesMeasuresStats);
+        self.sender
+            .send(message)
+            .await
+            .expect("Failed to send IPC message to controller");
     }
 }

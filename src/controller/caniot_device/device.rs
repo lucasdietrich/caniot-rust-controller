@@ -14,9 +14,11 @@ use crate::{
 use super::{
     actions::{DeviceAction, DeviceActionResult},
     context::ProcessContext,
+    downcast_job_as,
     traits::ActionWrapperTrait,
     verdict::{ActionVerdict, Verdict},
-    DeviceControllerWrapperTrait, DeviceError, DeviceJobsContext, DeviceStats, UpdateJobVerdict,
+    DeviceControllerWrapperTrait, DeviceError, DeviceJobWrapper, DeviceJobsContext, DeviceMeasures,
+    DeviceMeasuresResetJob, DeviceStats, UpdateJobVerdict,
 };
 #[derive(Debug)]
 pub struct Device {
@@ -33,7 +35,7 @@ pub struct Device {
     jobs: DeviceJobsContext,
 
     // Last class telemetry values
-    pub measures: Option<BoardClassTelemetry>,
+    pub measures: DeviceMeasures,
 }
 
 impl Device {
@@ -46,7 +48,7 @@ impl Device {
             last_seen: None,
             stats: DeviceStats::default(),
             controller,
-            measures: None,
+            measures: DeviceMeasures::default(),
             jobs: DeviceJobsContext::new(now),
         }
     }
@@ -105,6 +107,10 @@ impl Device {
         Ok(ActionVerdict::ActionPendingOn(req))
     }
 
+    pub fn reset_controller_measures_stats(&mut self) {
+        self.measures.reset_minmax();
+    }
+
     pub fn handle_action(
         &mut self,
         action: &DeviceAction,
@@ -115,7 +121,6 @@ impl Device {
             DeviceAction::ResetSettings => self.handle_action_reset_settings(),
             DeviceAction::InhibitControl(inhibit) => self.handle_action_inhibit_control(*inhibit),
             DeviceAction::Ping(endpoint) => self.handle_action_ping(*endpoint),
-
             DeviceAction::Inner(inner_action) => {
                 if let Some(inner_device) = self.controller.as_mut() {
                     let inner_verdict = inner_device.wrapper_handle_action(inner_action, ctx)?;
@@ -175,13 +180,13 @@ impl Device {
         };
 
         // Update the last class telemetry values
-        if let Some(as_class_blc) = as_class_blc {
-            self.measures = Some(as_class_blc);
+        if let Some(ref as_class_blc) = as_class_blc {
+            self.measures.update_class_telemetry(as_class_blc);
         }
 
         // Let the inner device controller handle the frame
         if let Some(ref mut inner) = self.controller {
-            inner.wrapper_handle_frame(frame, &self.measures, ctx)
+            inner.wrapper_handle_frame(frame, self.measures.get_class_telemetry(), ctx)
         } else {
             Ok(Verdict::default())
         }
@@ -195,6 +200,16 @@ impl Device {
         ctx: &mut ProcessContext,
     ) -> Option<Result<Verdict, DeviceError>> {
         if let Some(pending_job) = self.jobs.pop_pending() {
+            /* Handle special jobs */
+            match pending_job.definition {
+                DeviceJobWrapper::Scheduled(ref job) => {
+                    if downcast_job_as::<DeviceMeasuresResetJob>(job).is_some() {
+                        self.measures.reset_minmax();
+                    }
+                }
+                _ => {}
+            };
+
             if let Some(ref mut inner) = self.controller {
                 let result = inner.wrapper_process_one_job(
                     &pending_job.definition,

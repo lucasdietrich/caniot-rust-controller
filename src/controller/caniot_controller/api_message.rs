@@ -21,6 +21,7 @@ pub enum CaniotApiMessage {
         // If None, the controller will send the query and not wait for a response.
         respond_to: Option<oneshot::Sender<Result<ct::Response, CaniotControllerError>>>,
     },
+    DevicesResetMeasuresStats,
     DeviceAction {
         did: Option<DeviceId>,
         action: DeviceAction,
@@ -38,5 +39,7 @@ pub enum CaniotApiMessage {
         respond_to: oneshot::Sender<Result<(), CaniotControllerError>>,
     },
     #[cfg(feature = "emu")]
-    EmulationRequest { event: EmuRequest },
+    EmulationRequest {
+        event: EmuRequest,
+    },
 }

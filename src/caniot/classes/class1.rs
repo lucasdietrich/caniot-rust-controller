@@ -1,9 +1,12 @@
 use serde::Serialize;
 use strum::{EnumIter, IntoEnumIterator};
 
-use crate::caniot::{ClCd, Payload, ProtocolError, Temperature, Ty, Xps};
+use crate::{
+    caniot::{ClCd, Payload, ProtocolError, Temperature, Ty, Xps},
+    utils::math::avg_of_slice_opt,
+};
 
-use super::traits::{Class, ClassCommandTrait, ClassTelemetryTrait};
+use super::traits::{Class, ClassCommandTrait, ClassTelemetryTrait, TempSensType};
 
 pub const CLASS1_IO_COUNT: usize = 19;
 
@@ -16,13 +19,17 @@ pub struct Telemetry {
 }
 
 impl ClassTelemetryTrait for Telemetry {
-    fn get_board_temperature(&self) -> Option<f32> {
-        self.temp_in.to_celsius()
-    }
-
-    fn get_outside_temperature(&self) -> Option<f32> {
-        // return first valid temperature (get first if multiple are valid)
-        self.temp_out.iter().find_map(|t| t.to_celsius())
+    fn get_temperature(&self, sensor: TempSensType) -> Option<f32> {
+        match sensor {
+            TempSensType::BoardSensor => self.temp_in.to_celsius(),
+            TempSensType::ExternalSensor(index) => self
+                .temp_out
+                .get(index as usize)
+                .and_then(|t| t.to_celsius()),
+            TempSensType::AnyExternal => self.temp_out.iter().find_map(|t| t.to_celsius()),
+            TempSensType::AvgExternal => avg_of_slice_opt(&self.temp_out.map(|t| t.to_celsius())),
+            TempSensType::Any => self.temp_in.to_celsius(),
+        }
     }
 }
 

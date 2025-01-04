@@ -160,6 +160,8 @@ interface TemperatureGaugeProps {
   indoor?: boolean;
   summer?: boolean;
   showIcon?: boolean;
+  showColor?: boolean;
+  small?: boolean;
 }
 
 function TemperatureGaugeStatistic({
@@ -168,6 +170,8 @@ function TemperatureGaugeStatistic({
   indoor = false,
   summer = false,
   showIcon = true,
+  showColor = true,
+  small = false,
 }: TemperatureGaugeProps) {
   return temperature !== undefined ? (
     <Tooltip title={`${Math.round(temperature * 100) / 100} °C`} placement="topLeft">
@@ -175,9 +179,12 @@ function TemperatureGaugeStatistic({
         title={title}
         value={temperature}
         precision={TEMPERATURE_ROUND_PRECISION}
-        valueStyle={{ color: GetTemperatureColor(temperature, indoor, summer) }}
+        valueStyle={{
+          color: showColor ? GetTemperatureColor(temperature, indoor, summer) : "black",
+        }}
         prefix={showIcon && GetTemperatureIcon(temperature, indoor, summer)}
         suffix="°C"
+        className={small ? "small-statistic" : ""}
       ></Statistic>
     </Tooltip>
   ) : (
@@ -187,6 +194,7 @@ function TemperatureGaugeStatistic({
       valueStyle={{ color: "gray" }}
       prefix={<FaTemperatureEmpty />}
       suffix="°C"
+      className={small ? "small-statistic" : ""}
     ></Statistic>
   );
 }
@@ -211,6 +219,8 @@ interface HumidityGaugeProps {
   title?: string;
   humidity?: number;
   showIcon?: boolean;
+  showColor?: boolean;
+  small?: boolean;
 }
 
 export function GetHumidityIcon(humidity: number) {
@@ -231,16 +241,23 @@ export function GetHumidityColor(humidity: number) {
   return interpolateColor("#faf3ca", "#119af5", humidity / 100);
 }
 
-function HumidityGaugeStatistic({ title, humidity, showIcon = true }: HumidityGaugeProps) {
+function HumidityGaugeStatistic({
+  title,
+  humidity,
+  showIcon = true,
+  showColor = true,
+  small = false,
+}: HumidityGaugeProps) {
   return humidity !== undefined ? (
     <Tooltip title={`${Math.round(humidity * 10) / 10}%`} placement="topLeft">
       <Statistic
         title={title}
         value={humidity}
-        valueStyle={{ color: GetHumidityColor(humidity) }}
+        valueStyle={{ color: showColor ? GetHumidityColor(humidity) : "black" }}
         prefix={showIcon && GetHumidityIcon(humidity)}
         suffix="%"
         precision={HUMIDITY_ROUND_PRECISION}
+        className={small ? "small-statistic" : ""}
       ></Statistic>
     </Tooltip>
   ) : (
@@ -250,6 +267,7 @@ function HumidityGaugeStatistic({ title, humidity, showIcon = true }: HumidityGa
       valueStyle={{ color: "gray" }}
       prefix={<FaDropletSlash />}
       suffix="%"
+      className={small ? "small-statistic" : ""}
     ></Statistic>
   );
 }

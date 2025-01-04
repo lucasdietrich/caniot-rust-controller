@@ -22,6 +22,7 @@ interface ISettingsProps {
   setDebugMode?: (debugMode: boolean) => void;
   setUIHomeBLEDevices?: (homeBLEDevices: boolean) => void;
   setSettingsReset?: () => void;
+  setStatsMinMaxReset?: () => void;
 
   isMobile?: boolean;
 }
@@ -34,6 +35,7 @@ function SettingsView({
   setDarkMode = () => {},
   setDebugMode = () => {},
   setSettingsReset = () => {},
+  setStatsMinMaxReset = () => {},
   setUIHomeBLEDevices = () => {},
   isMobile = false,
 }: ISettingsProps) {
@@ -60,11 +62,17 @@ function SettingsView({
             >
               <Switch checked={UIHomeBLEDevices} onChange={setUIHomeBLEDevices} />
             </ListGridItem>
-            {UIDebugMode && (
-              <>
-                <List.Item>
-                  <span style={{ fontWeight: "bold" }}>Actions</span>
-                </List.Item>
+
+            <>
+              <List.Item>
+                <span style={{ fontWeight: "bold" }}>Actions</span>
+              </List.Item>
+              <ListGridItem label="Stats min/max" description="Remettre à zéro les stats min/max">
+                <Button type="primary" danger onClick={setStatsMinMaxReset} disabled={loading}>
+                  Remettre à zéro
+                </Button>
+              </ListGridItem>
+              {UIDebugMode && (
                 <ListGridItem
                   label="Réinitialiser "
                   description="Réinitialiser les paramètres aux valeurs usine"
@@ -73,9 +81,12 @@ function SettingsView({
                     Réinitialiser les paramètres
                   </Button>
                 </ListGridItem>
-              </>
-            )}
+              )}
+            </>
           </List>
+          <List.Item>
+            <span style={{ fontWeight: "bold" }}>Misc</span>
+          </List.Item>
           <ListGridItem label="Prometheus metrics" description="Lien vers les metrics Prometheus">
             <Link to="/metrics" target="_blank">
               /metrics

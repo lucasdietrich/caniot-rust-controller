@@ -106,7 +106,13 @@ impl Into<m::Device> for &DeviceInfos {
                 jobs_processed: self.stats.jobs_processed as u32,
             }),
             board_temp: self.board_temperature,
+            board_temp_min: self.board_temp_min,
+            board_temp_max: self.board_temp_max,
+            board_temp_avg: self.board_temp_avg,
             outside_temp: self.outside_temperature,
+            outside_temp_min: self.outside_temp_min,
+            outside_temp_max: self.outside_temp_max,
+            outside_temp_avg: self.outside_temp_avg,
             measures: self.measures.map(|m| m.into()),
             active_alert: self.active_alert.as_ref().map(|a| a.into()),
             ui_view_name: self.ui_view_name.clone(),
@@ -223,6 +229,7 @@ impl CaniotDevicesService for NgDevices {
             .map_err(|e| Status::internal(format!("Error in perform_action: {} ({:?})", e, e)))?;
 
         let result = match result {
+            DeviceActionResult::Done => m::action_result::ActionResult::Done(()),
             DeviceActionResult::ResetSent => m::action_result::ActionResult::Reboot(()),
             DeviceActionResult::ResetSettingsSent => {
                 m::action_result::ActionResult::ResetSettings(())

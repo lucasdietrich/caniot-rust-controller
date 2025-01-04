@@ -18,6 +18,7 @@ import Media from "react-media";
 import "./App.css";
 import {
   PartialSettings,
+  ResetStatsRequest,
   Settings,
 } from "@caniot-controller/caniot-api-grpc-web/api/ng_internal_pb";
 import internalStore from "./store/InternalStore";
@@ -91,6 +92,13 @@ const App: React.FC = () => {
     internalStore.resetSettings((resp) => {
       setSettings(resp);
     });
+  };
+
+  const onStatsMinMaxReset = () => {
+    const req = new ResetStatsRequest();
+    req.setCaniotMeasuresStats(true);
+    req.setCoproMeasuresStats(true);
+    internalStore.resetStats(req, () => {});
   };
 
   const {
@@ -199,6 +207,7 @@ const App: React.FC = () => {
                     setDarkMode={onDarkModeChange}
                     setDebugMode={onDebugModeChange}
                     setSettingsReset={onSettingsReset}
+                    setStatsMinMaxReset={onStatsMinMaxReset}
                     setUIHomeBLEDevices={onHomeBLEDevicesChange}
                     isMobile={appContext.isMobile}
                   />

@@ -8,6 +8,7 @@ import {
   HelloResponse,
   Infos,
   PartialSettings,
+  ResetStatsRequest,
   Settings,
   SoftwareInfos,
 } from "@caniot-controller/caniot-api-grpc-web/api/ng_internal_pb";
@@ -70,6 +71,19 @@ class InternalStore extends EventEmitter {
       }
 
       HandleSuccess("InternalStore::ResetSettings succeeded");
+
+      callbackFunc(resp);
+    });
+  };
+
+  resetStats = (req: ResetStatsRequest, callbackFunc: (resp: Empty) => void) => {
+    this.client.resetStats(req, null, (err, resp) => {
+      if (err !== null) {
+        HandleError(err);
+        return;
+      }
+
+      HandleSuccess("InternalStore::ResetStats succeeded");
 
       callbackFunc(resp);
     });

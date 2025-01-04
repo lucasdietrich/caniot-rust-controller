@@ -6,7 +6,7 @@ use std::{
 use ble_copro_stream_server::ble::BleAddress;
 use chrono::{DateTime, Utc};
 
-use crate::controller::DeviceAlert;
+use crate::{controller::DeviceAlert, utils::monitorable_measure::ValueMonitor};
 
 pub const BLE_LOW_BATTERY_THRESHOLD: u8 = 20; // %
 pub const BLE_CRITICAL_BATTERY_THRESHOLD: u8 = 5; // %
@@ -76,6 +76,32 @@ impl BleMeasurement {
     }
 }
 
+#[derive(Debug, Default, Clone)]
+pub struct BleDeviceMeasures {
+    temperature_monitor: ValueMonitor<f32>,
+    humidity_monitor: ValueMonitor<f32>,
+}
+
+impl BleDeviceMeasures {
+    pub fn update(&mut self, measurement: &BleMeasurement) {
+        if let Some(temp) = measurement.temperature {
+            self.temperature_monitor.update(&temp);
+        }
+
+        if let Some(humidity) = measurement.humidity {
+            self.humidity_monitor.update(&humidity);
+        }
+    }
+
+    pub fn get_temperature_monitor(&self) -> &ValueMonitor<f32> {
+        &self.temperature_monitor
+    }
+
+    pub fn get_humidity_monitor(&self) -> &ValueMonitor<f32> {
+        &self.humidity_monitor
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Stats {
     pub rx_packets: u64,
@@ -89,6 +115,8 @@ pub struct BleDevice {
     pub last_seen: DateTime<Utc>,
     pub last_measurement: BleMeasurement,
     pub stats: Stats,
+
+    pub measures: BleDeviceMeasures,
 
     ui_display_order: u32,
 }
@@ -108,8 +136,14 @@ impl BleDevice {
             last_measurement: measurement.into(),
             name,
             stats: Stats { rx_packets: 1 }, // At least one packet received
+            measures: BleDeviceMeasures::default(),
             ui_display_order: u32::MAX,
         }
+    }
+
+    pub fn reset_measures_minmax(&mut self) {
+        self.measures.temperature_monitor.reset();
+        self.measures.humidity_monitor.reset();
     }
 
     pub fn handle_received_frame(
@@ -120,6 +154,7 @@ impl BleDevice {
         self.stats.rx_packets += 1;
         self.last_seen = measurement_timestamp;
         self.last_measurement = measurement.into();
+        self.measures.update(&self.last_measurement);
     }
 
     // TODO Remove, calculate in UI

@@ -7,6 +7,8 @@ use log::debug;
 
 use crate::utils::{expirable::ExpirableTrait, Scheduling};
 
+use super::DeviceMeasuresResetJob;
+
 pub trait JobTrait: AsAny + Send + Debug + DynClone {
     fn get_scheduling(&self) -> Scheduling {
         Scheduling::Unscheduled
@@ -89,7 +91,11 @@ pub struct DeviceJobsContext {
 impl DeviceJobsContext {
     pub fn new(first_eval: DateTime<Utc>) -> Self {
         // Default jobs
-        let init_jobs = vec![DeviceJobWrapper::DeviceAdd];
+        let init_jobs = vec![
+            DeviceJobWrapper::DeviceAdd,
+            DeviceJobWrapper::Scheduled(Box::new(DeviceMeasuresResetJob::default())),
+        ];
+
         let init_eval_in = init_jobs.ttl(&first_eval);
 
         Self {
@@ -185,4 +191,8 @@ impl TriggeredDeviceJob {
 pub enum UpdateJobVerdict {
     Keep,
     Unschedule,
+}
+
+pub fn downcast_job_as<J: JobTrait>(job: &Box<dyn JobTrait>) -> Option<&J> {
+    job.as_any().downcast_ref::<J>()
 }

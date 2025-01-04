@@ -11,6 +11,7 @@ service InternalService {
   rpc GetSettings(google.protobuf.Empty) returns (Settings) {}
   rpc SetSettings(PartialSettings) returns (Settings) {}
   rpc ResetSettings(google.protobuf.Empty) returns (Settings) {}
+  rpc ResetStats(ResetStatsRequest) returns (google.protobuf.Empty) {}
 
   rpc GetControllerStats(google.protobuf.Empty) returns (ControllerStats) {}
 
@@ -25,6 +26,11 @@ message PartialSettings { optional bool debug_mode = 2; }
 message Settings { bool debug_mode = 2; }
 
 message HelloRequest { string name = 1; }
+
+message ResetStatsRequest {
+  bool caniot_measures_stats = 1;
+  bool copro_measures_stats = 2;
+}
 
 message HelloResponse {
   string message = 1;
@@ -64,6 +70,7 @@ message Infos {
   optional SoftwareInfos software = 1;
   optional FirmwareInfos firmware = 2;
   optional ControllerStats controller_stats = 3;
+  // TODO add copro stats
 }
 
 message ControllerStats {

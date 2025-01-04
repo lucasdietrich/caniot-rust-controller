@@ -13,6 +13,15 @@ pub trait Class {
     //
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum TempSensType {
+    BoardSensor,
+    ExternalSensor(u8),
+    AvgExternal,
+    AnyExternal,
+    Any,
+}
+
 pub trait ClassTelemetryTrait: AsPayload<Ty> {
     fn to_response(self) -> caniot::ResponseData {
         caniot::ResponseData::Telemetry {
@@ -21,13 +30,7 @@ pub trait ClassTelemetryTrait: AsPayload<Ty> {
         }
     }
 
-    // Gets the board temperature in Celsius degrees (°C)
-    //
-    // # Returns
-    // - `Some(f32)`: The board temperature in Celsius degrees (°C)
-    fn get_board_temperature(&self) -> Option<f32>;
-
-    fn get_outside_temperature(&self) -> Option<f32>;
+    fn get_temperature(&self, sensor: TempSensType) -> Option<f32>;
 }
 
 impl From<Payload<ClCd>> for Payload<Cd> {

@@ -132,7 +132,16 @@ function DeviceStatusCardContent({ device: resp }: IDeviceCardContentProps) {
       <ListLabelledItem label="Contrôleur">
         {resp?.getControllerAttached() ? resp.getControllerName() : "N/A"}
       </ListLabelledItem>
-      <ListLabelledItem label="Temp carte">{tempBoard} °C</ListLabelledItem>
+      <ListLabelledItem label="Temp carte">
+        {tempBoard} °C
+        {resp?.hasBoardTempMin() && resp?.hasBoardTempMax() && (
+          <span>
+            {" "}
+            (min: {resp.getBoardTempMin().toFixed(2)} °C max: {resp.getBoardTempMax().toFixed(2)}{" "}
+            °C)
+          </span>
+        )}
+      </ListLabelledItem>
       <ListLabelledItem label="Temp extérieure (sens 0)">{tempExt0} °C</ListLabelledItem>
       {hasTempExt1 && (
         <ListLabelledItem label="Temp extérieure (sens 1)">{tempExt1} °C</ListLabelledItem>

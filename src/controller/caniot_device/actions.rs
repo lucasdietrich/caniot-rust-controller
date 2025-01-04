@@ -28,6 +28,8 @@ impl ActionTrait for DeviceAction {
 
 // #[derive(Clone)]
 pub enum DeviceActionResult {
+    // Action has been completed
+    Done,
     // Reset command has been sent to the device and telemetry has been received
     ResetSent,
     // Reset settings command has been sent to the device and telemetry has been received

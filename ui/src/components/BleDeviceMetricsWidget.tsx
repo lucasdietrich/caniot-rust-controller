@@ -35,6 +35,8 @@ function BleDeviceMetricsWidget({
 }: BleDeviceMetricsWidgetProps) {
   const navigate = useNavigate();
 
+  const showMinMaxColor = true;
+
   let width_edges;
   let width_center;
 
@@ -82,9 +84,45 @@ function BleDeviceMetricsWidget({
             humidity={device?.hasHumidity() ? device.getHumidity() : undefined}
           />
         </Col>
-
-        <Divider style={{ margin: 5 }} />
-
+      </Row>
+      <Row gutter={2}>
+        <Col span={6}>
+          <TemperatureGaugeStatistic
+            title="Min"
+            temperature={device?.hasTemperatureMin() ? device.getTemperatureMin() : undefined}
+            indoor={true}
+            showColor={showMinMaxColor}
+            small
+          />
+        </Col>
+        <Col span={6}>
+          <TemperatureGaugeStatistic
+            title="Max"
+            temperature={device?.hasTemperatureMax() ? device.getTemperatureMax() : undefined}
+            indoor={true}
+            showColor={showMinMaxColor}
+            small
+          />
+        </Col>
+        <Col span={6}>
+          <HumidityGaugeStatistic
+            title="Min"
+            humidity={device?.hasHumidityMin() ? device.getHumidityMin() : undefined}
+            showColor={showMinMaxColor}
+            small
+          />
+        </Col>
+        <Col span={6}>
+          <HumidityGaugeStatistic
+            title="Max"
+            humidity={device?.hasHumidityMax() ? device.getHumidityMax() : undefined}
+            showColor={showMinMaxColor}
+            small
+          />
+        </Col>
+      </Row>
+      <Divider style={{ margin: 5 }} />
+      <Row gutter={2}>
         <Col span={width_edges}>
           <BatteryGaugeText
             battery_level={device?.getBatteryLevel()}

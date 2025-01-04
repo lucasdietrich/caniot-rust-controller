@@ -204,6 +204,29 @@ impl InternalService for NgInternal {
             (&self.shared.controller_handle.get_controller_stats().await).into(),
         ))
     }
+
+    async fn reset_stats(
+        &self,
+        request: Request<m::ResetStatsRequest>,
+    ) -> Result<Response<()>, Status> {
+        let request = request.into_inner();
+
+        if request.caniot_measures_stats {
+            self.shared
+                .controller_handle
+                .caniot_reset_devices_measures_stats()
+                .await
+        }
+
+        if request.copro_measures_stats {
+            self.shared
+                .controller_handle
+                .reset_copro_devices_measures_stats()
+                .await
+        }
+
+        Ok(Response::new(()))
+    }
 }
 
 pub fn get_ng_internal_server(shared: SharedHandle) -> InternalServiceServer<NgInternal> {

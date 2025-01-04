@@ -18,18 +18,18 @@ use crate::{
     },
     utils::{
         format_metric,
-        monitorable::{MonitorableResultTrait, ValueMonitor},
+        monitorable_state::{MonitorableResultTrait, StateMonitor},
         SensorLabel,
     },
 };
 
 #[derive(Debug, Clone, Default)]
 pub struct AlarmContext {
-    pub state: ValueMonitor<AlarmEnable>,
+    pub state: StateMonitor<AlarmEnable>,
 
     pub last_siren_activation: Option<DateTime<Utc>>,
 
-    pub sabotage: ValueMonitor<bool>,
+    pub sabotage: StateMonitor<bool>,
 }
 
 impl AlarmContext {
@@ -136,8 +136,8 @@ pub struct AlarmController {
     // ios state
 
     // general state
-    pub south_detector: ValueMonitor<bool>,
-    pub east_detector: ValueMonitor<bool>,
+    pub south_detector: StateMonitor<bool>,
+    pub east_detector: StateMonitor<bool>,
 
     // internal state
     pub alarm: AlarmContext,

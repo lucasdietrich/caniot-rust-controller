@@ -4,7 +4,7 @@ use chrono::{DateTime, Utc};
 use serde::Serialize;
 
 use crate::{
-    caniot,
+    caniot::{self, traits::TempSensType},
     controller::DeviceAlert,
     utils::{join_labels, DeviceLabel, PrometheusExporterTrait},
 };
@@ -27,6 +27,12 @@ pub struct DeviceInfos {
     // measures
     pub board_temperature: Option<f32>,
     pub outside_temperature: Option<f32>,
+    pub board_temp_min: Option<f32>,
+    pub board_temp_max: Option<f32>,
+    pub board_temp_avg: Option<f32>,
+    pub outside_temp_min: Option<f32>,
+    pub outside_temp_max: Option<f32>,
+    pub outside_temp_avg: Option<f32>,
 
     // current alert
     pub active_alert: Option<DeviceAlert>,
@@ -53,6 +59,8 @@ impl Into<DeviceInfos> for &Device {
             ui_view_name = infos.ui_view_name;
         }
 
+        let class_last_telemetry = self.measures.get_class_telemetry();
+
         DeviceInfos {
             did: self.did,
             last_seen: self.last_seen,
@@ -63,9 +71,17 @@ impl Into<DeviceInfos> for &Device {
             is_seen: self.is_seen(),
             last_seen_from_now: self.last_seen_from_now(),
             stats: self.stats,
-            measures: self.measures,
-            board_temperature: self.measures.and_then(|m| m.get_board_temperature()),
-            outside_temperature: self.measures.and_then(|m| m.get_outside_temperature()),
+            measures: *class_last_telemetry,
+            board_temperature: class_last_telemetry
+                .and_then(|m| m.get_temperature(TempSensType::BoardSensor)),
+            board_temp_min: self.measures.get_board_temp_monitor().get_min().cloned(),
+            board_temp_max: self.measures.get_board_temp_monitor().get_max().cloned(),
+            board_temp_avg: self.measures.get_board_temp_monitor().get_avg().cloned(),
+            outside_temp_min: self.measures.get_outside_temp_monitor().get_min().cloned(),
+            outside_temp_max: self.measures.get_outside_temp_monitor().get_max().cloned(),
+            outside_temp_avg: self.measures.get_outside_temp_monitor().get_avg().cloned(),
+            outside_temperature: class_last_telemetry
+                .and_then(|m| m.get_temperature(TempSensType::AnyExternal)),
             active_alert,
             ui_view_name,
         }

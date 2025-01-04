@@ -56,3 +56,11 @@ body {
     padding-bottom: 0px !important;
     min-height: 145px;
 }
+
+.small-statistic .ant-statistic-content {
+    font-size: 12px !important;
+}
+
+.small-statistic .ant-statistic-title {
+    font-size: 12px !important;
+}

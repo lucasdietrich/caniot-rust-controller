@@ -5,7 +5,7 @@ use std::{
 
 use crate::{
     caniot::{self, BoardClassTelemetry, Response},
-    controller::{DeviceAlert, JobTrait},
+    controller::{downcast_job_as, DeviceAlert, JobTrait},
     database::{SettingsError, SettingsStore},
 };
 
@@ -292,10 +292,9 @@ impl<T: DeviceControllerTrait> DeviceControllerWrapperTrait for T {
         let job_inner = match job {
             DeviceJobWrapper::DeviceAdd => Ok(DeviceJobImpl::DeviceAdd),
             DeviceJobWrapper::DeviceRemove => Ok(DeviceJobImpl::DeviceRemoved),
-            DeviceJobWrapper::Scheduled(job) => match job.deref().downcast_ref::<T::Job>() {
-                Some(job) => Ok(DeviceJobImpl::Scheduled(job)),
-                None => Err(DeviceError::UnsupportedProcessType),
-            },
+            DeviceJobWrapper::Scheduled(job) => downcast_job_as::<T::Job>(job)
+                .ok_or(DeviceError::UnsupportedProcessType)
+                .and_then(|job| Ok(DeviceJobImpl::Scheduled(job))),
         }?;
 
         self.process_job(&job_inner, job_timestamp, ctx)

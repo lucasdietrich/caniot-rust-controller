@@ -30,6 +30,11 @@ message CoproDevice {
   optional float humidity = 21;
   optional int32 battery_level = 22;
   optional float battery_voltage = 23;
+
+  optional float temperature_min = 24;
+  optional float temperature_max = 25;
+  optional float humidity_min = 26;
+  optional float humidity_max = 27;
 }
 
 message CoproDeviceStats { uint64 rx = 1; }

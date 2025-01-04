@@ -83,6 +83,12 @@ message Device {
 
   optional float board_temp = 20;
   optional float outside_temp = 21;
+  optional float board_temp_min = 22;
+  optional float board_temp_max = 23;
+  optional float board_temp_avg = 24;
+  optional float outside_temp_min = 25;
+  optional float outside_temp_max = 26;
+  optional float outside_temp_avg = 27;
 
   optional DeviceAlert active_alert = 30;
 
@@ -97,17 +103,19 @@ message Action {
   oneof action {
     google.protobuf.Empty reboot = 10;
     google.protobuf.Empty reset_settings = 11;
-    TwoStatePulse inhibit = 12;
-    Endpoint ping = 13;
+    TwoStatePulse inhibit = 13;
+    Endpoint ping = 14;
   }
 }
 
 message ActionResult {
   Device device = 1;
   oneof action_result {
+    google.protobuf.Empty done = 9;
+
     google.protobuf.Empty reboot = 10;
-    google.protobuf.Empty reset_settings = 11;
-    bool inhibit = 12;
-    CaniotFrame pong = 13;
+    google.protobuf.Empty reset_settings = 12;
+    bool inhibit = 13;
+    CaniotFrame pong = 14;
   }
 }

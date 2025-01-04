@@ -129,6 +129,11 @@ impl CoproController {
             CoproApiMessage::GetStats { respond_to } => {
                 respond_to.send(self.stats.clone()).ok();
             }
+            CoproApiMessage::ResetDevicesMeasuresStats => {
+                for device in self.devices.iter_mut() {
+                    device.reset_measures_minmax();
+                }
+            }
         }
 
         Ok(())

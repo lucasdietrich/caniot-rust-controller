@@ -14,4 +14,5 @@ pub enum CoproApiMessage {
     GetStats {
         respond_to: oneshot::Sender<CoproControllerStats>,
     },
+    ResetDevicesMeasuresStats,
 }

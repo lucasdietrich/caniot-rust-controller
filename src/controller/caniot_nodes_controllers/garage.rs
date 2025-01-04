@@ -4,7 +4,7 @@ use crate::{
         ActionResultTrait, ActionTrait, ActionVerdict, DeviceAlert, DeviceControllerInfos,
         DeviceControllerTrait, DeviceError, Verdict,
     },
-    utils::{format_metric, monitorable::ValueMonitor, SensorLabel},
+    utils::{format_metric, monitorable_state::StateMonitor, SensorLabel},
 };
 
 use self::traits::ClassCommandTrait;
@@ -75,17 +75,17 @@ impl From<&class0::Telemetry> for GarageIOState {
 
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct GarageDoorStatus {
-    pub left_door_status: ValueMonitor<DoorState>,
-    pub right_door_status: ValueMonitor<DoorState>,
-    pub gate_open: ValueMonitor<bool>,
+    pub left_door_status: StateMonitor<DoorState>,
+    pub right_door_status: StateMonitor<DoorState>,
+    pub gate_open: StateMonitor<bool>,
 }
 
 impl GarageDoorStatus {
     pub fn init(ios: GarageIOState) -> Self {
         Self {
-            left_door_status: ValueMonitor::init(ios.left_door_open.into()),
-            right_door_status: ValueMonitor::init(ios.right_door_open.into()),
-            gate_open: ValueMonitor::init(ios.gate_open),
+            left_door_status: StateMonitor::init(ios.left_door_open.into()),
+            right_door_status: StateMonitor::init(ios.right_door_open.into()),
+            gate_open: StateMonitor::init(ios.gate_open),
         }
     }
 

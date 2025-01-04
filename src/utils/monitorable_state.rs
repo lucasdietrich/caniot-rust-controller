@@ -1,23 +1,23 @@
 use std::{fmt::Debug, ops::Deref};
 
-pub trait MonitorableTrait: PartialEq + Eq + Clone + Debug + Default {
-    fn monitor(self) -> ValueMonitor<Self> {
-        ValueMonitor::init(self)
+pub trait MonitorableStateTrait: PartialEq + Eq + Clone + Debug + Default {
+    fn monitor(self) -> StateMonitor<Self> {
+        StateMonitor::init(self)
     }
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
-pub struct ValueMonitor<T>
+pub struct StateMonitor<T>
 where
-    T: MonitorableTrait,
+    T: MonitorableStateTrait,
 {
     value: T,
     updates_count: u64,
 }
 
-impl<T> ValueMonitor<T>
+impl<T> StateMonitor<T>
 where
-    T: MonitorableTrait,
+    T: MonitorableStateTrait,
 {
     #[allow(dead_code)]
     pub fn init(value: T) -> Self {
@@ -54,29 +54,29 @@ where
     }
 }
 
-impl<T> AsRef<T> for ValueMonitor<T>
+impl<T> AsRef<T> for StateMonitor<T>
 where
-    T: MonitorableTrait,
+    T: MonitorableStateTrait,
 {
     fn as_ref(&self) -> &T {
         &self.value
     }
 }
 
-impl<T> AsMut<T> for ValueMonitor<T>
+impl<T> AsMut<T> for StateMonitor<T>
 where
-    T: MonitorableTrait,
+    T: MonitorableStateTrait,
 {
     fn as_mut(&mut self) -> &mut T {
         &mut self.value
     }
 }
 
-impl<T> MonitorableTrait for T where T: PartialEq + Eq + Clone + Debug + Default {}
+impl<T> MonitorableStateTrait for T where T: PartialEq + Eq + Clone + Debug + Default {}
 
-impl<T> Deref for ValueMonitor<T>
+impl<T> Deref for StateMonitor<T>
 where
-    T: MonitorableTrait,
+    T: MonitorableStateTrait,
 {
     type Target = T;
 
@@ -110,11 +110,11 @@ impl MonitorableResultTrait for Option<bool> {
 }
 
 #[cfg(test)]
-mod monitorable_test {
+mod monitorable_state_test {
     use super::*;
 
     #[test]
-    fn test_value_monitor() {
+    fn test_state_monitor() {
         let value = 42;
         let mut monitor = value.monitor();
 

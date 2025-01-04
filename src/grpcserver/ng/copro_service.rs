@@ -26,6 +26,10 @@ impl Into<m::CoproDevice> for &BleDevice {
                 rx: self.stats.rx_packets,
             }),
             active_alert: self.get_alert().as_ref().map(|a| a.into()),
+            temperature_min: self.measures.get_temperature_monitor().get_min().cloned(),
+            temperature_max: self.measures.get_temperature_monitor().get_max().cloned(),
+            humidity_min: self.measures.get_humidity_monitor().get_min().cloned(),
+            humidity_max: self.measures.get_humidity_monitor().get_max().cloned(),
         }
     }
 }
@@ -39,7 +43,7 @@ pub struct NgCopro {
 impl CoproService for NgCopro {
     async fn get_list(
         &self,
-        req: tonic::Request<()>,
+        _req: tonic::Request<()>,
     ) -> Result<tonic::Response<m::CoproDevicesList>, tonic::Status> {
         let devices: Vec<m::CoproDevice> = self
             .shared
