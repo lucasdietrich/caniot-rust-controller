@@ -80,7 +80,7 @@ function BleDeviceMetricsWidget({
 
         <Col span={12}>
           <HumidityGaugeStatistic
-            title="Humidity"
+            title="Humidité"
             humidity={device?.hasHumidity() ? device.getHumidity() : undefined}
           />
         </Col>

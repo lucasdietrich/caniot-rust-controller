@@ -61,7 +61,7 @@ mac = "a4:c1:38:56:5e:ce"
 ui_display_order = 8
 
 [[copro.devices]]
-name = "Établie"
+name = "Rangement"
 mac = "a4:c1:38:0a:1e:38"
 ui_display_order = 10
 
