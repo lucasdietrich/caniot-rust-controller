@@ -201,7 +201,7 @@ impl Device {
     ) -> Option<Result<Verdict, DeviceError>> {
         if let Some(pending_job) = self.jobs.pop_pending() {
             /* Handle special jobs */
-            match pending_job.definition {
+            match pending_job.definition.as_ref() {
                 DeviceJobWrapper::Scheduled(ref job) => {
                     if downcast_job_as::<DeviceMeasuresResetJob>(job).is_some() {
                         self.measures.reset_minmax();

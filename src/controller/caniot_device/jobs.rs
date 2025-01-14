@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::{fmt::Debug, sync::Arc};
 
 use as_any::AsAny;
 use chrono::{DateTime, Duration, Utc};
@@ -9,7 +9,7 @@ use crate::utils::{expirable::ExpirableTrait, Scheduling};
 
 use super::DeviceMeasuresResetJob;
 
-pub trait JobTrait: AsAny + Send + Debug + DynClone {
+pub trait JobTrait: AsAny + Send + Sync + Debug + DynClone {
     fn get_scheduling(&self) -> Scheduling {
         Scheduling::Unscheduled
     }
@@ -54,7 +54,7 @@ where
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum DeviceJobWrapper {
     DeviceAdd,
     DeviceRemove,
@@ -82,7 +82,7 @@ impl ExpirableTrait<Duration> for DeviceJobWrapper {
 
 #[derive(Debug)]
 pub struct DeviceJobsContext {
-    definitions: Vec<DeviceJobWrapper>,
+    definitions: Vec<Arc<DeviceJobWrapper>>,
     last_eval: DateTime<Utc>,
     eval_in: Option<Duration>,
     pending: Vec<TriggeredDeviceJob>,
@@ -101,22 +101,22 @@ impl DeviceJobsContext {
         Self {
             last_eval: first_eval,
             eval_in: init_eval_in,
-            definitions: init_jobs,
+            definitions: init_jobs.into_iter().map(Arc::new).collect(),
             pending: vec![],
         }
     }
 
     pub fn register_new_jobs(&mut self, jobs_definitions: Vec<Box<dyn JobTrait>>) {
-        let new_definitions: Vec<DeviceJobWrapper> = jobs_definitions
+        let new_definitions: Vec<Arc<DeviceJobWrapper>> = jobs_definitions
             .into_iter()
-            .map(|job| DeviceJobWrapper::Scheduled(job))
+            .map(|job| Arc::new(DeviceJobWrapper::Scheduled(job)))
             .collect();
 
         // Perform the registration + calculation if the jobs changed
         if !new_definitions.is_empty() {
             debug!("Registering new jobs: {:?}", new_definitions);
             self.definitions.extend(new_definitions);
-            self.eval_in = self.definitions.ttl(&self.last_eval);
+            self.eval_in = self.definitions.iter().ttl(&self.last_eval);
         }
     }
 
@@ -148,7 +148,7 @@ impl DeviceJobsContext {
         self.definitions.len()
     }
 
-    pub fn retain_jobs_definitions(&mut self, f: impl FnMut(&mut DeviceJobWrapper) -> bool) {
+    pub fn retain_jobs_definitions(&mut self, f: impl FnMut(&mut Arc<DeviceJobWrapper>) -> bool) {
         self.definitions.retain_mut(f);
     }
 }
@@ -175,11 +175,11 @@ impl ExpirableTrait<Duration> for DeviceJobsContext {
 #[derive(Debug)]
 pub struct TriggeredDeviceJob {
     pub timestamp: DateTime<Utc>,
-    pub definition: DeviceJobWrapper,
+    pub definition: Arc<DeviceJobWrapper>,
 }
 
 impl TriggeredDeviceJob {
-    pub fn new(timestamp: DateTime<Utc>, definition: DeviceJobWrapper) -> Self {
+    pub fn new(timestamp: DateTime<Utc>, definition: Arc<DeviceJobWrapper>) -> Self {
         Self {
             timestamp,
             definition,

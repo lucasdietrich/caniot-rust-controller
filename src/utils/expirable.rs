@@ -1,6 +1,7 @@
 use std::collections::hash_map;
 use std::ops::Add;
 use std::slice::Iter;
+use std::sync::Arc;
 
 /// Trait for objects that can expire.
 pub trait ExpirableTrait<D>
@@ -114,6 +115,20 @@ where
 
     fn ttl(&self, now: &Self::Instant) -> Option<D> {
         self.iter().ttl(now)
+    }
+}
+
+impl<D, E> ExpirableTrait<D> for Arc<E>
+where
+    E: ExpirableTrait<D>,
+    D: Eq + Ord,
+{
+    const ZERO: D = E::ZERO;
+    type Instant = E::Instant;
+
+    fn ttl(&self, now: &Self::Instant) -> Option<D> {
+        // Just delegate to the inner type (E).
+        self.as_ref().ttl(now)
     }
 }
 
