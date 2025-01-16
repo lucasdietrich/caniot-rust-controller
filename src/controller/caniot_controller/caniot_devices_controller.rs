@@ -18,16 +18,16 @@ use crate::controller::caniot_controller::api_message::CaniotApiMessage;
 use crate::controller::caniot_controller::auto_attach::device_init_controller;
 use crate::controller::caniot_controller::pending_action::PendingAction;
 use crate::controller::caniot_controller::pending_query::{PendingQuery, PendingQueryTenant};
+use crate::controller::device_filtering::{DeviceFilter, FilterableDevice};
 use crate::controller::{
-    ActionVerdict, CaniotConfig, CaniotDevicesConfig, Device, DeviceAction, DeviceActionResult,
-    DeviceError, DeviceInfos, ProcessContext, Verdict,
+    ActionVerdict, CaniotConfig, CaniotDevice, CaniotDeviceInfos, CaniotDevicesConfig,
+    DeviceAction, DeviceActionResult, DeviceError, ProcessContext, Verdict,
 };
 use crate::database::{SettingsStore, Storage};
 use crate::utils::expirable::{ttl, ExpirableTrait};
 
 #[cfg(feature = "can-tunnel")]
 use super::can_tunnel::CanTunnelContextServer;
-use super::device_filter::DeviceFilter;
 use super::stats::CaniotControllerStats;
 
 use log::{info, warn};
@@ -102,7 +102,7 @@ pub struct CaniotDevicesController<IF: CanInterfaceTrait> {
 
     // caniot devices
     pending_queries: Vec<PendingQuery>,
-    devices: HashMap<DeviceId, Device>, // caniot devices
+    devices: HashMap<DeviceId, CaniotDevice>, // caniot devices
 
     #[cfg(feature = "can-tunnel")]
     tunnel_server: CanTunnelContextServer,
@@ -146,11 +146,11 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
     }
 
     async fn device_get_or_create<'d, 'stg>(
-        devices: &'d mut HashMap<DeviceId, Device>,
+        devices: &'d mut HashMap<DeviceId, CaniotDevice>,
         did: DeviceId,
         devices_config: &CaniotDevicesConfig,
         stg: SettingsStore<'stg>,
-    ) -> &'d mut Device {
+    ) -> &'d mut CaniotDevice {
         match devices.entry(did) {
             Entry::Occupied(entry) => entry.into_mut(),
             Entry::Vacant(entry) => {
@@ -158,7 +158,7 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
                 let device_controller = device_init_controller(did, (), devices_config, stg).await;
 
                 // Create device and attach controller if any
-                let new_device = Device::new(did, device_controller);
+                let new_device = CaniotDevice::new(did, device_controller);
 
                 // Insert device in the devices map
                 entry.insert(new_device)
@@ -231,7 +231,7 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
     }
 
     async fn device_update_from_context<'f>(
-        device: &mut Device,
+        device: &mut CaniotDevice,
         ctx: ProcessContext<'f>,
     ) -> Result<(), DeviceError> {
         if ctx.request_jobs_update {
@@ -384,19 +384,21 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
     }
 
     // Return a list of devices with given filter
-    fn get_devices_infos(&self, filter: DeviceFilter) -> Vec<DeviceInfos> {
-        let filter_function = filter.get_filter_function();
-        let sort_function = filter.get_sort_function();
+    fn get_devices_infos(&self, filter: DeviceFilter) -> Vec<CaniotDeviceInfos> {
+        let filter_function = filter.get_filter_function::<CaniotDevice>();
+        let sort_function = filter.get_sort_function::<CaniotDevice>();
         self.devices
             .iter()
             .filter(|(_, device)| filter_function(device))
             .sorted_by(|(_, a), (_, b)| sort_function(a, b))
             .map(|(_, device)| device.into())
-            .rev()
             .collect()
     }
 
-    fn get_device_by_did(&mut self, did: &DeviceId) -> Result<&mut Device, CaniotControllerError> {
+    fn get_device_by_did(
+        &mut self,
+        did: &DeviceId,
+    ) -> Result<&mut CaniotDevice, CaniotControllerError> {
         self.devices
             .get_mut(did)
             .ok_or(CaniotControllerError::NoSuchDevice)
@@ -405,10 +407,10 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
     fn get_device_by_action(
         &mut self,
         action: &DeviceAction,
-    ) -> Result<&mut Device, CaniotControllerError> {
+    ) -> Result<&mut CaniotDevice, CaniotControllerError> {
         match action {
             DeviceAction::Inner(inner_action) => {
-                let mut devices_candidates: Vec<&mut Device> = self
+                let mut devices_candidates: Vec<&mut CaniotDevice> = self
                     .devices
                     .values_mut()
                     .filter(|device| device.can_inner_controller_handle_action(&**inner_action))

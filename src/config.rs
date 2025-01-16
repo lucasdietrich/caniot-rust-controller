@@ -7,6 +7,7 @@ use crate::bus::CanConfig;
 use crate::controller::CaniotConfig;
 use crate::coprocessor::CoproConfig;
 use crate::database::DatabaseConfig;
+use crate::ha::ha::HaConfig;
 use crate::webserver::WebserverConfig;
 
 use crate::grpcserver::GrpcConfig;
@@ -19,6 +20,7 @@ pub struct AppConfig {
     pub web: WebserverConfig,
     pub database: DatabaseConfig,
     pub grpc: GrpcConfig,
+    pub ha: HaConfig,
 }
 
 const CONFIG_PATH: &str = "caniot-controller.toml";

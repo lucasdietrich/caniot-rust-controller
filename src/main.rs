@@ -11,6 +11,7 @@ mod controller;
 mod coprocessor;
 mod database;
 mod grpcserver;
+mod ha;
 mod init;
 mod internal;
 mod logger;

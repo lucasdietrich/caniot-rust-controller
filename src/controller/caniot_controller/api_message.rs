@@ -1,17 +1,17 @@
 use tokio::sync::oneshot;
 
 use crate::caniot::{self as ct, DeviceId};
-use crate::controller::DeviceInfos;
+use crate::controller::device_filtering::DeviceFilter;
+use crate::controller::CaniotDeviceInfos;
 use crate::controller::{ActionTrait, DeviceAction};
 use crate::grpcserver::EmuRequest;
 
 use super::caniot_devices_controller::CaniotControllerError;
-use super::device_filter::DeviceFilter;
 
 pub enum CaniotApiMessage {
     GetDevices {
         filter: DeviceFilter,
-        respond_to: oneshot::Sender<Vec<DeviceInfos>>,
+        respond_to: oneshot::Sender<Vec<CaniotDeviceInfos>>,
     },
     Query {
         query: ct::Request,

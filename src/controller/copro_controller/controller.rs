@@ -1,5 +1,9 @@
+use itertools::Itertools;
+
 use crate::{
-    controller::{copro_controller::device::BleDeviceType, ControllerStats, DeviceAlert},
+    controller::{
+        copro_controller::device::BleDeviceType, device_filtering::DeviceFilter, DeviceAlert,
+    },
     coprocessor::{coprocessor::CoproStreamChannelStatus, CoproHandle, CoproMessage},
     utils::{PrometheusExporterTrait, PrometheusNoLabel},
 };
@@ -79,12 +83,16 @@ impl CoproController {
                             BleDevice::default_name(&BleDeviceType::Xiaomi, &record.ble_addr)
                         });
 
+                    // Get location from config
+                    let location = device_config.and_then(|config| config.location.clone());
+
                     let mut device = BleDevice::new(
                         record.ble_addr,
                         name,
                         BleDeviceType::Xiaomi,
                         record_timestamp,
                         record,
+                        location,
                     );
 
                     // Set display order for the device
@@ -116,11 +124,22 @@ impl CoproController {
         }
     }
 
+    // Return a list of devices with given filter
+    fn get_devices(&self, filter: DeviceFilter) -> Vec<BleDevice> {
+        let filter_function = filter.get_filter_function::<BleDevice>();
+        let sort_function = filter.get_sort_function::<BleDevice>();
+        self.devices
+            .iter()
+            .filter(|device| filter_function(device))
+            .sorted_by(|a, b| sort_function(a, b))
+            .cloned()
+            .collect()
+    }
+
     pub async fn handle_api_message(&mut self, message: CoproApiMessage) -> Result<(), CoproError> {
         match message {
-            CoproApiMessage::GetDevices { respond_to } => {
-                let mut devices = self.devices.clone();
-                devices.sort_by_key(|dev| dev.get_ui_display_order());
+            CoproApiMessage::GetDevices { respond_to, filter } => {
+                let devices = self.get_devices(filter);
                 respond_to.send(devices).ok();
             }
             CoproApiMessage::GetAlert { respond_to } => {

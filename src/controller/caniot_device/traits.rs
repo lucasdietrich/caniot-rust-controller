@@ -167,6 +167,7 @@ pub trait DeviceControllerTrait: Send + Debug + Default {
 #[derive(Debug, Default)]
 pub struct DeviceControllerInfos {
     pub name: String,
+    pub location: Option<String>,
     pub display_name: Option<String>,
 
     // Name of the controller view in the UI
@@ -174,9 +175,15 @@ pub struct DeviceControllerInfos {
 }
 
 impl DeviceControllerInfos {
-    pub fn new(name: &str, display_name: Option<&str>, ui_view_name: Option<&str>) -> Self {
+    pub fn new(
+        name: &str,
+        location: Option<&str>,
+        display_name: Option<&str>,
+        ui_view_name: Option<&str>,
+    ) -> Self {
         Self {
             name: name.to_string(),
+            location: location.map(|s| s.to_string()),
             display_name: display_name.map(|s| s.to_string()),
             ui_view_name: ui_view_name.map(|s| s.to_string()),
         }

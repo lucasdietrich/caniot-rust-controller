@@ -6,6 +6,7 @@ use crate::{
         ActionResultTrait, ActionTrait, ActionVerdict, DeviceAlert, DeviceControllerInfos,
         DeviceControllerTrait, DeviceError, DeviceJobImpl, ProcessContext, Verdict,
     },
+    ha::LOCATION_ATTIC,
 };
 
 use super::types::{HeatingControllerCommand, HeatingControllerTelemetry};
@@ -45,7 +46,12 @@ impl DeviceControllerTrait for HeatersController {
     type Config = ();
 
     fn get_infos(&self) -> DeviceControllerInfos {
-        DeviceControllerInfos::new("heaters", Some("Chauffage lucas"), Some("heaters"))
+        DeviceControllerInfos::new(
+            "heaters",
+            Some(LOCATION_ATTIC),
+            Some("Chauffage lucas"),
+            Some("heaters"),
+        )
     }
 
     fn process_job(

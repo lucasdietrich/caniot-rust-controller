@@ -12,4 +12,5 @@ pub struct CoproDeviceConfig {
     pub mac: String,
     #[serde(default = "device_default_order")]
     pub ui_display_order: u32,
+    pub location: Option<String>,
 }

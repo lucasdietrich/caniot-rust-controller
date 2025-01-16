@@ -9,6 +9,7 @@ pub mod controller;
 pub mod coprocessor;
 pub mod database;
 pub mod grpcserver;
+pub mod ha;
 pub mod init;
 pub mod internal;
 pub mod logger;

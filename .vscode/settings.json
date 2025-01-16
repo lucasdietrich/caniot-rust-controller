@@ -6,9 +6,6 @@
             "remotePort": 50051,
         }
     ],
-    "rust-analyzer.linkedProjects": [
-        "./Cargo.toml",
-    ],
     "files.associations": {
         "*.html.tera": "jinja-html"
     },

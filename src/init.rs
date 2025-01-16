@@ -5,6 +5,7 @@ use tokio::sync::broadcast;
 use tokio::{self};
 
 use crate::database::Storage;
+use crate::ha::ha::Ha;
 use crate::internal::firmware::FirmwareInfos;
 use crate::internal::software::SoftwareInfos;
 use crate::shared::Shared;
@@ -57,10 +58,11 @@ pub fn run_controller() {
 
     let controller =
         controller::init::<bus::IFaceType>(&rt, &config, &storage_handle, &notify_shutdown);
+    let controller_handle = Arc::new(controller.get_handle());
 
     let shared = Arc::new(Shared::new(
         &rt,
-        Arc::new(controller.get_handle()),
+        controller_handle,
         &storage_handle,
         &config,
         notify_shutdown.clone(),
@@ -68,6 +70,9 @@ pub fn run_controller() {
         software_infos,
     ));
 
+    let ha = Ha::new(&config.ha, &shared);
+
+    let h_ha = rt.spawn(ha.run());
     let h_ctrl = rt.spawn(controller.run());
     let h_rocket = rt.spawn(webserver::rocket_server(shared.clone()));
     let h_grpc = rt.spawn(grpcserver::grpc_server(shared.clone()));
@@ -86,6 +91,6 @@ pub fn run_controller() {
         drop(notify_shutdown);
     });
 
-    let _ = rt.block_on(async { tokio::join!(h_ctrl, h_rocket, h_grpc) });
+    let _ = rt.block_on(async { tokio::join!(h_ctrl, h_rocket, h_grpc, h_ha) });
     println!("Exiting...");
 }

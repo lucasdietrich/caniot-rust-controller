@@ -30,6 +30,8 @@ outdoor_alarm_did = 24
 listen_ip = "192.0.3.1"
 listen_port = 4000
 
+[ha]
+
 [[copro.devices]]
 name = "Chambre"
 mac = "a4:c1:38:8d:ba:b4"
@@ -39,6 +41,7 @@ ui_display_order = 2
 name = "Chambre Lucas"
 mac = "a4:c1:38:ec:1c:6d"
 ui_display_order = 3
+location = "attic"
 
 [[copro.devices]]
 name = "Bureau Papa"

@@ -6,7 +6,7 @@ use crate::{
         caniot_controller::auto_attach::{
             DEVICE_GARAGE_DID, DEVICE_HEATERS_DID, DEVICE_OUTDOOR_ALARM_DID,
         },
-        DeviceAction, DeviceActionResult, DeviceInfos,
+        CaniotDeviceInfos, DeviceAction, DeviceActionResult,
     },
     grpcserver::utc_to_prost_timestamp,
     shared::SharedHandle,
@@ -82,7 +82,7 @@ impl Into<m::device::Measures> for ct::classes::BoardClassTelemetry {
     }
 }
 
-impl Into<m::Device> for &DeviceInfos {
+impl Into<m::Device> for &CaniotDeviceInfos {
     fn into(self) -> m::Device {
         m::Device {
             did: Some(self.did.into()),

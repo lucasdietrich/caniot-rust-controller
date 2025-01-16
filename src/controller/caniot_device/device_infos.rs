@@ -9,10 +9,10 @@ use crate::{
     utils::{join_labels, DeviceLabel, PrometheusExporterTrait},
 };
 
-use super::{Device, DeviceStats};
+use super::{CaniotDevice, DeviceStats};
 
 #[derive(Debug, Clone, Serialize)]
-pub struct DeviceInfos {
+pub struct CaniotDeviceInfos {
     pub did: caniot::DeviceId,
     pub is_seen: bool,
     pub last_seen: Option<DateTime<Utc>>,
@@ -41,8 +41,8 @@ pub struct DeviceInfos {
     pub ui_view_name: Option<String>,
 }
 
-impl Into<DeviceInfos> for &Device {
-    fn into(self) -> DeviceInfos {
+impl Into<CaniotDeviceInfos> for &CaniotDevice {
+    fn into(self) -> CaniotDeviceInfos {
         // If controller get the controller infos
         let mut controller_display_name = None;
         let mut controller_name = None;
@@ -61,7 +61,7 @@ impl Into<DeviceInfos> for &Device {
 
         let class_last_telemetry = self.measures.get_class_telemetry();
 
-        DeviceInfos {
+        CaniotDeviceInfos {
             did: self.did,
             last_seen: self.last_seen,
             controller_attached: controller_attached,
@@ -88,7 +88,7 @@ impl Into<DeviceInfos> for &Device {
     }
 }
 
-impl<'a> PrometheusExporterTrait<'a> for DeviceInfos {
+impl<'a> PrometheusExporterTrait<'a> for CaniotDeviceInfos {
     type Label = DeviceLabel;
     fn export(&self, labels: impl AsRef<[&'a Self::Label]>) -> String {
         let str_labels = join_labels(&labels);

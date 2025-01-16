@@ -4,6 +4,7 @@ use crate::{
         ActionResultTrait, ActionTrait, ActionVerdict, DeviceAlert, DeviceControllerInfos,
         DeviceControllerTrait, DeviceError, Verdict,
     },
+    ha::LOCATION_GARAGE,
     utils::{format_metric, monitorable_state::StateMonitor, SensorLabel},
 };
 
@@ -189,7 +190,12 @@ impl DeviceControllerTrait for GarageController {
     type Config = ();
 
     fn get_infos(&self) -> DeviceControllerInfos {
-        DeviceControllerInfos::new(CONTROLLER_NAME, Some("Portes de garage"), Some("garage"))
+        DeviceControllerInfos::new(
+            CONTROLLER_NAME,
+            Some(LOCATION_GARAGE),
+            Some("Portes de garage"),
+            Some("garage"),
+        )
     }
 
     fn get_config(&self) -> &Self::Config {

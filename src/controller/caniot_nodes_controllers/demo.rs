@@ -36,7 +36,7 @@ impl DeviceControllerTrait for DemoController {
     type Config = ();
 
     fn get_infos(&self) -> DeviceControllerInfos {
-        DeviceControllerInfos::new("demo", Some("Demo Controller"), None)
+        DeviceControllerInfos::new("demo", None, Some("Demo Controller"), None)
     }
 
     fn handle_action(

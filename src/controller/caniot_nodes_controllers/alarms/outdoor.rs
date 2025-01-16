@@ -16,6 +16,7 @@ use crate::{
         DeviceControllerInfos, DeviceControllerTrait, DeviceError, DeviceJobImpl,
         PartialConfigTrait, ProcessContext, UpdateJobVerdict, Verdict,
     },
+    ha::LOCATION_OUTSIDE,
     utils::{
         format_metric,
         monitorable_state::{MonitorableResultTrait, StateMonitor},
@@ -321,6 +322,7 @@ impl DeviceControllerTrait for AlarmController {
     fn get_infos(&self) -> DeviceControllerInfos {
         DeviceControllerInfos::new(
             "outdoor_alarm",
+            Some(LOCATION_OUTSIDE),
             Some("Controleur d'alarme extérieure"),
             Some("alarms"),
         )

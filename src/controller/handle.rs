@@ -11,17 +11,15 @@ use crate::grpcserver::EmuRequest;
 use serde::Serialize;
 
 #[cfg(feature = "ble-copro")]
-use super::copro_controller::controller::CoproControllerStats;
-#[cfg(feature = "ble-copro")]
-use super::copro_controller::device::BleDevice;
+use super::copro_controller::{controller::CoproControllerStats, device::BleDevice};
 
 use super::{
     caniot_controller::{
         api_message::CaniotApiMessage, caniot_devices_controller::CaniotControllerError,
-        device_filter::DeviceFilter,
     },
     copro_controller::api_message::CoproApiMessage,
-    ActionTrait, ControllerStats, DeviceAction, DeviceActionResult, DeviceAlert, DeviceInfos,
+    device_filtering::{DeviceFilter, FilterCriteria},
+    ActionTrait, ControllerStats, DeviceAction, DeviceActionResult, DeviceAlert, CaniotDeviceInfos,
     DeviceStats,
 };
 
@@ -94,7 +92,7 @@ impl ControllerHandle {
             .await
     }
 
-    pub async fn get_caniot_devices_infos_list(&self) -> Vec<DeviceInfos> {
+    pub async fn get_caniot_devices_infos_list(&self) -> Vec<CaniotDeviceInfos> {
         self.caniot_query(|respond_to| {
             CaniotApiMessage::GetDevices {
                 filter: DeviceFilter::All,
@@ -105,7 +103,7 @@ impl ControllerHandle {
         .await
     }
 
-    pub async fn get_caniot_devices_with_active_alert(&self) -> Vec<DeviceInfos> {
+    pub async fn get_caniot_devices_with_active_alert(&self) -> Vec<CaniotDeviceInfos> {
         self.caniot_query(|respond_to| {
             CaniotApiMessage::GetDevices {
                 filter: DeviceFilter::WithActiveAlert,
@@ -116,10 +114,10 @@ impl ControllerHandle {
         .await
     }
 
-    pub async fn get_caniot_device_infos(&self, did: DeviceId) -> Option<DeviceInfos> {
+    pub async fn get_caniot_device_infos(&self, did: DeviceId) -> Option<CaniotDeviceInfos> {
         self.caniot_query(|respond_to| {
             CaniotApiMessage::GetDevices {
-                filter: DeviceFilter::ById(did),
+                filter: DeviceFilter::ByCriteria(FilterCriteria::CaniotId(did)),
                 respond_to,
             }
             .into()
@@ -127,6 +125,16 @@ impl ControllerHandle {
         .await
         .into_iter()
         .next()
+    }
+
+    pub async fn get_caniot_device_infos_by_filter(
+        &self,
+        filter: DeviceFilter,
+    ) -> Option<CaniotDeviceInfos> {
+        self.caniot_query(|respond_to| CaniotApiMessage::GetDevices { filter, respond_to }.into())
+            .await
+            .into_iter()
+            .next()
     }
 
     // Send a generic device action to the controller of the device.
@@ -201,9 +209,16 @@ impl ControllerHandle {
 
     #[cfg(feature = "ble-copro")]
     pub async fn get_copro_devices_list(&self) -> Vec<BleDevice> {
+        self.get_copro_devices_by_filter(DeviceFilter::All).await
+    }
+
+    #[cfg(feature = "ble-copro")]
+    pub async fn get_copro_devices_by_filter(&self, filter: DeviceFilter) -> Vec<BleDevice> {
         let (respond_to, receiver) = oneshot::channel();
-        let message =
-            ControllerMessage::CoprocessorMessage(CoproApiMessage::GetDevices { respond_to });
+        let message = ControllerMessage::CoprocessorMessage(CoproApiMessage::GetDevices {
+            filter,
+            respond_to,
+        });
         self.sender
             .send(message)
             .await

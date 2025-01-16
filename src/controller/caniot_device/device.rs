@@ -7,7 +7,10 @@ use crate::{
         self, classes, BoardClassTelemetry, DeviceId, Endpoint, Response, ResponseData, SysCtrl,
         TSP,
     },
-    controller::{ActionTrait, DeviceAlert, JobTrait},
+    controller::{
+        device_filtering::{FilterCriteria, FilterableDevice},
+        ActionTrait, DeviceAlert, JobTrait,
+    },
     utils::expirable::ExpirableTrait,
 };
 
@@ -17,11 +20,11 @@ use super::{
     downcast_job_as,
     traits::ActionWrapperTrait,
     verdict::{ActionVerdict, Verdict},
-    DeviceControllerWrapperTrait, DeviceError, DeviceJobWrapper, DeviceJobsContext, DeviceMeasures,
-    DeviceMeasuresResetJob, DeviceStats, UpdateJobVerdict,
+    DeviceControllerInfos, DeviceControllerWrapperTrait, DeviceError, DeviceJobWrapper,
+    DeviceJobsContext, DeviceMeasures, DeviceMeasuresResetJob, DeviceStats, UpdateJobVerdict,
 };
 #[derive(Debug)]
-pub struct Device {
+pub struct CaniotDevice {
     pub did: DeviceId,
 
     // Stats
@@ -38,7 +41,7 @@ pub struct Device {
     pub measures: DeviceMeasures,
 }
 
-impl Device {
+impl CaniotDevice {
     pub fn new(did: DeviceId, controller: Option<Box<dyn DeviceControllerWrapperTrait>>) -> Self {
         // TODO remove/move
         let now = Utc::now();
@@ -51,6 +54,12 @@ impl Device {
             measures: DeviceMeasures::default(),
             jobs: DeviceJobsContext::new(now),
         }
+    }
+
+    pub fn get_controller_infos(&self) -> Option<DeviceControllerInfos> {
+        self.controller
+            .as_ref()
+            .map(|inner| inner.wrapper_get_infos())
     }
 
     pub fn mark_last_seen(&mut self, at: DateTime<Utc>) {
@@ -280,11 +289,40 @@ impl Device {
     }
 }
 
-impl ExpirableTrait<Duration> for Device {
+impl ExpirableTrait<Duration> for CaniotDevice {
     const ZERO: Duration = Duration::zero();
     type Instant = DateTime<Utc>;
 
     fn ttl(&self, now: &DateTime<Utc>) -> Option<Duration> {
         self.jobs.ttl(now)
+    }
+}
+
+impl FilterableDevice for CaniotDevice {
+    fn get_filter_name(&self) -> String {
+        "".to_string()
+    }
+
+    fn get_filter_location(&self) -> Option<String> {
+        self.get_controller_infos()
+            .and_then(|infos| infos.location.clone())
+    }
+
+    fn get_default_order(&self) -> u32 {
+        self.did.to_u8() as u32
+    }
+
+    fn get_active_alert(&self) -> Option<DeviceAlert> {
+        self.get_alert()
+    }
+
+    fn match_criteria(&self, criteria: &FilterCriteria) -> bool {
+        match criteria {
+            FilterCriteria::CaniotId(did) => &self.did == did,
+            FilterCriteria::CaniotControllerName(name) => self
+                .get_controller_infos()
+                .map_or(false, |infos| &infos.name == name),
+            _ => false,
+        }
     }
 }

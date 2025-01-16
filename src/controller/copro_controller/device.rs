@@ -6,7 +6,13 @@ use std::{
 use ble_copro_stream_server::ble::BleAddress;
 use chrono::{DateTime, Utc};
 
-use crate::{controller::DeviceAlert, utils::monitorable_measure::ValueMonitor};
+use crate::{
+    controller::{
+        device_filtering::{FilterCriteria, FilterableDevice},
+        DeviceAlert,
+    },
+    utils::monitorable_measure::ValueMonitor,
+};
 
 pub const BLE_LOW_BATTERY_THRESHOLD: u8 = 20; // %
 pub const BLE_CRITICAL_BATTERY_THRESHOLD: u8 = 5; // %
@@ -119,6 +125,7 @@ pub struct BleDevice {
     pub measures: BleDeviceMeasures,
 
     ui_display_order: u32,
+    location: Option<String>,
 }
 
 impl BleDevice {
@@ -128,6 +135,7 @@ impl BleDevice {
         device_type: BleDeviceType,
         measurement_timestamp: DateTime<Utc>,
         measurement: impl Into<BleMeasurement>,
+        location: Option<String>,
     ) -> Self {
         Self {
             device_type,
@@ -138,6 +146,7 @@ impl BleDevice {
             stats: Stats { rx_packets: 1 }, // At least one packet received
             measures: BleDeviceMeasures::default(),
             ui_display_order: u32::MAX,
+            location,
         }
     }
 
@@ -230,5 +239,27 @@ impl BleDevice {
 
     pub fn get_ui_display_order(&self) -> u32 {
         self.ui_display_order
+    }
+}
+
+impl FilterableDevice for BleDevice {
+    fn get_filter_name(&self) -> String {
+        self.name.clone()
+    }
+
+    fn get_filter_location(&self) -> Option<String> {
+        self.location.clone()
+    }
+
+    fn get_default_order(&self) -> u32 {
+        self.get_ui_display_order()
+    }
+
+    fn get_active_alert(&self) -> Option<DeviceAlert> {
+        self.get_alert()
+    }
+
+    fn match_criteria(&self, _criteria: &FilterCriteria) -> bool {
+        false
     }
 }
