@@ -350,29 +350,34 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
             .iter_mut()
             .filter(|(_, device)| device.is_expired(now))
         {
-            // Calculate triggered jobs
-            device.shift_jobs(now);
-
-            // Process device jobs until no more jobs are available
             loop {
                 let mut device_ctx = ProcessContext::new(None, storage.clone());
+                let mut more_jobs = false;
 
-                if let Some(verdict) = device.process_one_job(&mut device_ctx).transpose()? {
-                    match verdict {
-                        Verdict::None => {}
-                        Verdict::Request(request) => {
-                            let request = Request::new(*did, request);
-                            Self::iface_send_caniot_frame(
-                                &mut self.iface,
-                                &mut self.stats,
-                                &request,
-                            )
-                            .await?;
+                match device.process_one_job(now, &mut device_ctx, &mut more_jobs) {
+                    Ok(verdict) => {
+                        match verdict {
+                            Verdict::None => {}
+                            Verdict::Request(request) => {
+                                let request = Request::new(*did, request);
+                                Self::iface_send_caniot_frame(
+                                    &mut self.iface,
+                                    &mut self.stats,
+                                    &request,
+                                )
+                                .await?;
+                            }
                         }
-                    }
 
-                    Self::device_update_from_context(device, device_ctx).await?;
-                } else {
+                        Self::device_update_from_context(device, device_ctx).await?;
+                    }
+                    Err(err) => {
+                        error!("Failed to process device job: {}", err);
+                    }
+                }
+
+                // If no more jobs, break the loop
+                if !more_jobs {
                     break;
                 }
             }

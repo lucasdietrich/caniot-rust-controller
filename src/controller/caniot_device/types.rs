@@ -10,8 +10,8 @@ pub enum DeviceError {
     NoInnerDevice,
     #[error("Unsupported action for device")]
     UnsupportedAction,
-    #[error("Unsupported process type")]
-    UnsupportedProcessType,
+    #[error("Unsupported job for device")]
+    UnsupportedJob,
     #[error("No action result")]
     NoActionResult,
     #[error("Not implemented")]

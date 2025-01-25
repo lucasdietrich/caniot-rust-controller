@@ -1,4 +1,4 @@
-use chrono::NaiveTime;
+use chrono::{NaiveTime, Timelike};
 
 use crate::{controller::JobTrait, utils::Scheduling};
 
@@ -22,7 +22,9 @@ pub enum AlarmJob {
 impl JobTrait for AlarmJob {
     fn get_scheduling(&self) -> Scheduling {
         match self {
-            AlarmJob::DailyAuto(time, ..) => Scheduling::Daily(*time),
+            AlarmJob::DailyAuto(time, ..) => {
+                Scheduling::new_cron(&format!("0 {} {} * * *", time.minute(), time.hour()))
+            }
         }
     }
 }

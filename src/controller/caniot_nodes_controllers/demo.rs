@@ -74,7 +74,7 @@ impl DeviceControllerTrait for DemoController {
     fn process_job(
         &mut self,
         _job: &DeviceJobImpl<Self::Job>,
-        _job_timestamp: DateTime<Utc>,
+        _job_timestamp: &DateTime<Utc>,
         _ctx: &mut ProcessContext,
     ) -> Result<Verdict, DeviceError> {
         Ok(Verdict::default())

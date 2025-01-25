@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 
 use super::{
     verdict::{ActionVerdict, ActionVerdictWrapper, Verdict},
-    DeviceError, DeviceJobImpl, DeviceJobWrapper, ProcessContext, UpdateJobVerdict,
+    DeviceError, DeviceJobDefinition, DeviceJobImpl, ProcessContext, UpdateJobVerdict,
 };
 
 #[async_trait]
@@ -121,7 +121,7 @@ pub trait DeviceControllerTrait: Send + Debug + Default {
     fn process_job(
         &mut self,
         _job: &DeviceJobImpl<Self::Job>,
-        _job_timestamp: DateTime<Utc>,
+        _job_timestamp: &DateTime<Utc>,
         _ctx: &mut ProcessContext,
     ) -> Result<Verdict, DeviceError> {
         Ok(Verdict::default())
@@ -227,12 +227,12 @@ pub trait DeviceControllerWrapperTrait: Send + Debug {
 
     fn wrapper_process_one_job(
         &mut self,
-        job: &DeviceJobWrapper,
-        job_timestamp: DateTime<Utc>,
+        job: &DeviceJobDefinition,
+        job_timestamp: &DateTime<Utc>,
         ctx: &mut ProcessContext,
     ) -> Result<Verdict, DeviceError>;
 
-    fn wrapper_update_scheduled_job(&mut self, jobs: &mut DeviceJobWrapper) -> UpdateJobVerdict;
+    fn wrapper_update_scheduled_job(&mut self, jobs: &mut DeviceJobDefinition) -> UpdateJobVerdict;
 
     fn wrapper_get_infos(&self) -> DeviceControllerInfos;
 
@@ -290,26 +290,24 @@ impl<T: DeviceControllerTrait> DeviceControllerWrapperTrait for T {
 
     fn wrapper_process_one_job(
         &mut self,
-        job: &DeviceJobWrapper,
-        job_timestamp: DateTime<Utc>,
+        job: &DeviceJobDefinition,
+        job_timestamp: &DateTime<Utc>,
         ctx: &mut ProcessContext,
     ) -> Result<Verdict, DeviceError> {
-        debug!("Processing job: {:?}", job);
-
         let job_inner = match job {
-            DeviceJobWrapper::DeviceAdd => Ok(DeviceJobImpl::DeviceAdd),
-            DeviceJobWrapper::DeviceRemove => Ok(DeviceJobImpl::DeviceRemoved),
-            DeviceJobWrapper::Scheduled(job) => downcast_job_as::<T::Job>(job)
-                .ok_or(DeviceError::UnsupportedProcessType)
+            DeviceJobDefinition::DeviceAdd => Ok(DeviceJobImpl::DeviceAdd),
+            DeviceJobDefinition::DeviceRemove => Ok(DeviceJobImpl::DeviceRemoved),
+            DeviceJobDefinition::Scheduled(job) => downcast_job_as::<T::Job>(job)
+                .ok_or(DeviceError::UnsupportedJob)
                 .and_then(|job| Ok(DeviceJobImpl::Scheduled(job))),
         }?;
 
-        self.process_job(&job_inner, job_timestamp, ctx)
+        self.process_job(&job_inner, job_timestamp, ctx) // TODO remove unwrap
     }
 
-    fn wrapper_update_scheduled_job(&mut self, job: &mut DeviceJobWrapper) -> UpdateJobVerdict {
+    fn wrapper_update_scheduled_job(&mut self, job: &mut DeviceJobDefinition) -> UpdateJobVerdict {
         match job {
-            DeviceJobWrapper::Scheduled(job) => {
+            DeviceJobDefinition::Scheduled(job) => {
                 if let Some(job) = job.deref_mut().downcast_mut::<T::Job>() {
                     self.update_job(job)
                 } else {

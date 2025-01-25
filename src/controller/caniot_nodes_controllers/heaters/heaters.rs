@@ -57,7 +57,7 @@ impl DeviceControllerTrait for HeatersController {
     fn process_job(
         &mut self,
         job: &DeviceJobImpl<Self::Job>,
-        _job_timestamp: DateTime<Utc>,
+        _job_timestamp: &DateTime<Utc>,
         _ctx: &mut ProcessContext,
     ) -> Result<Verdict, DeviceError> {
         if job.is_device_add() {

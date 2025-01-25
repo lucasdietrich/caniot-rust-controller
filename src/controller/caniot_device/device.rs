@@ -1,6 +1,6 @@
 use chrono::{DateTime, Duration, Utc};
 
-use log::warn;
+use log::{debug, info, warn};
 
 use crate::{
     caniot::{
@@ -20,10 +20,11 @@ use super::{
     downcast_job_as,
     traits::ActionWrapperTrait,
     verdict::{ActionVerdict, Verdict},
-    DeviceControllerInfos, DeviceControllerWrapperTrait, DeviceError, DeviceJobWrapper,
-    DeviceJobsContext, DeviceMeasures, DeviceMeasuresResetJob, DeviceStats, UpdateJobVerdict,
+    DeviceControllerInfos, DeviceControllerWrapperTrait, DeviceError, DeviceJobDefinition,
+    DeviceJobState, DeviceJobsContext, DeviceMeasures, DeviceMeasuresResetJob, DeviceStats,
+    JobsIterator, UpdateJobVerdict,
 };
-#[derive(Debug)]
+
 pub struct CaniotDevice {
     pub did: DeviceId,
 
@@ -201,17 +202,29 @@ impl CaniotDevice {
         }
     }
 
-    // Process a device job
+    // Process a single device job
     // * Returns the result of the job processing if a job was processed
     // * Returns None if no job was processed
     pub fn process_one_job(
         &mut self,
+        now: &DateTime<Utc>,
         ctx: &mut ProcessContext,
-    ) -> Option<Result<Verdict, DeviceError>> {
-        if let Some(pending_job) = self.jobs.pop_pending() {
+        more_jobs: &mut bool,
+    ) -> Result<Verdict, DeviceError> {
+        let mut ready_jobs_iterator = self.jobs.monitor_ready_jobs(now);
+
+        if let Some(job) = ready_jobs_iterator.next() {
+            // Tell the caller that there are more jobs to process
+            *more_jobs = true;
+
+            // Update stats
+            self.stats.jobs_processed += 1;
+
+            debug!("Processing {:?}", job);
+
             /* Handle special jobs */
-            match pending_job.definition {
-                DeviceJobWrapper::Scheduled(ref job) => {
+            match job.definition {
+                DeviceJobDefinition::Scheduled(ref job) => {
                     if downcast_job_as::<DeviceMeasuresResetJob>(job).is_some() {
                         self.measures.reset_minmax();
                     }
@@ -219,28 +232,24 @@ impl CaniotDevice {
                 _ => {}
             };
 
-            if let Some(ref mut inner) = self.controller {
-                let result = inner.wrapper_process_one_job(
-                    &pending_job.definition,
-                    pending_job.timestamp,
-                    ctx,
-                );
-                self.stats.jobs_processed += 1;
-                return Some(result);
+            let result = if let Some(ref mut inner) = self.controller {
+                inner.wrapper_process_one_job(&job.definition, now, ctx)
             } else {
                 warn!(
                     "No controller to process job {:?} for device {}",
-                    pending_job.definition, self.did
+                    job.definition, self.did
                 );
-            }
+                Ok(Verdict::None)
+            };
+
+            // Advance the job
+            job.advance();
+
+            // return
+            result
+        } else {
+            Ok(Verdict::None)
         }
-
-        None
-    }
-
-    pub fn shift_jobs(&mut self, now: &DateTime<Utc>) {
-        self.jobs.shift(now);
-        self.stats.jobs_currently_scheduled = self.jobs.get_jobs_count();
     }
 
     pub fn register_new_jobs(&mut self, jobs_definitions: Vec<Box<dyn JobTrait>>) {
@@ -249,15 +258,11 @@ impl CaniotDevice {
     }
 
     pub fn update_scheduled_jobs(&mut self) {
-        self.jobs.retain_jobs_definitions(|job| {
+        self.jobs.update_scheduled_jobs(|definition| {
             if let Some(inner) = self.controller.as_mut() {
-                match inner.wrapper_update_scheduled_job(job) {
-                    UpdateJobVerdict::Keep => true,
-                    UpdateJobVerdict::Unschedule => false,
-                }
+                inner.wrapper_update_scheduled_job(definition)
             } else {
-                // Keep job if no defined device controller
-                true
+                UpdateJobVerdict::Keep // Keep job if no defined device controller
             }
         });
     }

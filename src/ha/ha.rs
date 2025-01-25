@@ -40,7 +40,7 @@ impl Ha {
         loop {
             attic::control_attic_heaters(&self.shared).await;
 
-            debug!("HA controller running");
+            // debug!("HA controller running");
             sleep(Duration::from_secs(5)).await;
         }
     }

@@ -56,16 +56,17 @@ impl Default for DeviceMeasures {
 }
 
 #[derive(Debug, Clone)]
-pub struct DeviceMeasuresResetJob(NaiveTime /* reset time */);
+pub struct DeviceMeasuresResetJob;
 
 impl Default for DeviceMeasuresResetJob {
     fn default() -> Self {
-        Self(NaiveTime::from_hms_opt(0, 0, 0).unwrap())
+        Self
     }
 }
 
 impl JobTrait for DeviceMeasuresResetJob {
     fn get_scheduling(&self) -> Scheduling {
-        Scheduling::Daily(self.0)
+        // Daily at midnight
+        Scheduling::new_cron("0 0 0 * * *")
     }
 }

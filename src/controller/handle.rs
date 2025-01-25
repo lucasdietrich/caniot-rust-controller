@@ -19,7 +19,7 @@ use super::{
     },
     copro_controller::api_message::CoproApiMessage,
     device_filtering::{DeviceFilter, FilterCriteria},
-    ActionTrait, ControllerStats, DeviceAction, DeviceActionResult, DeviceAlert, CaniotDeviceInfos,
+    ActionTrait, CaniotDeviceInfos, ControllerStats, DeviceAction, DeviceActionResult, DeviceAlert,
     DeviceStats,
 };
 
