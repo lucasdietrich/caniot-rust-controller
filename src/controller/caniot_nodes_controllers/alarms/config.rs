@@ -77,9 +77,8 @@ impl ConfigTrait for AlarmConfig {
             partial_enable: Option<bool>,
             device: AutoDevice,
         ) -> ConfigUpdateAutoJobsResult {
-            let time_changed = patch_val(enable_time, partial_enable_time).is_some()
-                || patch_val(disable_time, partial_disable_time).is_some();
-
+            let mut time_changed = patch_val(enable_time, partial_enable_time).is_some();
+            time_changed |= patch_val(disable_time, partial_disable_time).is_some();
             if let Some(v) = patch_val(enable, partial_enable) {
                 match v {
                     true => ConfigUpdateAutoJobsResult::EnableJobs(
