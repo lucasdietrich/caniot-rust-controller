@@ -259,9 +259,7 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
 
         // Find pending queries that can be answered by this frame
         // TODO broadcast should be handled differently as the oneshot channel cannot be used to send multiple responses
-        let pivot = self
-            .pending_queries
-            .partition_point(|pq| pq.match_response(&frame));
+        let pivot = partition(&mut self.pending_queries, |pq| pq.match_response(&frame));
 
         // if a frame can answer multiple pending queries, remove all of them
         for pq in self.pending_queries.drain(..pivot) {
