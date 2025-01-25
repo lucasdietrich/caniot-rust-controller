@@ -347,7 +347,7 @@ impl DeviceControllerTrait for AlarmController {
     fn process_job(
         &mut self,
         job: &DeviceJobImpl<Self::Job>,
-        _job_timestamp: DateTime<Utc>,
+        _job_timestamp: &DateTime<Utc>,
         ctx: &mut ProcessContext,
     ) -> Result<Verdict, DeviceError> {
         match job {
@@ -401,20 +401,32 @@ impl DeviceControllerTrait for AlarmController {
     // Unschedule daily jobs if auto mode is disabled, update time if changed
     fn update_job(&mut self, job: &mut Self::Job) -> UpdateJobVerdict {
         match job {
-            AlarmJob::DailyAuto(time, AutoDevice::Alarm, _) => {
+            AlarmJob::DailyAuto(time, AutoDevice::Alarm, action) => {
                 if !self.config.auto_alarm_enable {
                     info!("Unscheduling daily auto alarm job");
                     return UpdateJobVerdict::Unschedule;
-                } else if self.config.auto_alarm_enable_time != *time {
+                } else if (*action == AutoAction::Enable)
+                    && (self.config.auto_alarm_enable_time != *time)
+                {
                     *time = self.config.auto_alarm_enable_time;
+                } else if (*action == AutoAction::Disable)
+                    && (self.config.auto_alarm_disable_time != *time)
+                {
+                    *time = self.config.auto_alarm_disable_time;
                 }
             }
-            AlarmJob::DailyAuto(time, AutoDevice::Lights, _) => {
+            AlarmJob::DailyAuto(time, AutoDevice::Lights, action) => {
                 if !self.config.auto_lights_enable {
                     info!("Unscheduling daily auto lights job");
                     return UpdateJobVerdict::Unschedule;
-                } else if self.config.auto_lights_enable_time != *time {
+                } else if (*action == AutoAction::Enable)
+                    && (self.config.auto_lights_enable_time != *time)
+                {
                     *time = self.config.auto_lights_enable_time;
+                } else if (*action == AutoAction::Disable)
+                    && (self.config.auto_lights_disable_time != *time)
+                {
+                    *time = self.config.auto_lights_disable_time;
                 }
             }
         }
