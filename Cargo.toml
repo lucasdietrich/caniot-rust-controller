@@ -11,18 +11,10 @@ rust-version = "1.75"
 [features]
 default = ["db-sqlite", "ble-copro"]
 
-# feature for emulated can interface and devices
-can-tunnel = []
-experimental = []
-emu = ["emu-delay"]
-grpc-can-iface-server = ["can-tunnel", "dep:tokio-stream", "dep:async-stream"]
-grpc-can-iface-client = ["can-tunnel", "dep:async-stream"]
-
 db-postgres = ["sqlx/postgres"]
 db-sqlite = ["sqlx/sqlite"]
 
 ble-copro = ["dep:ble-copro-stream-server"]
-emu-delay = []
 
 [dependencies]
 # Asynchronous runtime and features

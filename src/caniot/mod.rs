@@ -25,6 +25,3 @@ mod datatypes_test;
 mod payloads_test;
 #[cfg(test)]
 mod sys_control_test;
-
-#[cfg(feature = "emu")]
-pub mod emu;

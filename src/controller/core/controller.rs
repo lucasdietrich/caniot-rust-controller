@@ -26,10 +26,6 @@ pub enum ControllerError {
     #[error("Caniot controller error: {0}")]
     CaniotError(#[from] CaniotControllerError),
 
-    #[cfg(feature = "can-tunnel")]
-    #[error("Can tunnel error: {0}")]
-    CanTunnelError(#[from] super::can_tunnel::CanTunnelError),
-
     #[cfg(feature = "ble-copro")]
     #[error("BLE copro error: {0}")]
     BleCoproError(#[from] crate::controller::copro_controller::CoproError),
@@ -86,8 +82,6 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
 
             let sleep_time = self.caniot.loop_process(&sys_now, &utc_now).await;
 
-            let tunnel_poll_rx = self.caniot.tunnel_poll_tx();
-
             select! {
                 Some(message) = self.receiver.recv() => {
                     let _ = self.handle_api_message(message).await;
@@ -97,11 +91,6 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
                 },
                 Some(copro_message) = self.copro.poll_message() => {
                     self.copro.handle_message(copro_message).await;
-                },
-                Some(frame) = tunnel_poll_rx => {
-                    // If frame is received from tunnel, send it to the bus
-                    #[cfg(feature = "can-tunnel")]
-                    let _ = self.caniot.iface.send(frame).await;
                 },
                 _ = sleep(sleep_time) => {
                     // Timeout of pending queries handled in handle_pending_queries_timeout()

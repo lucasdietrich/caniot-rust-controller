@@ -13,7 +13,6 @@
                     "build",
                     "--bin=caniot-controller",
                     "--package=caniot-controller",
-                    "--features=emu"
                 ],
                 "filter": {
                     "name": "caniot-controller",

@@ -6,8 +6,6 @@ use chrono::{DateTime, Utc};
 use tokio::sync::{mpsc, oneshot};
 
 use crate::caniot::{self as ct, DeviceId};
-#[cfg(feature = "emu")]
-use crate::grpcserver::EmuRequest;
 use serde::Serialize;
 
 #[cfg(feature = "ble-copro")]
@@ -191,15 +189,6 @@ impl ControllerHandle {
             _ => panic!("Unexpected DeviceActionResult variant"),
         }
         // Err(ControllerError::NotImplemented)
-    }
-
-    #[cfg(feature = "emu")]
-    pub async fn send_caniot_emulation_request(&self, event: EmuRequest) {
-        debug!("Sending emulation request to controller: {:?}", event);
-        self.sender
-            .send(CaniotApiMessage::EmulationRequest { event }.into())
-            .await
-            .expect("Failed to send emulation request to controller");
     }
 
     pub async fn reset_caniot_devices_settings(&self) -> Result<(), CaniotControllerError> {

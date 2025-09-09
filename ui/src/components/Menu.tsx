@@ -73,12 +73,6 @@ function AppMenu({ isMobile = false, uiDebugMode = false }: IMenuProps) {
       children: [
         { key: "devices", label: <Link to="/devices">Appareils</Link>, title: titleTooltipEnable },
         {
-          key: "emulation",
-          icon: <ImLab />,
-          label: <Link to="/emulation">Simulation</Link>,
-          title: titleTooltipEnable,
-        },
-        {
           key: "demo",
           label: <Link to="/demo">Démo</Link>,
           title: titleTooltipEnable,

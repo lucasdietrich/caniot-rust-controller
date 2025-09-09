@@ -4,7 +4,6 @@ use crate::caniot::{self as ct, DeviceId};
 use crate::controller::device_filtering::DeviceFilter;
 use crate::controller::CaniotDeviceInfos;
 use crate::controller::{ActionTrait, DeviceAction};
-use crate::grpcserver::EmuRequest;
 
 use super::caniot_devices_controller::CaniotControllerError;
 
@@ -31,15 +30,5 @@ pub enum CaniotApiMessage {
     },
     DevicesResetSettings {
         respond_to: oneshot::Sender<Result<(), CaniotControllerError>>,
-    },
-    #[cfg(feature = "can-tunnel")]
-    EstablishCanTunnel {
-        rx_queue: mpsc::Sender<CanDataFrame>, // Messages received from the bus
-        tx_queue: mpsc::Receiver<CanDataFrame>, // Messages to sent to the bus
-        respond_to: oneshot::Sender<Result<(), CaniotControllerError>>,
-    },
-    #[cfg(feature = "emu")]
-    EmulationRequest {
-        event: EmuRequest,
     },
 }

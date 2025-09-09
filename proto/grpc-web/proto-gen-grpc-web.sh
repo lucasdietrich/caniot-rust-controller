@@ -18,8 +18,5 @@ protoc -I=.. \
     ../ng_garage.proto \
     ../ng_heaters.proto \
     ../ng_internal.proto \
-    ../ng_emulation.proto \
   --js_out=import_style=commonjs:./api \
   --grpc-web_out=import_style=typescript,mode=grpcweb:./api
-
-# Willingly excluding ng_can_iface.proto as it doesn't need to be generated for the web client

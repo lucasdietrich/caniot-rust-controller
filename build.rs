@@ -10,12 +10,8 @@ const PROTO_FILES: &[&str] = &[
     "proto/ng_garage.proto",
     "proto/ng_alarms.proto",
     "proto/ng_copro.proto",
-    "proto/ng_emulation.proto",
     "proto/common.proto",
 ];
-
-#[cfg(any(feature = "grpc-can-iface-server", feature = "grpc-can-iface-client"))]
-const PROTO_CAN_IFACE: &str = "proto/ng_can_iface.proto";
 
 const DB_MIGRATION_DIR: &str = "migrations";
 
@@ -50,19 +46,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .build_client(false)
         .compile(PROTO_FILES, &[PROTO_DIR])?;
 
-    #[cfg(any(feature = "grpc-can-iface-server", feature = "grpc-can-iface-client"))]
-    tonic_build::configure()
-        .build_server(cfg!(feature = "grpc-can-iface-server"))
-        .build_client(cfg!(feature = "grpc-can-iface-client"))
-        .compile(&[PROTO_CAN_IFACE], &[PROTO_DIR])?;
-
     // build on change
     for proto in PROTO_FILES.iter() {
         println!("cargo:rerun-if-changed={}", proto);
     }
-
-    #[cfg(any(feature = "grpc-can-iface-server", feature = "grpc-can-iface-client"))]
-    println!("cargo:rerun-if-changed={}", PROTO_CAN_IFACE);
 
     println!("cargo:rerun-if-changed={}", DB_MIGRATION_DIR);
 

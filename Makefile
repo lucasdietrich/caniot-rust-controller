@@ -6,19 +6,16 @@ format:
 	cargo fmt
 
 build: ui
-	cargo build --features "emu","emu-delay"
+	cargo build
 
 test:
 	cargo test
-
-test_emu:
-	cargo test --features "emu"
 
 clippy:
 	cargo clippy -- -D warnings
 
 run:
-	cargo run --features "emu" --profile dev --bin caniot-controller
+	cargo run --profile dev --bin caniot-controller
 
 clean:
 	cargo clean
@@ -29,12 +26,8 @@ target:
 target_release:
 	./scripts/build.sh build release
 
-target_release_emu:
-	./scripts/build.sh build release emu
-
 deploy_release: deploy_config deploy_static deploy_bin_release
 deploy_debug: deploy_config deploy_static deploy_bin_debug
-deploy_release_emu: deploy_config deploy_static deploy_bin_release_emu
 
 deploy_static:
 	ssh rpi "mkdir -p /home/root/rust-controller/ui/dist"
@@ -49,9 +42,6 @@ deploy_bin_release: target_release
 
 deploy_bin_debug: target
 	scp target/armv7-unknown-linux-gnueabihf/debug/caniot-controller rpi:/home/root/rust-controller/caniot-controller
-
-deploy_bin_release_emu: target_release_emu
-	scp target/armv7-unknown-linux-gnueabihf/release/caniot-controller rpi:/home/root/rust-controller/caniot-controller
 
 ui:
 	make -C proto/grpc-web

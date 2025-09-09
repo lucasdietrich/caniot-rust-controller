@@ -130,7 +130,6 @@ Run with
 - Allow to use a remote controller as a can interface (Hardware in the loop), using the GRPC API
 - Compute stats based on measures (today min, max, last and a curve showing the trend)
 - treat the case where the process() function of a device controller sends a frame for which the response trigger a new process() call, leading to a infinite loop
-- improve call of process() in emulated devices
 - event/log system
 - send broadcast frame on startup
 - handle broadcast pending queries
@@ -147,6 +146,14 @@ Run with
 - improve the configuration handling:
   - reseting device configuration
   - remove async callback from the device configuration
+- SMS:
+    - https://help.ovhcloud.com/csm/fr-sms-api-cookbook?id=kb_article_view&sysparm_article=KB0039149
+    - https://github.com/ovh/php-ovh-sms/tree/master
+    - https://www.ovhtelecom.fr/manager/#/telecom/sms/onboarding
+1. outdoor alarm: lights does not get off when alarm shutdown
+2. telemetry allow to configure attributes with caniot-controller
+3. create vcan and split caniot-controller in multiple parts, allow to configure emulated devices
+4. write configuration app for configuring the gateway
 
 ## TODO (UI)
 

@@ -11,14 +11,14 @@ use itertools::{partition, Itertools};
 use socketcan::CanDataFrame;
 use tokio::sync::oneshot::Sender;
 
-use crate::bus::{CanInterfaceError, CanInterfaceTrait, CAN_IOCTL_SEND_EMU_EVENT};
+use crate::bus::{CanInterfaceError, CanInterfaceTrait};
 use crate::caniot::{self, are_requests_concurrent, Frame, RequestData};
 use crate::caniot::{DeviceId, Request};
 use crate::controller::caniot_controller::api_message::CaniotApiMessage;
 use crate::controller::caniot_controller::auto_attach::device_init_controller;
 use crate::controller::caniot_controller::pending_action::PendingAction;
 use crate::controller::caniot_controller::pending_query::{PendingQuery, PendingQueryTenant};
-use crate::controller::device_filtering::{DeviceFilter, FilterableDevice};
+use crate::controller::device_filtering::DeviceFilter;
 use crate::controller::{
     ActionVerdict, CaniotConfig, CaniotDevice, CaniotDeviceInfos, CaniotDevicesConfig,
     DeviceAction, DeviceActionResult, DeviceError, ProcessContext, Verdict,
@@ -26,8 +26,6 @@ use crate::controller::{
 use crate::database::{SettingsStore, Storage};
 use crate::utils::expirable::{ttl, ExpirableTrait};
 
-#[cfg(feature = "can-tunnel")]
-use super::can_tunnel::CanTunnelContextServer;
 use super::stats::CaniotControllerStats;
 
 use log::{info, warn};
@@ -103,9 +101,6 @@ pub struct CaniotDevicesController<IF: CanInterfaceTrait> {
     // caniot devices
     pending_queries: Vec<PendingQuery>,
     devices: HashMap<DeviceId, CaniotDevice>, // caniot devices
-
-    #[cfg(feature = "can-tunnel")]
-    tunnel_server: CanTunnelContextServer,
 }
 
 impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
@@ -122,8 +117,6 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
 
             pending_queries: Vec::new(),
             devices: HashMap::new(),
-            #[cfg(feature = "can-tunnel")]
-            tunnel_server: CanTunnelContextServer::default(),
         })
     }
 
@@ -536,22 +529,6 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
                 }
                 let _ = respond_to.send(Ok(()));
             }
-            #[cfg(feature = "can-tunnel")]
-            CaniotApiMessage::EstablishCanTunnel {
-                rx_queue,
-                tx_queue,
-                respond_to,
-            } => {
-                let result = self
-                    .tunnel_server
-                    .establish_can_tunnel(rx_queue, tx_queue)
-                    .map_err(Into::into);
-                let _ = respond_to.send(result);
-            }
-            #[cfg(feature = "emu")]
-            CaniotApiMessage::EmulationRequest { event } => self
-                .iface
-                .ioctl(CAN_IOCTL_SEND_EMU_EVENT, Into::<i32>::into(event) as u32)?,
         }
 
         Ok(())
@@ -566,10 +543,6 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
     }
 
     pub async fn handle_can_frame(&mut self, frame: CanDataFrame) {
-        // Send frame to tunnel if established
-        #[cfg(feature = "can-tunnel")]
-        self.tunnel_server.notify_rx(frame.clone());
-
         // Process the frame in the current controller
         match caniot::Response::try_from(frame) {
             Ok(frame) => {
@@ -606,20 +579,5 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
         }
 
         sleep_time
-    }
-
-    pub fn tunnel_poll_tx(&mut self) -> Pending<Option<CanDataFrame>> {
-        let tunnel_poll_tx: Pending<Option<CanDataFrame>> = {
-            #[cfg(feature = "can-tunnel")]
-            {
-                self.tunnel_server.poll_tx()
-            }
-            #[cfg(not(feature = "can-tunnel"))]
-            {
-                futures::future::pending()
-            }
-        };
-
-        tunnel_poll_tx
     }
 }

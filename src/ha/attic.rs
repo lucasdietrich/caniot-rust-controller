@@ -25,7 +25,7 @@ pub async fn control_attic_heaters(shared: &Arc<Shared>) {
             // debug!("BLE {:#?}", ble);
 
             let diff = Instant::now().duration_since(instant);
-            println!("Diff: {:?}", diff);
+            // println!("Diff: {:?}", diff);
         }
     }
 }

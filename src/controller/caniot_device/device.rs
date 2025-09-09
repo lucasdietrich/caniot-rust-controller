@@ -21,8 +21,7 @@ use super::{
     traits::ActionWrapperTrait,
     verdict::{ActionVerdict, Verdict},
     DeviceControllerInfos, DeviceControllerWrapperTrait, DeviceError, DeviceJobDefinition,
-    DeviceJobState, DeviceJobsContext, DeviceMeasures, DeviceMeasuresResetJob, DeviceStats,
-    JobsIterator, UpdateJobVerdict,
+    DeviceJobsContext, DeviceMeasures, DeviceMeasuresResetJob, DeviceStats, UpdateJobVerdict,
 };
 
 pub struct CaniotDevice {
@@ -180,19 +179,25 @@ impl CaniotDevice {
         }
 
         // Ty to parse the telemetry frame as a class telemetry if possible
-        let as_class_blc = match frame {
+        match frame {
             ResponseData::Telemetry { endpoint, payload }
                 if endpoint == &Endpoint::BoardControl =>
             {
-                classes::telemetry::boardlc_parse_telemetry_as_class(self.did.class, payload).ok()
+                if let Ok(ref as_class_blc) =
+                    classes::telemetry::boardlc_parse_telemetry_as_class(self.did.class, payload)
+                {
+                    // Update the last class telemetry values
+                    self.measures.update_class_telemetry(as_class_blc);
+                }
             }
-            _ => None,
+            ResponseData::Attribute { key, value } => {
+                println!(
+                    "Received attribute {} with value {} for device {}",
+                    key, value, self.did
+                );
+            }
+            _ => {}
         };
-
-        // Update the last class telemetry values
-        if let Some(ref as_class_blc) = as_class_blc {
-            self.measures.update_class_telemetry(as_class_blc);
-        }
 
         // Let the inner device controller handle the frame
         if let Some(ref mut inner) = self.controller {

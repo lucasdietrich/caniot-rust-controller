@@ -191,7 +191,7 @@ impl AlarmController {
     /// Returns:
     ///
     /// Returns `request_data` if a request should be sent to the device.
-    pub fn update_state(
+    fn update_state(
         &mut self,
         new_state: DeviceIOState,
         now: &DateTime<Utc>,

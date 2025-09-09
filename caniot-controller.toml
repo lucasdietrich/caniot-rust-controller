@@ -1,5 +1,5 @@
 [can]
-interface = "can0"
+interface = "vcan1"
 
 [web]
 port = 8081

@@ -1,4 +1,3 @@
-pub mod emu;
 pub mod expirable;
 // pub mod expirable_queue;
 pub mod math;
@@ -13,5 +12,4 @@ pub use prometheus::*;
 #[cfg(test)]
 mod expirable_test;
 
-pub use emu::*;
 pub use scheduling::*;

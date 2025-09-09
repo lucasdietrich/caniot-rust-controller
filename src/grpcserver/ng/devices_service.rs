@@ -10,7 +10,6 @@ use crate::{
     },
     grpcserver::utc_to_prost_timestamp,
     shared::SharedHandle,
-    utils::emulated_delay_async,
 };
 
 use super::model::{
@@ -28,7 +27,6 @@ pub struct NgDevices {
 
 impl NgDevices {
     async fn get_device_by_did(&self, did: ct::DeviceId) -> Result<Response<m::Device>, Status> {
-        emulated_delay_async().await;
         if let Some(ref infos) = self
             .shared
             .controller_handle

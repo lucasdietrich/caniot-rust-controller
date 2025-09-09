@@ -11,11 +11,6 @@ else
     BUILD_TYPE="debug"
 fi
 
-# flavor
-if [ "$3" == "emu" ]; then
-    FEATURES="--features emu"
-fi
-
 function build() {
     # if release add --release
     if [ "$BUILD_TYPE" == "release" ]; then

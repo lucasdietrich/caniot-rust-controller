@@ -4,6 +4,7 @@ use log::info;
 use tokio::sync::broadcast;
 use tokio::{self};
 
+use crate::bus::can::CanInterface;
 use crate::database::Storage;
 use crate::ha::ha::Ha;
 use crate::internal::firmware::FirmwareInfos;
@@ -57,7 +58,7 @@ pub fn run_controller() {
     let storage_handle = Arc::new(storage);
 
     let controller =
-        controller::init::<bus::IFaceType>(&rt, &config, &storage_handle, &notify_shutdown);
+        controller::init::<CanInterface>(&rt, &config, &storage_handle, &notify_shutdown);
     let controller_handle = Arc::new(controller.get_handle());
 
     let shared = Arc::new(Shared::new(
