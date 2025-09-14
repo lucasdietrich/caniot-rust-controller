@@ -10,8 +10,8 @@ use crate::{
         get_ng_copro_server,
         legacy::get_legacy_caniot_controller,
         ng::{
-            get_ng_alarms_server, get_ng_controller_server, get_ng_devices_server,
-            get_ng_garage_server, get_ng_heaters_server,
+            get_ng_alarms_server, get_ng_devices_server, get_ng_garage_server,
+            get_ng_heaters_server,
         },
     },
     shared::SharedHandle,
@@ -43,7 +43,6 @@ pub async fn grpc_server(shared: SharedHandle) -> Result<(), GrpcServerInitError
     let addr = &shared.config.grpc.listen;
     let addr = addr.parse().expect("gRPC: Could not parse listen address");
 
-    let ng_controller = get_ng_controller_server(shared.clone());
     let ng_internal = get_ng_internal_server(shared.clone());
     let ng_devices = get_ng_devices_server(shared.clone());
     let ng_heaters = get_ng_heaters_server(shared.clone());
@@ -60,7 +59,6 @@ pub async fn grpc_server(shared: SharedHandle) -> Result<(), GrpcServerInitError
 
     let builder = Server::builder()
         .accept_http1(true)
-        .add_service(tonic_web::enable(ng_controller))
         .add_service(tonic_web::enable(ng_internal))
         .add_service(tonic_web::enable(ng_devices))
         .add_service(tonic_web::enable(ng_heaters))

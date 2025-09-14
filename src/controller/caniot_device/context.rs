@@ -2,10 +2,7 @@ use std::{collections::HashMap, future::Future, pin::Pin, sync::Arc};
 
 use chrono::{DateTime, Utc};
 
-use crate::{
-    caniot::Attribute,
-    database::{SettingsStore, Storage},
-};
+use crate::database::{SettingsStore, Storage};
 
 use super::{DeviceError, JobTrait};
 
@@ -26,7 +23,7 @@ pub struct ProcessContext<'f> {
     pub storage: Arc<Storage>,
 
     // Update attributes
-    pub update_attributes: HashMap<Attribute, u32>,
+    pub update_attributes: HashMap<caniot::Attribute, u32>,
 
     // Storage update future
     //

@@ -4,14 +4,12 @@ use std::{
 };
 
 use crate::{
-    caniot::{self, BoardClassTelemetry, Response},
     controller::{downcast_job_as, DeviceAlert, JobTrait},
     database::{SettingsError, SettingsStore},
 };
 
 use as_any::{AsAny, Downcast};
 use chrono::{DateTime, Utc};
-use log::debug;
 use serde::{Deserialize, Serialize};
 
 use super::{
@@ -83,8 +81,8 @@ pub trait DeviceControllerTrait: Send + Debug + Default {
 
     fn handle_frame(
         &mut self,
-        _frame: &caniot::ResponseData,
-        _as_class_blc: &Option<BoardClassTelemetry>,
+        _frame: &caniot::Response,
+        _as_class_blc: &Option<caniot::BoardClassTelemetry>,
         _ctx: &mut ProcessContext,
     ) -> Result<Verdict, DeviceError> {
         Ok(Verdict::default())
@@ -106,7 +104,7 @@ pub trait DeviceControllerTrait: Send + Debug + Default {
     fn handle_action_result(
         &self,
         _delayed_action: &Self::Action,
-        _completed_by: Response,
+        _completed_by: caniot::Response,
     ) -> Result<<Self::Action as ActionTrait>::Result, DeviceError> {
         error!(
             "handle_action_result not implemented for device controller \"{}\"",
@@ -205,8 +203,8 @@ impl Display for DeviceControllerInfos {
 pub trait DeviceControllerWrapperTrait: Send + Debug {
     fn wrapper_handle_frame(
         &mut self,
-        frame: &caniot::ResponseData,
-        as_class_blc: &Option<BoardClassTelemetry>,
+        frame: &caniot::Response,
+        as_class_blc: &Option<caniot::BoardClassTelemetry>,
         ctx: &mut ProcessContext,
     ) -> Result<Verdict, DeviceError>;
 
@@ -255,8 +253,8 @@ impl<T: DeviceControllerTrait> DeviceControllerWrapperTrait for T {
 
     fn wrapper_handle_frame(
         &mut self,
-        frame: &caniot::ResponseData,
-        as_class_blc: &Option<BoardClassTelemetry>,
+        frame: &caniot::Response,
+        as_class_blc: &Option<caniot::BoardClassTelemetry>,
         ctx: &mut ProcessContext,
     ) -> Result<Verdict, DeviceError> {
         self.handle_frame(frame, as_class_blc, ctx)
@@ -278,7 +276,7 @@ impl<T: DeviceControllerTrait> DeviceControllerWrapperTrait for T {
     fn wrapper_handle_delayed_action_result(
         &self,
         delayed_action: &Box<dyn ActionWrapperTrait>,
-        completed_by: Response,
+        completed_by: caniot::Response,
     ) -> Result<Box<dyn ActionResultTrait>, DeviceError> {
         match delayed_action.deref().downcast_ref::<T::Action>() {
             Some(delayed_action) => self

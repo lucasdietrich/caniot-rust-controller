@@ -8,18 +8,7 @@ use serde::Serialize;
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Serialize)]
 pub struct Telemetry {
-    pub oc1: bool,
-    pub oc2: bool,
-    pub rl1: bool,
-    pub rl2: bool,
-    pub in1: bool,
-    pub in2: bool,
-    pub in3: bool,
-    pub in4: bool,
-    pub poc1: bool,
-    pub poc2: bool,
-    pub prl1: bool,
-    pub prl2: bool,
+    pub ios: [bool; CLASS1_IO_COUNT],
 
     pub temp_in: Temperature,
     pub temp_out: [Temperature; 3],

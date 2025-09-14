@@ -1,7 +1,5 @@
 use std::cmp::Ordering;
 
-use crate::caniot;
-
 use super::alert;
 
 pub trait FilterableDevice {

@@ -1,28 +1,29 @@
-use chrono::NaiveTime;
-
-use crate::{
-    caniot::{traits::TempSensType, BoardClassTelemetry},
-    utils::{monitorable_measure::ValueMonitor, Scheduling},
-};
+use crate::utils::{monitorable_measure::ValueMonitor, Scheduling};
 
 use super::JobTrait;
 
 #[derive(Debug)]
 pub struct DeviceMeasures {
-    class_telemetry: Option<BoardClassTelemetry>,
+    class_telemetry: Option<caniot::BoardClassTelemetry>,
     board_temp_monitor: ValueMonitor<f32>,
     outside_temp_monitor: ValueMonitor<f32>,
 }
 
 impl DeviceMeasures {
-    pub fn update_class_telemetry(&mut self, telemetry: &BoardClassTelemetry) {
+    pub fn update_class_telemetry(&mut self, telemetry: &caniot::BoardClassTelemetry) {
         self.class_telemetry = Some(*telemetry);
 
-        if let Some(ref temp) = telemetry.get_temperature(TempSensType::BoardSensor) {
+        if let Some(ref temp) = telemetry
+            .get_temperature(caniot::TempSensType::BoardSensor)
+            .and_then(|t| t.to_celsius())
+        {
             self.board_temp_monitor.update(temp);
         }
 
-        if let Some(ref temp) = telemetry.get_temperature(TempSensType::AnyExternal) {
+        if let Some(ref temp) = telemetry
+            .get_temperature(caniot::TempSensType::AnyExternal)
+            .and_then(|t| t.to_celsius())
+        {
             self.outside_temp_monitor.update(temp);
         }
     }
@@ -32,7 +33,7 @@ impl DeviceMeasures {
         self.outside_temp_monitor.reset();
     }
 
-    pub fn get_class_telemetry(&self) -> &Option<BoardClassTelemetry> {
+    pub fn get_class_telemetry(&self) -> &Option<caniot::BoardClassTelemetry> {
         &self.class_telemetry
     }
 

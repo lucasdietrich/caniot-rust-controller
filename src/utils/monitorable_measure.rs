@@ -1,6 +1,4 @@
-use std::{fmt::Debug, ops::Deref};
-
-use crate::caniot::error;
+use std::fmt::Debug;
 
 pub trait MonitorableValueTrait: PartialOrd + Clone + Debug + Default {
     fn monitor(self) -> ValueMonitor<Self> {

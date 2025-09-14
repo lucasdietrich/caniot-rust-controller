@@ -5,15 +5,12 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use chrono::{DateTime, Utc};
-use futures::future::Pending;
 use itertools::{partition, Itertools};
 
 use socketcan::CanDataFrame;
 use tokio::sync::oneshot::Sender;
 
 use crate::bus::{CanInterfaceError, CanInterfaceTrait};
-use crate::caniot::{self, are_requests_concurrent, Frame, RequestData};
-use crate::caniot::{DeviceId, Request};
 use crate::controller::caniot_controller::api_message::CaniotApiMessage;
 use crate::controller::caniot_controller::auto_attach::device_init_controller;
 use crate::controller::caniot_controller::pending_action::PendingAction;

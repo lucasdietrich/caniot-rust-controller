@@ -1,7 +1,7 @@
+use caniot::{BoardClassTelemetry, Endpoint, HeatingMode, Request, Response};
 use chrono::{DateTime, Utc};
 
 use crate::{
-    caniot::{self, BoardClassTelemetry, Endpoint, HeatingMode, Response},
     controller::{
         ActionResultTrait, ActionTrait, ActionVerdict, DeviceAlert, DeviceControllerInfos,
         DeviceControllerTrait, DeviceError, DeviceJobImpl, ProcessContext, Verdict,
@@ -61,7 +61,7 @@ impl DeviceControllerTrait for HeatersController {
         _ctx: &mut ProcessContext,
     ) -> Result<Verdict, DeviceError> {
         if job.is_device_add() {
-            return Ok(Verdict::Request(caniot::RequestData::Telemetry {
+            return Ok(Verdict::Request(Request::Telemetry {
                 endpoint: HEATERS_ENDPOINT,
             }));
         }
@@ -81,7 +81,7 @@ impl DeviceControllerTrait for HeatersController {
                     modes: [heaters[0], heaters[1], heaters[2], heaters[3]],
                 };
 
-                ActionVerdict::ActionPendingOn(caniot::RequestData::Command {
+                ActionVerdict::ActionPendingOn(Request::Command {
                     endpoint: HEATERS_ENDPOINT,
                     payload: command.into(),
                 })
@@ -101,14 +101,12 @@ impl DeviceControllerTrait for HeatersController {
 
     fn handle_frame(
         &mut self,
-        frame: &caniot::ResponseData,
+        frame: &caniot::Response,
         _as_class_blc: &Option<BoardClassTelemetry>,
         _ctx: &mut ProcessContext,
     ) -> Result<Verdict, crate::controller::DeviceError> {
         match &frame {
-            &caniot::ResponseData::Telemetry { endpoint, payload }
-                if endpoint == &HEATERS_ENDPOINT =>
-            {
+            &caniot::Response::Telemetry { endpoint, payload } if endpoint == &HEATERS_ENDPOINT => {
                 self.status_telemetry_rx_count += 1;
 
                 // interpret the payload as telemetry

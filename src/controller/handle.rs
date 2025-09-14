@@ -5,7 +5,7 @@ use chrono::{DateTime, Utc};
 
 use tokio::sync::{mpsc, oneshot};
 
-use crate::caniot::{self as ct, DeviceId};
+use caniot::{self as ct, DeviceId};
 use serde::Serialize;
 
 #[cfg(feature = "ble-copro")]
@@ -40,7 +40,7 @@ pub struct ControllerHandle {
     sender: mpsc::Sender<ControllerMessage>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone)]
 pub struct DeviceStatsEntry {
     pub did: ct::DeviceId,
     pub last_seen: Option<DateTime<Utc>>,

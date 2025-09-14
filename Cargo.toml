@@ -33,6 +33,8 @@ socketcan = { git = "https://github.com/socketcan-rs/socketcan-rs.git", rev = "c
     "async-std",
 ] }
 embedded-can = "0.4"
+caniot = { path = "/home/lucas/yocto/ha/caniot-lib/caniot-rs" }
+
 # grpc
 tonic = "0.11.0"
 tonic-web = "0.11"

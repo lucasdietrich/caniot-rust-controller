@@ -1,11 +1,9 @@
+use caniot::{BoardClassTelemetry, Request, Response};
 use chrono::{DateTime, Utc};
 
-use crate::{
-    caniot::{self, BoardClassTelemetry, Payload, RequestData},
-    controller::{
-        ActionResultTrait, ActionTrait, ActionVerdict, DeviceControllerInfos,
-        DeviceControllerTrait, DeviceError, DeviceJobImpl, ProcessContext, Verdict,
-    },
+use crate::controller::{
+    ActionResultTrait, ActionTrait, ActionVerdict, DeviceControllerInfos, DeviceControllerTrait,
+    DeviceError, DeviceJobImpl, ProcessContext, Verdict,
 };
 
 #[derive(Default, Debug)]
@@ -23,7 +21,7 @@ impl DemoController {
     pub fn set_active(&mut self, active: bool) -> Result<ActionVerdict<DemoAction>, DeviceError> {
         self.active = active;
 
-        Ok(ActionVerdict::ActionPendingOn(RequestData::Command {
+        Ok(ActionVerdict::ActionPendingOn(Request::Command {
             endpoint: caniot::Endpoint::ApplicationDefault,
             payload: Payload::new_unchecked(&[active as u8]),
         }))
@@ -54,11 +52,11 @@ impl DeviceControllerTrait for DemoController {
 
     fn handle_frame(
         &mut self,
-        frame: &caniot::ResponseData,
+        frame: &caniot::Response,
         _as_class_blc: &Option<BoardClassTelemetry>,
         _ctx: &mut ProcessContext,
     ) -> Result<Verdict, DeviceError> {
-        if let caniot::ResponseData::Telemetry {
+        if let Response::Telemetry {
             endpoint: _,
             payload,
         } = frame

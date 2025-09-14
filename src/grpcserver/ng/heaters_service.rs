@@ -1,7 +1,8 @@
 use num_traits::{FromPrimitive, ToPrimitive};
 use tonic::{Request, Response, Result, Status};
 
-use crate::{caniot::HeatingMode, controller::heaters, shared::SharedHandle};
+use crate::{controller::heaters, shared::SharedHandle};
+use caniot::HeatingMode;
 
 use super::model::heaters::{
     self as m,

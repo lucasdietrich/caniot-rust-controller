@@ -3,7 +3,6 @@ use std::process::Command;
 const PROTO_DIR: &str = "proto";
 const PROTO_FILES: &[&str] = &[
     "proto/legacy.proto",
-    "proto/ng_controller.proto",
     "proto/ng_devices.proto",
     "proto/ng_internal.proto",
     "proto/ng_heaters.proto",

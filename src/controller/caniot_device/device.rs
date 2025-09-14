@@ -1,12 +1,9 @@
+use caniot::SysCtrl;
 use chrono::{DateTime, Duration, Utc};
 
 use log::{debug, info, warn};
 
 use crate::{
-    caniot::{
-        self, classes, BoardClassTelemetry, DeviceId, Endpoint, Response, ResponseData, SysCtrl,
-        TSP,
-    },
     controller::{
         device_filtering::{FilterCriteria, FilterableDevice},
         ActionTrait, DeviceAlert, JobTrait,
@@ -25,7 +22,7 @@ use super::{
 };
 
 pub struct CaniotDevice {
-    pub did: DeviceId,
+    pub did: caniot::DeviceId,
 
     // Stats
     pub last_seen: Option<DateTime<Utc>>,
@@ -165,23 +162,23 @@ impl CaniotDevice {
 
     pub fn handle_frame(
         &mut self,
-        frame: &ResponseData,
-        _as_class_blc: &Option<BoardClassTelemetry>,
+        frame: &caniot::Response,
+        _as_class_blc: &Option<caniot::BoardClassTelemetry>,
         ctx: &mut ProcessContext,
     ) -> Result<Verdict, DeviceError> {
         self.mark_last_seen(ctx.frame_received_at.unwrap());
 
         // Update device stats
         match frame {
-            ResponseData::Telemetry { .. } => self.stats.telemetry_rx += 1,
-            ResponseData::Attribute { .. } => self.stats.attribute_rx += 1,
-            ResponseData::Error { .. } => self.stats.err_rx += 1,
+            caniot::Response::Telemetry { .. } => self.stats.telemetry_rx += 1,
+            caniot::Response::Attribute { .. } => self.stats.attribute_rx += 1,
+            caniot::Response::Error { .. } => self.stats.err_rx += 1,
         }
 
         // Ty to parse the telemetry frame as a class telemetry if possible
         match frame {
-            ResponseData::Telemetry { endpoint, payload }
-                if endpoint == &Endpoint::BoardControl =>
+            caniot::Response::Telemetry { endpoint, payload }
+                if endpoint == &caniot::Endpoint::BoardControl =>
             {
                 if let Ok(ref as_class_blc) =
                     classes::telemetry::boardlc_parse_telemetry_as_class(self.did.class, payload)
@@ -190,7 +187,7 @@ impl CaniotDevice {
                     self.measures.update_class_telemetry(as_class_blc);
                 }
             }
-            ResponseData::Attribute { key, value } => {
+            caniot::Response::Attribute { key, value } => {
                 println!(
                     "Received attribute {} with value {} for device {}",
                     key, value, self.did

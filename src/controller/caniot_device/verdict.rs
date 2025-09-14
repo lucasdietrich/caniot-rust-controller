@@ -1,7 +1,4 @@
-use crate::{
-    caniot::RequestData,
-    controller::{ActionResultTrait, ActionTrait},
-};
+use crate::controller::{ActionResultTrait, ActionTrait};
 
 use super::actions::{DeviceAction, DeviceActionResult};
 
@@ -9,13 +6,13 @@ use super::actions::{DeviceAction, DeviceActionResult};
 pub enum Verdict {
     #[default]
     None,
-    Request(RequestData),
+    Request(caniot::Request),
 }
 
 #[derive(Debug)]
 pub enum ActionVerdict<A: ActionTrait> {
     ActionResult(A::Result),
-    ActionPendingOn(RequestData),
+    ActionPendingOn(caniot::Request),
     ActionRejected(String), // Reason for rejection
 }
 
@@ -39,7 +36,7 @@ impl<A: ActionTrait> ActionVerdict<A> {
         matches!(self, ActionVerdict::ActionPendingOn(_))
     }
 
-    pub fn get_request_action_pending_on(&self) -> Option<&RequestData> {
+    pub fn get_request_action_pending_on(&self) -> Option<&caniot::RequestData> {
         match self {
             ActionVerdict::ActionPendingOn(request) => Some(request),
             _ => None,
@@ -51,7 +48,7 @@ impl<A> ActionResultTrait for ActionVerdict<A> where A: ActionTrait {}
 
 pub enum ActionVerdictWrapper {
     ActionResult(Box<dyn ActionResultTrait>),
-    PendingActionOnRequest(RequestData),
+    PendingActionOnRequest(caniot::RequestData),
     ActionRejected(String),
 }
 

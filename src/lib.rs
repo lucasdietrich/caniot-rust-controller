@@ -3,7 +3,7 @@
 extern crate rocket;
 
 pub mod bus;
-pub mod caniot;
+// pub mod caniot;
 pub mod config;
 pub mod controller;
 pub mod coprocessor;

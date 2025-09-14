@@ -1,8 +1,8 @@
 use crate::{
-    caniot as ct,
     controller::{DeviceAlert, DeviceAlertType},
     grpcserver::utc_to_prost_timestamp,
 };
+use caniot as ct;
 
 use super::model as ng;
 
@@ -16,7 +16,7 @@ impl Into<ng::DeviceId> for ct::DeviceId {
 
 impl Into<ct::DeviceId> for ng::DeviceId {
     fn into(self) -> ct::DeviceId {
-        ct::DeviceId::try_from_u8(self.did as u8).unwrap()
+        ct::DeviceId::try_from(self.did as u8).unwrap()
     }
 }
 

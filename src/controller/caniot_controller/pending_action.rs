@@ -2,10 +2,7 @@ use std::fmt::Debug;
 
 use tokio::sync::oneshot;
 
-use crate::{
-    caniot,
-    controller::{DeviceAction, DeviceActionResult},
-};
+use crate::controller::{DeviceAction, DeviceActionResult};
 
 use super::caniot_devices_controller::CaniotControllerError;
 

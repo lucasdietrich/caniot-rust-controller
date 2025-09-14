@@ -1,5 +1,3 @@
-use crate::caniot::{self, Response};
-
 use super::{ActionResultTrait, ActionTrait, ActionWrapperTrait};
 
 #[derive(Debug)]
@@ -37,7 +35,7 @@ pub enum DeviceActionResult {
     // Inhibit control command has been sent to the device and telemetry has been received
     InhibitControlSent,
     // Pong response from the device
-    Pong(Response),
+    Pong(caniot::Response),
     // Inner action result
     Inner(Box<dyn ActionResultTrait>),
 }

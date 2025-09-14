@@ -1,5 +1,4 @@
 pub mod alarms_service;
-pub mod controller_service;
 #[cfg(feature = "ble-copro")]
 pub mod copro_service;
 pub mod devices_service;
@@ -9,7 +8,6 @@ pub mod helpers;
 pub mod internal_service;
 
 pub use alarms_service::*;
-pub use controller_service::*;
 #[cfg(feature = "ble-copro")]
 pub use copro_service::*;
 pub use devices_service::*;
@@ -25,10 +23,6 @@ mod model {
 
     pub mod internal {
         tonic::include_proto!("ng.internal");
-    }
-
-    pub mod controller {
-        tonic::include_proto!("ng.controller");
     }
 
     pub mod heaters {

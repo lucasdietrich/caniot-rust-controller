@@ -1,5 +1,9 @@
+use caniot::{
+    class::llpayload::{LLCommand, LLTelemetry},
+    class0, BoardClassTelemetry, Xps,
+};
+
 use crate::{
-    caniot::Xps,
     controller::{
         ActionResultTrait, ActionTrait, ActionVerdict, DeviceAlert, DeviceControllerInfos,
         DeviceControllerTrait, DeviceError, Verdict,
@@ -7,10 +11,6 @@ use crate::{
     ha::LOCATION_GARAGE,
     utils::{format_metric, monitorable_state::StateMonitor, SensorLabel},
 };
-
-use self::traits::ClassCommandTrait;
-
-use super::super::super::caniot::*;
 
 const CONTROLLER_NAME: &str = "garage";
 
@@ -42,19 +42,20 @@ impl GarageDoorCommand {
 #[allow(clippy::all)]
 impl Into<class0::Command> for &GarageDoorCommand {
     fn into(self) -> class0::Command {
-        class0::Command {
-            crl1: if self.left_door_activate {
-                Xps::PulseOn
-            } else {
-                Xps::None
-            },
-            crl2: if self.right_door_activate {
-                Xps::PulseOn
-            } else {
-                Xps::None
-            },
-            ..Default::default()
-        }
+        let crl1 = if self.left_door_activate {
+            Xps::PulseOn
+        } else {
+            Xps::None
+        };
+        let crl2 = if self.right_door_activate {
+            Xps::PulseOn
+        } else {
+            Xps::None
+        };
+        let mut command = class0::Command::default();
+        command.set_io_xps(class0::IO::Relay1, crl1).unwrap();
+        command.set_io_xps(class0::IO::Relay2, crl2).unwrap();
+        command
     }
 }
 
@@ -64,11 +65,11 @@ pub struct GarageIOState {
     pub gate_open: bool,
 }
 
-impl From<&class0::Telemetry> for GarageIOState {
-    fn from(payload: &class0::Telemetry) -> Self {
+impl From<&class0::TelemetryData> for GarageIOState {
+    fn from(payload: &class0::TelemetryData) -> Self {
         Self {
-            left_door_open: payload.in3.into(),
-            right_door_open: payload.in4.into(),
+            left_door_open: payload.in3,
+            right_door_open: payload.in4,
             gate_open: payload.in2,
         }
     }
@@ -228,14 +229,14 @@ impl DeviceControllerTrait for GarageController {
     fn handle_action_result(
         &self,
         _delayed_action: &Self::Action,
-        _completed_by: Response,
+        _completed_by: caniot::Response,
     ) -> Result<<Self::Action as ActionTrait>::Result, DeviceError> {
         Ok(self.status.clone())
     }
 
     fn handle_frame(
         &mut self,
-        _frame: &crate::caniot::ResponseData,
+        _frame: &caniot::Response,
         as_class_blc: &Option<BoardClassTelemetry>,
         _ctx: &mut crate::controller::ProcessContext,
     ) -> Result<crate::controller::Verdict, crate::controller::DeviceError> {

@@ -1,6 +1,6 @@
 use std::time::{Duration, Instant};
 
-use crate::{caniot, utils::expirable::ExpirableTrait};
+use crate::utils::expirable::ExpirableTrait;
 use tokio::sync::oneshot;
 
 use super::{caniot_devices_controller::CaniotControllerError, pending_action::PendingAction};

@@ -1,10 +1,10 @@
 use std::fmt::Write;
 
+use caniot::TempSensType;
 use chrono::{DateTime, Utc};
 use serde::Serialize;
 
 use crate::{
-    caniot::{self, traits::TempSensType},
     controller::DeviceAlert,
     utils::{join_labels, DeviceLabel, PrometheusExporterTrait},
 };
@@ -73,7 +73,8 @@ impl Into<CaniotDeviceInfos> for &CaniotDevice {
             stats: self.stats,
             measures: *class_last_telemetry,
             board_temperature: class_last_telemetry
-                .and_then(|m| m.get_temperature(TempSensType::BoardSensor)),
+                .and_then(|m| m.get_temperature(TempSensType::BoardSensor))
+                .and_then(|t| t.to_celsius()),
             board_temp_min: self.measures.get_board_temp_monitor().get_min().cloned(),
             board_temp_max: self.measures.get_board_temp_monitor().get_max().cloned(),
             board_temp_avg: self.measures.get_board_temp_monitor().get_avg().cloned(),
@@ -81,7 +82,8 @@ impl Into<CaniotDeviceInfos> for &CaniotDevice {
             outside_temp_max: self.measures.get_outside_temp_monitor().get_max().cloned(),
             outside_temp_avg: self.measures.get_outside_temp_monitor().get_avg().cloned(),
             outside_temperature: class_last_telemetry
-                .and_then(|m| m.get_temperature(TempSensType::AnyExternal)),
+                .and_then(|m| m.get_temperature(TempSensType::AnyExternal))
+                .and_then(|t| t.to_celsius()),
             active_alert,
             ui_view_name,
         }

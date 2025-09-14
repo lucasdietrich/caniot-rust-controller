@@ -12,7 +12,6 @@ protoc -I=.. \
     ../common.proto \
     ../legacy.proto \
     ../ng_alarms.proto \
-    ../ng_controller.proto \
     ../ng_copro.proto \
     ../ng_devices.proto \
     ../ng_garage.proto \

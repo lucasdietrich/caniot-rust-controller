@@ -1,6 +1,6 @@
 use num::FromPrimitive;
 
-use crate::caniot::{Cd, HeatingMode, Payload, ProtocolError, Ty};
+use caniot::{Cd, HeatingMode, Payload, ProtocolError, Ty};
 
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub struct HeatingControllerCommand {

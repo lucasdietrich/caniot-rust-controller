@@ -1,3 +1,4 @@
+use caniot::Xps;
 use chrono::{DateTime, Duration, Utc};
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
@@ -9,7 +10,6 @@ use super::{
     AlarmPartialConfig,
 };
 use crate::{
-    caniot::{self, RequestData, Response, Xps},
     controller::{
         alarms::{actions::SirenAction, types::OutdoorAlarmCommand},
         ActionResultTrait, ActionTrait, ActionVerdict, ConfigTrait, DeviceAlert,
@@ -195,7 +195,7 @@ impl AlarmController {
         &mut self,
         new_state: DeviceIOState,
         now: &DateTime<Utc>,
-    ) -> Option<RequestData> {
+    ) -> Option<caniot::Request> {
         self.ios = new_state;
 
         let mut command = OutdoorAlarmCommand::default();
@@ -483,8 +483,8 @@ impl DeviceControllerTrait for AlarmController {
 
     fn handle_frame(
         &mut self,
-        _frame: &caniot::ResponseData,
-        as_class_blc: &Option<crate::caniot::BoardClassTelemetry>,
+        _frame: &caniot::Response,
+        as_class_blc: &Option<caniot::BoardClassTelemetry>,
         _ctx: &mut ProcessContext,
     ) -> Result<Verdict, DeviceError> {
         if let Some(caniot::BoardClassTelemetry::Class0(telemetry)) = as_class_blc {
@@ -508,7 +508,7 @@ impl DeviceControllerTrait for AlarmController {
     fn handle_action_result(
         &self,
         _delayed_action: &Self::Action,
-        _completed_by: Response,
+        _completed_by: caniot::Response,
     ) -> Result<<Self::Action as ActionTrait>::Result, DeviceError> {
         Ok(self.get_state())
     }

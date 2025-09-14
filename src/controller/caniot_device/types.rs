@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use crate::{caniot, database::SettingsError};
+use crate::database::SettingsError;
 
 #[derive(Error, Debug)]
 pub enum DeviceError {

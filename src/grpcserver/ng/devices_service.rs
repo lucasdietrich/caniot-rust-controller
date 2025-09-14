@@ -1,7 +1,10 @@
+use caniot::{
+    class::{llpayload::LLTelemetry, TempSensType},
+    class0, BoardClassTelemetry,
+};
 use tonic::{Request, Response, Result, Status};
 
 use crate::{
-    caniot as ct,
     controller::{
         caniot_controller::auto_attach::{
             DEVICE_GARAGE_DID, DEVICE_HEATERS_DID, DEVICE_OUTDOOR_ALARM_DID,
@@ -26,7 +29,10 @@ pub struct NgDevices {
 }
 
 impl NgDevices {
-    async fn get_device_by_did(&self, did: ct::DeviceId) -> Result<Response<m::Device>, Status> {
+    async fn get_device_by_did(
+        &self,
+        did: caniot::DeviceId,
+    ) -> Result<Response<m::Device>, Status> {
         if let Some(ref infos) = self
             .shared
             .controller_handle
@@ -40,7 +46,7 @@ impl NgDevices {
     }
 }
 
-impl Into<m::Class0Telemetry> for ct::class0::Telemetry {
+impl Into<m::Class0Telemetry> for caniot::class0::TelemetryData {
     fn into(self) -> m::Class0Telemetry {
         m::Class0Telemetry {
             in1: self.in1,
@@ -59,7 +65,7 @@ impl Into<m::Class0Telemetry> for ct::class0::Telemetry {
     }
 }
 
-impl Into<m::Class1Telemetry> for ct::class1::Telemetry {
+impl Into<m::Class1Telemetry> for caniot::class1::TelemetryData {
     fn into(self) -> m::Class1Telemetry {
         m::Class1Telemetry {
             ios: self.ios.to_vec(),
@@ -71,11 +77,11 @@ impl Into<m::Class1Telemetry> for ct::class1::Telemetry {
     }
 }
 
-impl Into<m::device::Measures> for ct::classes::BoardClassTelemetry {
+impl Into<m::device::Measures> for BoardClassTelemetry {
     fn into(self) -> m::device::Measures {
         match self {
-            ct::BoardClassTelemetry::Class0(t) => m::device::Measures::Class0(t.into()),
-            ct::BoardClassTelemetry::Class1(t) => m::device::Measures::Class1(t.into()),
+            BoardClassTelemetry::Class0(t) => m::device::Measures::Class0(t.into()),
+            BoardClassTelemetry::Class1(t) => m::device::Measures::Class1(t.into()),
         }
     }
 }
@@ -151,7 +157,7 @@ impl CaniotDevicesService for NgDevices {
     }
 
     async fn get(&self, request: Request<ng::DeviceId>) -> Result<Response<m::Device>, Status> {
-        let did: ct::DeviceId = request.into_inner().into();
+        let did: caniot::DeviceId = request.into_inner().into();
         if let Some(ref infos) = self
             .shared
             .controller_handle
@@ -168,7 +174,7 @@ impl CaniotDevicesService for NgDevices {
         &self,
         _request: Request<()>,
     ) -> Result<Response<m::Device>, Status> {
-        self.get_device_by_did(ct::DeviceId::from_u8(DEVICE_HEATERS_DID))
+        self.get_device_by_did(caniot::DeviceId::try_from(DEVICE_HEATERS_DID).unwrap())
             .await
     }
 
@@ -176,7 +182,7 @@ impl CaniotDevicesService for NgDevices {
         &self,
         _request: Request<()>,
     ) -> Result<Response<m::Device>, Status> {
-        self.get_device_by_did(ct::DeviceId::from_u8(DEVICE_GARAGE_DID))
+        self.get_device_by_did(caniot::DeviceId::try_from(DEVICE_GARAGE_DID).unwrap())
             .await
     }
 
@@ -184,7 +190,7 @@ impl CaniotDevicesService for NgDevices {
         &self,
         _request: Request<()>,
     ) -> Result<Response<m::Device>, Status> {
-        self.get_device_by_did(ct::DeviceId::from_u8(DEVICE_OUTDOOR_ALARM_DID))
+        self.get_device_by_did(caniot::DeviceId::try_from(DEVICE_OUTDOOR_ALARM_DID).unwrap())
             .await
     }
 
@@ -194,7 +200,7 @@ impl CaniotDevicesService for NgDevices {
     ) -> std::result::Result<tonic::Response<m::ActionResult>, tonic::Status> {
         let action = request.into_inner();
 
-        let did: ct::DeviceId = action
+        let did: caniot::DeviceId = action
             .did
             .ok_or_else(|| Status::invalid_argument("Missing did or action"))?
             .into();

@@ -1,4 +1,6 @@
-use crate::{caniot::Xps, controller::ActionTrait};
+use caniot::Xps;
+
+use crate::controller::ActionTrait;
 
 use super::{config::AlarmPartialConfig, outdoor::AlarmControllerReport};
 
