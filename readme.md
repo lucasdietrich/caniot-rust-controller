@@ -176,6 +176,7 @@ Run with
   - https://pushover.net/
 - AWS amazon https://aws.amazon.com/fr/sns/
 - Mettre un bouton pour se reconnecter en cas de perte de connexion
+- Fix lastseen badge
 
 ### Evaluate `react-media` for responsive design
 

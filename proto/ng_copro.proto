@@ -24,17 +24,36 @@ message CoproDevice {
   CoproDeviceStats stats = 40;
   optional DeviceAlert active_alert = 41;
 
-  optional int32 rssi = 30;
-
-  optional float temperature = 20;
-  optional float humidity = 21;
   optional int32 battery_level = 22;
   optional float battery_voltage = 23;
+
+  optional int32 rssi = 30;
+
+  oneof measurements {
+    EnvironementalMeasurement environemental = 50;
+    EnergyMeterMeasurement energy_meter = 51;
+  }
+}
+
+message EnvironementalMeasurement {
+  optional float temperature = 20;
+  optional float humidity = 21;
 
   optional float temperature_min = 24;
   optional float temperature_max = 25;
   optional float humidity_min = 26;
   optional float humidity_max = 27;
+}
+
+message EnergyMeterMeasurement {
+  optional float current = 31;
+  optional float power = 32;
+  optional float energy = 33;
+
+  optional float power_min = 34;
+  optional float power_max = 35;
+  optional float current_min = 36;
+  optional float current_max = 37;
 }
 
 message CoproDeviceStats { uint64 rx = 1; }

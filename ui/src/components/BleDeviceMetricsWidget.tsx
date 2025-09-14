@@ -8,9 +8,12 @@ import TemperatureGaugeStatistic, {
   HumidityGaugeText,
   BleStatisticsText,
   TemperatureGaugeText,
+  PowerGaugeStatistic,
+  EnergyGaugeStatistic,
+  CurrentGaugeStatistic,
 } from "./Gauges";
 import LastSeenBadge from "./LastSeenBadge";
-import { TbCpu } from "react-icons/tb";
+import { TbCpu, TbPlugConnected } from "react-icons/tb";
 import { CoproDevice } from "@caniot-controller/caniot-api-grpc-web/api/ng_copro_pb";
 import { SECONDS_TO_CONSIDER_ONLINE_BLE } from "../constants";
 
@@ -68,68 +71,214 @@ function BleDeviceMetricsWidget({
       }}
       isMobile={small}
     >
-      <Row gutter={2}>
-        <Col span={12}>
-          <TemperatureGaugeStatistic
-            title="Température"
-            temperature={device?.hasTemperature() ? device.getTemperature() : undefined}
-            indoor={true}
-            summer={isSummer}
-          />
-        </Col>
+      {(() => {
+        const env = device?.getEnvironemental();
+        const valueExists = (v: any) => v !== undefined && v !== null;
 
-        <Col span={12}>
-          <HumidityGaugeStatistic
-            title="Humidité"
-            humidity={device?.hasHumidity() ? device.getHumidity() : undefined}
-          />
-        </Col>
-      </Row>
+        const tempVal = env?.getTemperature();
+        const humVal = env?.getHumidity();
+        const hasTemp = env?.hasTemperature ? env.hasTemperature() : valueExists(tempVal);
+        const hasHum = env?.hasHumidity ? env.hasHumidity() : valueExists(humVal);
+
+        const hasTempMin = env?.hasTemperatureMin ? env.hasTemperatureMin() : valueExists(env?.getTemperatureMin());
+        const hasTempMax = env?.hasTemperatureMax ? env.hasTemperatureMax() : valueExists(env?.getTemperatureMax());
+        const hasHumMin = env?.hasHumidityMin ? env.hasHumidityMin() : valueExists(env?.getHumidityMin());
+        const hasHumMax = env?.hasHumidityMax ? env.hasHumidityMax() : valueExists(env?.getHumidityMax());
+
+        const showEnvRow = hasTemp || hasHum;
+        const showEnvMinMaxRow = hasTempMin || hasTempMax || hasHumMin || hasHumMax;
+
+        const energy = device?.getEnergyMeter();
+        const powerVal = energy?.getPower();
+  const currentVal = energy?.getCurrent?.() ?? (energy as any)?.getCurrent?.();
+        const energyVal = energy?.getEnergy();
+        const hasPower = valueExists(powerVal);
+  const hasCurrent = valueExists(currentVal);
+        const hasEnergy = valueExists(energyVal);
+  const showEnergyRow = hasPower || hasCurrent || hasEnergy;
+
+  // Min / Max for power & current (optional presence)
+  const powerMin = (energy as any)?.getPowerMin?.();
+  const powerMax = (energy as any)?.getPowerMax?.();
+  const currentMin = (energy as any)?.getCurrentMin?.();
+  const currentMax = (energy as any)?.getCurrentMax?.();
+
+  const hasPowerMin = valueExists(powerMin);
+  const hasPowerMax = valueExists(powerMax);
+  const hasCurrentMin = valueExists(currentMin);
+  const hasCurrentMax = valueExists(currentMax);
+
+  const showEnergyMinMaxRow = hasPowerMin || hasPowerMax || hasCurrentMin || hasCurrentMax;
+
+        return (
+          <>
+            {showEnvRow && (
+              <Row gutter={2}>
+                {hasTemp && (
+                  <Col span={12}>
+                    <TemperatureGaugeStatistic
+                      title="Température"
+                      temperature={tempVal}
+                      indoor={true}
+                      summer={isSummer}
+                    />
+                  </Col>
+                )}
+                {hasHum && (
+                  <Col span={hasTemp ? 12 : 24}>
+                    <HumidityGaugeStatistic
+                      title="Humidité"
+                      humidity={humVal}
+                    />
+                  </Col>
+                )}
+              </Row>
+            )}
+            {showEnvMinMaxRow && (
+              <Row gutter={2}>
+                {hasTempMin && (
+                  <Col span={6}>
+                    <TemperatureGaugeStatistic
+                      title="Min"
+                      temperature={env?.getTemperatureMin()}
+                      indoor={true}
+                      showColor={showMinMaxColor}
+                      small
+                    />
+                  </Col>
+                )}
+                {hasTempMax && (
+                  <Col span={6}>
+                    <TemperatureGaugeStatistic
+                      title="Max"
+                      temperature={env?.getTemperatureMax()}
+                      indoor={true}
+                      showColor={showMinMaxColor}
+                      small
+                    />
+                  </Col>
+                )}
+                {hasHumMin && (
+                  <Col span={6}>
+                    <HumidityGaugeStatistic
+                      title="Min"
+                      humidity={env?.getHumidityMin()}
+                      showColor={showMinMaxColor}
+                      small
+                    />
+                  </Col>
+                )}
+                {hasHumMax && (
+                  <Col span={6}>
+                    <HumidityGaugeStatistic
+                      title="Max"
+                      humidity={env?.getHumidityMax()}
+                      showColor={showMinMaxColor}
+                      small
+                    />
+                  </Col>
+                )}
+              </Row>
+            )}
+            {(showEnvRow || showEnvMinMaxRow) && showEnergyRow && <Divider style={{ margin: 5 }} />}
+            {showEnergyRow && (
+              <>
+                <Row gutter={2}>
+                  {hasPower && (
+                    <Col span={hasCurrent || hasEnergy ? 8 : 24}>
+                      <PowerGaugeStatistic
+                        title="Puissance (W)"
+                        power_w={powerVal}
+                      />
+                    </Col>
+                  )}
+                  {hasCurrent && (
+                    <Col span={hasPower && hasEnergy ? 8 : hasPower || hasEnergy ? 12 : 24}>
+                      <CurrentGaugeStatistic
+                        title="Courant (A)"
+                        current_a={currentVal}
+                      />
+                    </Col>
+                  )}
+                  {hasEnergy && (
+                    <Col span={hasPower || hasCurrent ? (hasPower && hasCurrent ? 8 : 12) : 24}>
+                      <EnergyGaugeStatistic
+                        title="Index (Wh)"
+                        energy_wh={energyVal}
+                      />
+                    </Col>
+                  )}
+                </Row>
+                {showEnergyMinMaxRow && (
+                  <Row gutter={2} style={{ marginTop: 4 }}>
+                    {hasPowerMin && (
+                      <Col span={6}>
+                        <PowerGaugeStatistic
+                          title="Min"
+                          power_w={powerMin}
+                          small
+                        />
+                      </Col>
+                    )}
+                    {hasPowerMax && (
+                      <Col span={6}>
+                        <PowerGaugeStatistic
+                          title="Max"
+                          power_w={powerMax}
+                          small
+                        />
+                      </Col>
+                    )}
+                    {hasCurrentMin && (
+                      <Col span={6}>
+                        <CurrentGaugeStatistic
+                          title="Min"
+                          current_a={currentMin}
+                          small
+                        />
+                      </Col>
+                    )}
+                    {hasCurrentMax && (
+                      <Col span={6}>
+                        <CurrentGaugeStatistic
+                          title="Max"
+                          current_a={currentMax}
+                          small
+                        />
+                      </Col>
+                    )}
+                  </Row>
+                )}
+                <Divider style={{ margin: 5 }} />
+              </>
+            )}
+          </>
+        );
+      })()}
       <Row gutter={2}>
-        <Col span={6}>
-          <TemperatureGaugeStatistic
-            title="Min"
-            temperature={device?.hasTemperatureMin() ? device.getTemperatureMin() : undefined}
-            indoor={true}
-            showColor={showMinMaxColor}
-            small
-          />
-        </Col>
-        <Col span={6}>
-          <TemperatureGaugeStatistic
-            title="Max"
-            temperature={device?.hasTemperatureMax() ? device.getTemperatureMax() : undefined}
-            indoor={true}
-            showColor={showMinMaxColor}
-            small
-          />
-        </Col>
-        <Col span={6}>
-          <HumidityGaugeStatistic
-            title="Min"
-            humidity={device?.hasHumidityMin() ? device.getHumidityMin() : undefined}
-            showColor={showMinMaxColor}
-            small
-          />
-        </Col>
-        <Col span={6}>
-          <HumidityGaugeStatistic
-            title="Max"
-            humidity={device?.hasHumidityMax() ? device.getHumidityMax() : undefined}
-            showColor={showMinMaxColor}
-            small
-          />
-        </Col>
-      </Row>
-      <Divider style={{ margin: 5 }} />
-      <Row gutter={2}>
-        <Col span={width_edges}>
-          <BatteryGaugeText
-            battery_level={device?.getBatteryLevel()}
-            battery_voltage={device?.getBatteryVoltage()}
-            showIcon={true}
-          />
-        </Col>
+        {(() => {
+          const battery_level = device?.getBatteryLevel();
+          const battery_voltage = device?.getBatteryVoltage();
+          const showBattery = device?.hasBatteryLevel() || device?.hasBatteryVoltage(); // hide if both missing
+          return (
+            <Col span={width_edges} style={{ display: "flex", alignItems: "center" }}>
+              {showBattery ? (
+                <BatteryGaugeText
+                  battery_level={battery_level}
+                  battery_voltage={battery_voltage}
+                  showIcon={true}
+                />
+              ) : (
+                <Tooltip title="Alimenté par le secteur">
+                  <span style={{ color: "#555", fontSize: 12, display: "flex", alignItems: "center" }}>
+                    <TbPlugConnected size={18} style={{ marginRight: 4 }} />
+                    Secteur
+                  </span>
+                </Tooltip>
+              )}
+            </Col>
+          );
+        })()}
 
         <Col span={width_center}>
           <BleStatisticsText
