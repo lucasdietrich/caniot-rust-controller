@@ -1,5 +1,5 @@
 use crate::{
-    controller::copro_controller::measurements::EnvironmentalTrait,
+    controller::copro_controller::measurements::{EnergyMeterTrait, EnvironmentalTrait},
     utils::{join_labels, DeviceLabel, PrometheusExporterTrait},
 };
 use std::fmt::Write;
@@ -64,7 +64,15 @@ impl<'a> PrometheusExporterTrait<'a> for BleDevice {
                 }
             }
             super::measurements::BleMeasurement::EnergyMeter(meas) => {
-                // TODO
+                if let Some(power) = meas.power() {
+                    write!(&mut buf, "device_power {{{labels}}} {}\n", power,).unwrap();
+                }
+                if let Some(current) = meas.current() {
+                    write!(&mut buf, "device_current {{{labels}}} {}\n", current,).unwrap();
+                }
+                if let Some(energy) = meas.energy() {
+                    write!(&mut buf, "device_energy {{{labels}}} {}\n", energy,).unwrap();
+                }
             }
         }
 

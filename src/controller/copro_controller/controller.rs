@@ -13,7 +13,8 @@ use crate::{
         DeviceAlert,
     },
     coprocessor::{coprocessor::CoproStreamChannelStatus, CoproHandle, CoproMessage},
-    utils::{PrometheusExporterTrait, PrometheusNoLabel},
+    impl_display_for_enum,
+    utils::{prometheus, PrometheusExporterTrait, PrometheusNoLabel},
 };
 
 use ble_copro_stream_server::ble::BleAddress;
@@ -36,6 +37,8 @@ pub enum CoproError {}
 #[derive(Debug, Default, Clone)]
 pub struct CoproControllerStats {
     pub rx_packets: u64,
+    pub rx_type_xiaomi: u64,
+    pub rx_type_linky_tic: u64,
 }
 
 impl<'a> PrometheusExporterTrait<'a> for CoproControllerStats {
@@ -44,8 +47,10 @@ impl<'a> PrometheusExporterTrait<'a> for CoproControllerStats {
     fn export(&self, _labels: impl AsRef<[&'a Self::Label]>) -> String {
         format!(
             "controller_copro_iface_rx {}\n\
+            controller_copro_iface_rx {{type=\"xiaomi\"}} {}\n\
+            controller_copro_iface_rx {{type=\"linky_tic\"}} {}\n\
             ",
-            self.rx_packets,
+            self.rx_packets, self.rx_type_xiaomi, self.rx_type_linky_tic,
         )
     }
 }
@@ -115,6 +120,7 @@ impl CoproController {
             CoproMessage::Xiaomi(record) => {
                 info!("ble xiaomi {}", record);
                 self.stats.rx_packets += 1;
+                self.stats.rx_type_xiaomi += 1;
 
                 let record_timestamp = record.timestamp.to_utc().unwrap_or(Utc::now());
 
@@ -141,6 +147,7 @@ impl CoproController {
             CoproMessage::LinkyTic(record) => {
                 info!("ble linky tic {}", record);
                 self.stats.rx_packets += 1;
+                self.stats.rx_type_linky_tic += 1;
 
                 let record_timestamp = record.timestamp.to_utc().unwrap_or(Utc::now());
 
