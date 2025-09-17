@@ -20,6 +20,7 @@ import { OutdoorAlarmState } from "@caniot-controller/caniot-api-grpc-web/api/ng
 import alarmsStore from "../store/AlarmsStore";
 import {
   CoproAlert,
+  CoproDevice,
   CoproDevicesList,
 } from "@caniot-controller/caniot-api-grpc-web/api/ng_copro_pb";
 import coproStore from "../store/CoproStore";
@@ -57,6 +58,9 @@ function HomeView({ appContext, refreshInterval = 5000, uiHomeBLEDevices = false
   const [bleDevicesList, setBleDevicesList] = useState<CoproDevicesList | undefined>(undefined);
   const [bleDevicesLoading, setBleDevicesLoading] = useState(true);
 
+  const [bleDeviceLinky, setBleDeviceLinky] = useState<CoproDevice | undefined>(undefined);
+  const [bleDeviceLinkyLoading, setBleDeviceLinkyLoading] = useState(true);
+
   const [coproAlert, setCoproAlert] = useState<CoproAlert | undefined>(undefined);
 
   const [time, setTime] = useState(Date.now());
@@ -72,8 +76,11 @@ function HomeView({ appContext, refreshInterval = 5000, uiHomeBLEDevices = false
     setOutdoorAlarmsLoading(true);
     setGarageLoading(true);
     setDevicesWithAlertLoading(true);
+    setBleDevicesLoading(true);
     if (uiHomeBLEDevices) {
       setBleDevicesLoading(true);
+    } else {
+      setBleDeviceLinkyLoading(true);
     }
 
     devicesStore.getDevicesWithActiveAlert((devices: DevicesList) => {
@@ -111,6 +118,11 @@ function HomeView({ appContext, refreshInterval = 5000, uiHomeBLEDevices = false
       coproStore.getList((resp: CoproDevicesList) => {
         setBleDevicesList(resp);
         setBleDevicesLoading(false);
+      });
+    } else {
+      coproStore.getDeviceByName("Linky TIC", (resp: CoproDevice) => {
+        setBleDeviceLinky(resp);
+        setBleDeviceLinkyLoading(false);
       });
     }
 
@@ -261,6 +273,18 @@ function HomeView({ appContext, refreshInterval = 5000, uiHomeBLEDevices = false
             />
           </Col>
         ))}
+      {bleDeviceLinky && (
+        <Col xs={24} md={12} xl={6} style={{ marginBottom: 8 }} key={bleDeviceLinky.getMac()}>
+          <BleDeviceMetricsWidget
+            title={bleDeviceLinky.getName()}
+            device={bleDeviceLinky}
+            loading={bleDeviceLinkyLoading}
+            small={appContext.isMobile}
+            debug={appContext.uiDebugMode}
+            navigateTo="/ble"
+          />
+        </Col>
+      )}
 
       <Col xs={24} md={8} xl={6} style={{ marginBottom: 8 }}>
         {outdoorAlarmsMetricsWidget}

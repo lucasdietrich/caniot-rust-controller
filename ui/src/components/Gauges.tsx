@@ -477,12 +477,13 @@ function CurrentGaugeStatistic({
   showColor = true,
   small = false,
 }: CurrentGaugeProps) {
+  const precision = 0;
   return current_a !== undefined ? (
-    <Tooltip title={`${(current_a || 0).toFixed(2)} A`} placement="topLeft">
+    <Tooltip title={`${(current_a || precision).toFixed(0)} A`} placement="topLeft">
       <Statistic
         title={title}
         value={current_a}
-        precision={2}
+        precision={precision}
         valueStyle={{ color: showColor ? getCurrentColor(current_a) : "black" }}
         prefix={showIcon && getCurrentIcon(current_a)}
         suffix="A"

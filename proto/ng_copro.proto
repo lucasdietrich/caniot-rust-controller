@@ -6,9 +6,15 @@ import "common.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/empty.proto";
 
-service CoproService {
-  rpc GetList(google.protobuf.Empty) returns (CoproDevicesList) {}
+message GetListParams { 
+  oneof filter {
+    google.protobuf.Empty all = 1;
+    string name = 2;
+  }
+}
 
+service CoproService {
+  rpc GetList(GetListParams) returns (CoproDevicesList) {}
   rpc GetCoproAlert(google.protobuf.Empty) returns (CoproAlert) {}
 }
 

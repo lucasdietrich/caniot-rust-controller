@@ -1,10 +1,13 @@
 use crate::{
-    controller::copro_controller::{
-        device::BleDevice,
-        measurements::{
-            BleMeasurement, EnergyMeterMinMaxTrait, EnergyMeterTrait, EnvironmentalMinMaxTrait,
-            EnvironmentalTrait,
+    controller::{
+        copro_controller::{
+            device::BleDevice,
+            measurements::{
+                BleMeasurement, EnergyMeterMinMaxTrait, EnergyMeterTrait, EnvironmentalMinMaxTrait,
+                EnvironmentalTrait,
+            },
         },
+        device_filtering::DeviceFilter,
     },
     grpcserver::utc_to_prost_timestamp,
     shared::SharedHandle,
@@ -73,12 +76,21 @@ pub struct NgCopro {
 impl CoproService for NgCopro {
     async fn get_list(
         &self,
-        _req: tonic::Request<()>,
+        ref req: tonic::Request<m::GetListParams>,
     ) -> Result<tonic::Response<m::CoproDevicesList>, tonic::Status> {
+        let filter = req
+            .into_inner()
+            .filter
+            .map(|f| match f {
+                m::get_list_params::Filter::All(()) => DeviceFilter::All,
+                m::get_list_params::Filter::Name(name) => DeviceFilter::ByName(name),
+            })
+            .unwrap_or(DeviceFilter::All);
+
         let devices: Vec<m::CoproDevice> = self
             .shared
             .controller_handle
-            .get_copro_devices_list()
+            .get_copro_devices_by_filter(filter)
             .await
             .into_iter()
             .map(|ref dev| dev.into())

@@ -16,7 +16,9 @@ import { CoproServiceClient } from "@caniot-controller/caniot-api-grpc-web/api/N
 import { DeviceId } from "@caniot-controller/caniot-api-grpc-web/api/common_pb";
 import {
   CoproAlert,
+  CoproDevice,
   CoproDevicesList,
+  GetListParams,
 } from "@caniot-controller/caniot-api-grpc-web/api/ng_copro_pb";
 
 class CoproStore extends EventEmitter {
@@ -27,8 +29,33 @@ class CoproStore extends EventEmitter {
     this.client = new CoproServiceClient(getApiUrl());
   }
 
+  getDeviceByName = (name: string, callbackFunc: (resp: CoproDevice) => void) => {
+    let params = new GetListParams();
+    params.setName(name);
+    this.client.getList(params, null, (err, resp) => {
+      if (err !== null) {
+        HandleError(err);
+        return;
+      }
+
+      HandleSuccess("CoproStore::GetDevice succeeded");
+
+      if (resp.getDevicesList().length === 1) {
+        callbackFunc(resp.getDevicesList()[0]);
+      } else {
+        // notification.error({
+        //   message: "CoproStore::GetDevice",
+        //   description: `Expected 1 device, got ${resp.getDevicesList().length}`,
+        // });
+        console.error(`CoproStore::GetDevice: Expected 1 device, got ${resp.getDevicesList().length}`);
+      }
+    });
+  };
+
   getList = (callbackFunc: (resp: CoproDevicesList) => void) => {
-    this.client.getList(new Empty(), null, (err, resp) => {
+    let params = new GetListParams();
+    params.setAll(new Empty());
+    this.client.getList(params, null, (err, resp) => {
       if (err !== null) {
         HandleError(err);
         return;

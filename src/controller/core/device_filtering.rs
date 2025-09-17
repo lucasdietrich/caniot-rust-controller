@@ -31,17 +31,17 @@ pub trait FilterableDevice {
 #[derive(Debug, Clone)]
 pub enum FilterCriteria {
     CaniotId(caniot::DeviceId),
-    CaniotControllerName(&'static str),
-    BleMac(&'static str),
+    CaniotControllerName(String),
+    BleMac(String),
 }
 
 #[derive(Debug, Default, Clone)]
 pub enum DeviceFilter {
     #[default]
     All, // All devices sorted by did
-    ByName(&'static str),       // Devices with a specific name
-    ByTag(&'static str),        // Devices having a specific tag
-    ByLocation(&'static str),   // Devices in a specific location
+    ByName(String),             // Devices with a specific name
+    ByTag(String),              // Devices having a specific tag
+    ByLocation(String),         // Devices in a specific location
     ByCriteria(FilterCriteria), // With a specific criteria
     WithActiveAlert, // Devices with active alerts sorted by alert severity (highest first)
 }
