@@ -442,7 +442,7 @@ checksum = "a2bd12c1caf447e69cd4528f47f94d203fd2582878ecb9e9465484c4148a8223"
 
 [[package]]
 name = "caniot-controller"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "as-any",
  "async-std",
