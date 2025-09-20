@@ -5,7 +5,7 @@ use ble_copro_stream_server::{
     xiaomi::XiaomiRecord, StreamServer, Timestamp,
 };
 use chrono::Utc;
-use log::{debug, warn};
+use log::warn;
 use rocket::error;
 use tokio::{sync::mpsc, time::sleep};
 
@@ -83,10 +83,12 @@ impl Coprocessor {
             State::Uninitialized => match StreamServer::init(listen_ip, listen_port).await {
                 Ok(server) => State::Listening(server),
                 Err(e) => {
-                    error!("Failed to start server: {}", e);
+                    error!("Failed to start Coprocessor server: {}", e);
                     Self::notify_stream_channel_status(
                         sender,
-                        CoproStreamChannelStatus::Error("Failed to start server".to_string()),
+                        CoproStreamChannelStatus::Error(
+                            "Failed to start Coprocessor server".to_string(),
+                        ),
                     )
                     .await;
                     sleep(COPRO_SERVER_INIT_RETRY_INTERVAL).await;

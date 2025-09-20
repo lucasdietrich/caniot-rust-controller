@@ -4,7 +4,6 @@ pub mod settings_store;
 
 pub use db::*;
 pub use settings_store::*;
-use sqlx::Pool;
 
 pub mod settings_types;
 

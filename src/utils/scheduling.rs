@@ -1,6 +1,5 @@
 use std::str::FromStr;
 
-use chrono::{DateTime, Duration, Utc};
 use cron::Schedule;
 
 #[derive(Default, PartialEq, Eq, Debug, Clone)]

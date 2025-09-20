@@ -15,5 +15,6 @@ pub mod internal;
 pub mod logger;
 pub mod shared;
 pub mod shutdown;
+pub mod ui;
 pub mod utils;
 pub mod webserver;

@@ -1,6 +1,6 @@
 use chrono::{DateTime, Duration, Utc};
 
-use log::{debug, info, warn};
+use log::{debug, warn};
 
 use crate::{
     caniot::{

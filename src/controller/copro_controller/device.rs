@@ -20,7 +20,7 @@ pub const BLE_CRITICAL_BATTERY_THRESHOLD: u8 = 5; // %
 pub const BLE_TIME_TO_CONSIDER_OFFLINE: u32 = 3600; // seconds
 pub const BLE_BAD_RSSI_THRESHOLD: i8 = -90; // dBm
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BleDeviceType {
     Xiaomi,
     LinkyTIC,

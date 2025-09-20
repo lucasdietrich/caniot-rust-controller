@@ -16,7 +16,7 @@ use crate::{
 };
 
 use chrono::Utc;
-use log::info;
+use log::{info, warn};
 use thiserror::Error;
 
 use super::{api_message::CoproApiMessage, device::BleDevice};
@@ -129,8 +129,17 @@ impl CoproController {
                 if let Some(device) = self
                     .devices
                     .iter_mut()
-                    .find(|d| d.ble_addr == record.ble_addr)
+                    .find(|d| d.device_type == BleDeviceType::LinkyTIC)
                 {
+                    // TODO, how to handle a rebooting TIC device, or multiple TIC devices ?
+                    if device.ble_addr != record.ble_addr {
+                        warn!(
+                            "linky tic device address changed from {} to {}, updating ...",
+                            device.ble_addr, record.ble_addr
+                        );
+                        device.ble_addr = record.ble_addr;
+                    }
+
                     let _ = device.commit_new_energy_meter_measurement(record_timestamp, record);
                 } else {
                     // Instantiate device
