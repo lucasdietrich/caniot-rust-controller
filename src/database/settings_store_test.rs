@@ -26,9 +26,6 @@ pub async fn test_settings() {
     }
 
     let config = DatabaseConfig {
-        #[cfg(feature = "db-postgres")]
-        connection_string: "postgres://caniot:caniot@localhost/caniot".to_string(),
-        #[cfg(feature = "db-sqlite")]
         connection_string: "sqlite::memory:".to_string(),
         ..Default::default()
     };

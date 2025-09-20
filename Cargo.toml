@@ -9,10 +9,8 @@ rust-version = "1.75"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["db-sqlite", "ble-copro"]
-
-db-postgres = ["sqlx/postgres"]
-db-sqlite = ["sqlx/sqlite"]
+# Database is now unconditionally SQLite; removed db-postgres and db-sqlite features.
+default = ["ble-copro"]
 
 ble-copro = ["dep:ble-copro-stream-server"]
 
@@ -39,8 +37,8 @@ tonic-web = "0.11"
 prost = "0.12"
 prost-types = "0.12"
 
-# database
-sqlx = { version = "0.8.2", features = ["runtime-tokio", "macros"] }
+# database (always sqlite)
+sqlx = { version = "0.8.2", features = ["runtime-tokio", "macros", "sqlite"] }
 
 # Webserver
 rocket = { version = "0.5.1", features = ["json"] }
