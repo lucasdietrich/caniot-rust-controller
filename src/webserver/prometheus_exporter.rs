@@ -25,11 +25,11 @@ pub async fn export(shared: &SharedHandle) -> String {
         let sub_id_label = DeviceLabel::SubId(device_infos.did.sub_id);
 
         let mut device_labels = vec![&medium_label, &mac_label, &class_label, &sub_id_label];
-        let controller_label;
 
+        let name_label;
         if let Some(controller_name) = device_infos.controller_name.as_ref() {
-            controller_label = DeviceLabel::Controller(controller_name.clone());
-            device_labels.push(&controller_label);
+            name_label = DeviceLabel::Name(controller_name.clone());
+            device_labels.push(&name_label);
         }
 
         buf.push_str(&device_infos.stats.export(&device_labels));
