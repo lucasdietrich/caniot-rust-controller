@@ -40,16 +40,13 @@ function LastSeenSecondsCounter({
   prefix = "actif il y a ",
 }: ILastSeenSecondsCounterProps) {
   if (lastSeenValue !== undefined) {
+    // State initialized from prop; component is remounted (keyed) when the base value must reset.
     const [seconds, setSeconds] = useState(lastSeenValue);
 
     useEffect(() => {
-      setSeconds(lastSeenValue);
       const id = setInterval(() => setSeconds((oldCount) => oldCount + 1), refreshIntervalMs);
-
-      return () => {
-        clearInterval(id);
-      };
-    }, [lastSeenValue, refreshIntervalMs]);
+      return () => clearInterval(id);
+    }, [refreshIntervalMs]);
 
     const fmt_seconds = convertSecondsToHumanReadable(seconds);
     const fmt = minimalDisplay ? fmt_seconds : " (" + prefix + fmt_seconds + ")";

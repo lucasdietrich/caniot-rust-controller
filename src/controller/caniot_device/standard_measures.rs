@@ -1,4 +1,3 @@
-use chrono::NaiveTime;
 
 use crate::{
     caniot::{traits::TempSensType, BoardClassTelemetry},

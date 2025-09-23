@@ -1,4 +1,3 @@
-use super::settings_types::SettingTrait;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum SettingValue {

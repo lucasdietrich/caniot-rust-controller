@@ -1,12 +1,10 @@
 use std::{sync::Arc, time::Duration};
 
-use log::debug;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use tokio::time::sleep;
 
 use crate::{
-    controller::device_filtering::{DeviceFilter, FilterCriteria},
     ha::attic,
     shared::Shared,
 };
@@ -36,7 +34,7 @@ impl Ha {
         }
     }
 
-    pub async fn run(mut self) -> Result<(), HaError> {
+    pub async fn run(self) -> Result<(), HaError> {
         loop {
             attic::control_attic_heaters(&self.shared).await;
 

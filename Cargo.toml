@@ -1,6 +1,6 @@
 [package]
 name = "caniot-controller"
-version = "0.2.2"
+version = "0.2.3"
 edition = "2021"
 description = "CANIOT Rust Controller"
 homepage = "https://github.com/lucasdietrich/caniot-rust-controller.git"
@@ -9,10 +9,8 @@ rust-version = "1.75"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["db-sqlite", "ble-copro"]
-
-db-postgres = ["sqlx/postgres"]
-db-sqlite = ["sqlx/sqlite"]
+# Database is now unconditionally SQLite; removed db-postgres and db-sqlite features.
+default = ["ble-copro"]
 
 ble-copro = ["dep:ble-copro-stream-server"]
 
@@ -39,8 +37,8 @@ tonic-web = "0.11"
 prost = "0.12"
 prost-types = "0.12"
 
-# database
-sqlx = { version = "0.8.2", features = ["runtime-tokio", "macros"] }
+# database (always sqlite)
+sqlx = { version = "0.8.2", features = ["runtime-tokio", "macros", "sqlite"] }
 
 # Webserver
 rocket = { version = "0.5.1", features = ["json"] }
@@ -73,8 +71,8 @@ as-any = "0.3"
 # BLE can
 [dependencies.ble-copro-stream-server]
 git = "https://github.com/lucasdietrich/zephyr-linux-ble-copro.git"
-rev = "d003d303169fb21a0ee4956531362db2b9f4448e"
-# path = "/home/lucas/zephyrproject/zephyr-hypirl-ble-copro/ble-copro-stream-server-rs"
+rev = "9f462c90b3b7cfb2229270d4bae113665be7a40c"
+# path = "/home/lucas/zephyrproject-ble/zephyr-linux-ble-copro/ble-copro-stream-server-rs"
 optional = true
 features = ["tcp-keep-alive", "chrono"]
 

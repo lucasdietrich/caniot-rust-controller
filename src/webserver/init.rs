@@ -65,6 +65,14 @@ pub async fn metrics(shared: &State<SharedHandle>) -> String {
     }
 }
 
+// simple endpoint to expose (part) of the UI configuration to the frontend
+#[get("/api/uiconfig")] // intentionally short; can be cached client-side
+pub async fn ui_config(
+    shared: &State<SharedHandle>,
+) -> rocket::serde::json::Json<&crate::ui::UiConfig> {
+    rocket::serde::json::Json(&shared.config.ui)
+}
+
 pub async fn rocket_server(shared: SharedHandle) -> Result<Rocket<rocket::Ignite>, rocket::Error> {
     let config = &shared.config.web;
 
@@ -86,7 +94,7 @@ pub async fn rocket_server(shared: SharedHandle) -> Result<Rocket<rocket::Ignite
 
     let rocket = rocket::custom(config)
         .manage(shared)
-        .mount("/", routes![metrics, files]);
+        .mount("/", routes![metrics, ui_config, files]);
 
     rocket.launch().await
 }

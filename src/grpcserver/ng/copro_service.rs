@@ -1,5 +1,15 @@
 use crate::{
-    controller::copro_controller::device::BleDevice, grpcserver::utc_to_prost_timestamp,
+    controller::{
+        copro_controller::{
+            device::BleDevice,
+            measurements::{
+                BleMeasurement, EnergyMeterMinMaxTrait, EnergyMeterTrait, EnvironmentalMinMaxTrait,
+                EnvironmentalTrait,
+            },
+        },
+        device_filtering::DeviceFilter,
+    },
+    grpcserver::utc_to_prost_timestamp,
     shared::SharedHandle,
 };
 
@@ -7,6 +17,34 @@ use super::model::copro::{
     self as m,
     copro_service_server::{CoproService, CoproServiceServer},
 };
+
+impl Into<m::copro_device::Measurements> for &BleMeasurement {
+    fn into(self) -> m::copro_device::Measurements {
+        match self {
+            BleMeasurement::Environemental(meas) => {
+                m::copro_device::Measurements::Environemental(m::EnvironementalMeasurement {
+                    temperature: meas.temperature(),
+                    humidity: meas.humidity(),
+                    temperature_min: meas.temperature_min(),
+                    temperature_max: meas.temperature_max(),
+                    humidity_min: meas.humidity_min(),
+                    humidity_max: meas.humidity_max(),
+                })
+            }
+            BleMeasurement::EnergyMeter(meas) => {
+                m::copro_device::Measurements::EnergyMeter(m::EnergyMeterMeasurement {
+                    current: meas.current(),
+                    power: meas.power(),
+                    energy: meas.energy(),
+                    power_min: meas.power_min(),
+                    power_max: meas.power_max(),
+                    current_min: meas.current_min(),
+                    current_max: meas.current_max(),
+                })
+            }
+        }
+    }
+}
 
 impl Into<m::CoproDevice> for &BleDevice {
     fn into(self) -> m::CoproDevice {
@@ -17,19 +55,14 @@ impl Into<m::CoproDevice> for &BleDevice {
             last_seen: Some(utc_to_prost_timestamp(&self.last_seen)),
             last_seen_from_now: Some(self.last_seen_from_now()),
             is_seen: true,
-            rssi: Some(self.last_measurement.rssi() as i32),
-            temperature: self.last_measurement.temperature(),
-            humidity: self.last_measurement.humidity(),
-            battery_level: self.last_measurement.battery_level().map(|v| v as i32),
-            battery_voltage: self.last_measurement.battery_voltage(),
+            rssi: Some(self.rssi as i32),
+            battery_level: self.battery_level().map(|v| v as i32),
+            battery_voltage: self.battery_voltage(),
             stats: Some(m::CoproDeviceStats {
                 rx: self.stats.rx_packets,
             }),
             active_alert: self.get_alert().as_ref().map(|a| a.into()),
-            temperature_min: self.measures.get_temperature_monitor().get_min().cloned(),
-            temperature_max: self.measures.get_temperature_monitor().get_max().cloned(),
-            humidity_min: self.measures.get_humidity_monitor().get_min().cloned(),
-            humidity_max: self.measures.get_humidity_monitor().get_max().cloned(),
+            measurements: Some((&self.measurements).into()),
         }
     }
 }
@@ -43,12 +76,21 @@ pub struct NgCopro {
 impl CoproService for NgCopro {
     async fn get_list(
         &self,
-        _req: tonic::Request<()>,
+        ref req: tonic::Request<m::GetListParams>,
     ) -> Result<tonic::Response<m::CoproDevicesList>, tonic::Status> {
+        let filter = req
+            .into_inner()
+            .filter
+            .map(|f| match f {
+                m::get_list_params::Filter::All(()) => DeviceFilter::All,
+                m::get_list_params::Filter::Name(name) => DeviceFilter::ByName(name),
+            })
+            .unwrap_or(DeviceFilter::All);
+
         let devices: Vec<m::CoproDevice> = self
             .shared
             .controller_handle
-            .get_copro_devices_list()
+            .get_copro_devices_by_filter(filter)
             .await
             .into_iter()
             .map(|ref dev| dev.into())

@@ -1,4 +1,5 @@
 use crate::{
+    controller::copro_controller::device::BleDeviceType,
     shared::SharedHandle,
     utils::{DeviceLabel, PrometheusExporterTrait},
 };
@@ -24,11 +25,11 @@ pub async fn export(shared: &SharedHandle) -> String {
         let sub_id_label = DeviceLabel::SubId(device_infos.did.sub_id);
 
         let mut device_labels = vec![&medium_label, &mac_label, &class_label, &sub_id_label];
-        let controller_label;
 
+        let name_label;
         if let Some(controller_name) = device_infos.controller_name.as_ref() {
-            controller_label = DeviceLabel::Controller(controller_name.clone());
-            device_labels.push(&controller_label);
+            name_label = DeviceLabel::Name(controller_name.clone());
+            device_labels.push(&name_label);
         }
 
         buf.push_str(&device_infos.stats.export(&device_labels));
@@ -37,10 +38,14 @@ pub async fn export(shared: &SharedHandle) -> String {
 
     let medium_label = DeviceLabel::Medium("BLE".to_string());
     for device_infos in ble_devices {
-        let mac_label = DeviceLabel::Mac(device_infos.ble_addr.mac_string());
         let name_label = DeviceLabel::Name(device_infos.name.clone());
+        let mut device_labels = vec![&name_label, &medium_label];
 
-        let device_labels = vec![&name_label, &medium_label, &mac_label];
+        let mac_label_opt = (device_infos.device_type != BleDeviceType::LinkyTIC)
+            .then(|| DeviceLabel::Mac(device_infos.ble_addr.mac_string()));
+        if let Some(mac_label) = mac_label_opt.as_ref() {
+            device_labels.push(mac_label);
+        }
 
         buf.push_str(&device_infos.export(&device_labels));
     }

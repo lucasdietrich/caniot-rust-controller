@@ -2,14 +2,21 @@ use itertools::Itertools;
 
 use crate::{
     controller::{
-        copro_controller::device::BleDeviceType, device_filtering::DeviceFilter, DeviceAlert,
+        copro_controller::{
+            device::BleDeviceType,
+            measurements::{
+                BatteryTrait, BleEnergyMeterMeasurement, BleEnvironementalMeasurement, RssiTrait,
+            },
+        },
+        device_filtering::DeviceFilter,
+        DeviceAlert,
     },
     coprocessor::{coprocessor::CoproStreamChannelStatus, CoproHandle, CoproMessage},
     utils::{PrometheusExporterTrait, PrometheusNoLabel},
 };
 
 use chrono::Utc;
-use log::info;
+use log::{info, warn};
 use thiserror::Error;
 
 use super::{api_message::CoproApiMessage, device::BleDevice};
@@ -27,6 +34,8 @@ pub enum CoproError {}
 #[derive(Debug, Default, Clone)]
 pub struct CoproControllerStats {
     pub rx_packets: u64,
+    pub rx_type_xiaomi: u64,
+    pub rx_type_linky_tic: u64,
 }
 
 impl<'a> PrometheusExporterTrait<'a> for CoproControllerStats {
@@ -35,8 +44,10 @@ impl<'a> PrometheusExporterTrait<'a> for CoproControllerStats {
     fn export(&self, _labels: impl AsRef<[&'a Self::Label]>) -> String {
         format!(
             "controller_copro_iface_rx {}\n\
+            controller_copro_iface_rx {{type=\"xiaomi\"}} {}\n\
+            controller_copro_iface_rx {{type=\"linky_tic\"}} {}\n\
             ",
-            self.rx_packets,
+            self.rx_packets, self.rx_type_xiaomi, self.rx_type_linky_tic,
         )
     }
 }
@@ -57,9 +68,10 @@ impl CoproController {
 
     pub async fn handle_message(&mut self, message: CoproMessage) {
         match message {
-            CoproMessage::XiaomiRecord(record) => {
+            CoproMessage::Xiaomi(record) => {
                 info!("ble xiaomi {}", record);
                 self.stats.rx_packets += 1;
+                self.stats.rx_type_xiaomi += 1;
 
                 let record_timestamp = record.timestamp.to_utc().unwrap_or(Utc::now());
 
@@ -68,7 +80,7 @@ impl CoproController {
                     .iter_mut()
                     .find(|d| d.ble_addr == record.ble_addr)
                 {
-                    let _ = device.handle_received_frame(record_timestamp, record);
+                    let _ = device.commit_new_environemental_measurement(record_timestamp, record);
                 } else {
                     let device_config = self
                         .handle
@@ -76,30 +88,75 @@ impl CoproController {
                         .iter()
                         .find(|config| config.mac == record.ble_addr.mac_string());
 
-                    // Set name for the device
+                    // Name / location
                     let name = device_config
                         .map(|config| config.name.clone())
                         .unwrap_or_else(|| {
                             BleDevice::default_name(&BleDeviceType::Xiaomi, &record.ble_addr)
                         });
-
-                    // Get location from config
                     let location = device_config.and_then(|config| config.location.clone());
 
-                    let mut device = BleDevice::new(
+                    // Instantiate device
+                    let mut device = BleDevice::init(
                         record.ble_addr,
                         name,
                         BleDeviceType::Xiaomi,
                         record_timestamp,
-                        record,
+                        record.rssi(),
+                        record.battery_mv(),
+                        record.battery_level(),
+                        BleEnvironementalMeasurement::init(record),
                         location,
                     );
 
-                    // Set display order for the device
+                    // UI display order (defaults to 0 if not provided)
                     let ui_display_order = device_config
                         .map(|config| config.ui_display_order)
                         .unwrap_or(0);
                     device.set_ui_display_order(ui_display_order);
+
+                    info!("new device: {:?}", device);
+                    self.devices.push(device);
+                }
+            }
+            CoproMessage::LinkyTic(record) => {
+                info!("ble linky tic {}", record);
+                self.stats.rx_packets += 1;
+                self.stats.rx_type_linky_tic += 1;
+
+                let record_timestamp = record.timestamp.to_utc().unwrap_or(Utc::now());
+
+                if let Some(device) = self
+                    .devices
+                    .iter_mut()
+                    .find(|d| d.device_type == BleDeviceType::LinkyTIC)
+                {
+                    // TODO, how to handle a rebooting TIC device, or multiple TIC devices ?
+                    if device.ble_addr != record.ble_addr {
+                        warn!(
+                            "linky tic device address changed from {} to {}, updating ...",
+                            device.ble_addr, record.ble_addr
+                        );
+                        device.ble_addr = record.ble_addr;
+                    }
+
+                    let _ = device.commit_new_energy_meter_measurement(record_timestamp, record);
+                } else {
+                    // Instantiate device
+                    let mut device = BleDevice::init(
+                        record.ble_addr,
+                        "Linky TIC".to_string(),
+                        BleDeviceType::LinkyTIC,
+                        record_timestamp,
+                        record.rssi(),
+                        None,
+                        None,
+                        BleEnergyMeterMeasurement::init(record),
+                        Some("Garage".to_string()),
+                    );
+
+                    // Set first
+                    device.set_ui_display_order(0);
 
                     info!("new device: {:?}", device);
                     self.devices.push(device);

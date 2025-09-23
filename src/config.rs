@@ -8,12 +8,14 @@ use crate::controller::CaniotConfig;
 use crate::coprocessor::CoproConfig;
 use crate::database::DatabaseConfig;
 use crate::ha::ha::HaConfig;
+use crate::ui::UiConfig;
 use crate::webserver::WebserverConfig;
 
 use crate::grpcserver::GrpcConfig;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct AppConfig {
+    pub ui: UiConfig,
     pub can: CanConfig,
     pub caniot: CaniotConfig,
     pub copro: CoproConfig,

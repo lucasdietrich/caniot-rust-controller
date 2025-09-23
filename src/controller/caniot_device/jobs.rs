@@ -3,8 +3,7 @@ use std::{fmt::Debug, thread::sleep};
 use as_any::AsAny;
 use chrono::{DateTime, Duration, Utc};
 use cron::OwnedScheduleIterator;
-use itertools::{partition, Itertools};
-use log::debug;
+use itertools::partition;
 
 use crate::utils::{expirable::ExpirableTrait, Scheduling};
 

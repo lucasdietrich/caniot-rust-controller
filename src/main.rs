@@ -17,6 +17,7 @@ mod internal;
 mod logger;
 mod shared;
 mod shutdown;
+mod ui;
 mod utils;
 mod webserver;
 

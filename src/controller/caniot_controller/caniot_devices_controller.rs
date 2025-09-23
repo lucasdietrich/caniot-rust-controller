@@ -5,7 +5,6 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use chrono::{DateTime, Utc};
-use futures::future::Pending;
 use itertools::{partition, Itertools};
 
 use socketcan::CanDataFrame;

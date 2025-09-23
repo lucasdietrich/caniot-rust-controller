@@ -10,7 +10,7 @@ use crate::ha::ha::Ha;
 use crate::internal::firmware::FirmwareInfos;
 use crate::internal::software::SoftwareInfos;
 use crate::shared::Shared;
-use crate::{bus, config, controller, logger, webserver};
+use crate::{config, controller, logger, webserver};
 
 use crate::grpcserver;
 

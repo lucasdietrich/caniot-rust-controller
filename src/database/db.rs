@@ -7,9 +7,7 @@ use tokio::time::sleep;
 
 use super::{DatabaseType, SettingsStore};
 
-#[cfg(feature = "db-postgres")]
-pub const DEFAULT_CONNECTION_STRING: &str = "postgres://caniot:caniot@localhost/caniot";
-#[cfg(feature = "db-sqlite")]
+// Database backend is now always SQLite.
 pub const DEFAULT_CONNECTION_STRING: &str = "sqlite:./caniot.db";
 // pub const DEFAULT_CONNECTION_STRING: &str = "sqlite::memory:";
 
@@ -51,7 +49,6 @@ const PG_MAX_CONNECTIONS: u32 = 5;
 impl Storage {
     pub async fn try_connect(config: &DatabaseConfig) -> Result<Storage, sqlx::Error> {
         // Create sqlite database if it does not exist
-        #[cfg(feature = "db-sqlite")]
         if !Sqlite::database_exists(&config.connection_string).await? {
             warn!("Database does not exist, creating it");
             Sqlite::create_database(&config.connection_string).await?;

@@ -22,6 +22,7 @@ import {
 } from "react-icons/fa6";
 import { LuBluetooth } from "react-icons/lu";
 import { MdSignalCellularConnectedNoInternet4Bar } from "react-icons/md";
+import { FaBolt, FaPlug } from "react-icons/fa6";
 
 const TEMPERATURE_ROUND_PRECISION = 1;
 const HUMIDITY_ROUND_PRECISION = 0;
@@ -336,3 +337,169 @@ export {
   BatteryGaugeText,
   BleStatisticsText,
 };
+
+// -------------- POWER GAUGE --------------
+
+interface PowerGaugeProps {
+  title?: string;
+  power_w?: number; // current power in watts
+  showIcon?: boolean;
+  showColor?: boolean;
+  small?: boolean;
+}
+
+// Simple color mapping: low (green) -> medium (orange) -> high (red)
+function getPowerColor(power_w: number): string {
+  if (power_w < 1000) return "#2cde73"; // green
+  if (power_w < 2000) return interpolateColor("#2cde73", "#ffad72", (power_w - 100) / 400);
+  if (power_w < 4000) return interpolateColor("#ffad72", "#f76d5e", (power_w - 500) / 1500);
+  return "#D82632"; // very high
+}
+
+function getPowerIcon(power_w: number) {
+  if (power_w === 0) return <FaPlug />; // idle
+  return <FaBolt />;
+}
+
+function PowerGaugeStatistic({
+  title,
+  power_w,
+  showIcon = true,
+  showColor = true,
+  small = false,
+}: PowerGaugeProps) {
+  return power_w !== undefined ? (
+    <Tooltip title={`${(power_w || 0).toFixed(1)} W`} placement="topLeft">
+      <Statistic
+        title={title}
+        value={power_w}
+        precision={0} // integer watts displayed
+        valueStyle={{ color: showColor ? getPowerColor(power_w) : "black" }}
+        prefix={showIcon && getPowerIcon(power_w)}
+        suffix="W"
+        className={small ? "small-statistic" : ""}
+      />
+    </Tooltip>
+  ) : (
+    <Statistic
+      title={title}
+      value="N/A"
+      valueStyle={{ color: "gray" }}
+      prefix={<FaPlug />}
+      suffix="W"
+      className={small ? "small-statistic" : ""}
+    />
+  );
+}
+
+// -------------- ENERGY GAUGE --------------
+
+interface EnergyGaugeProps {
+  title?: string;
+  energy_wh?: number; // cumulative energy in Wh
+  showIcon?: boolean;
+  small?: boolean;
+}
+
+function getEnergyIcon(energy_wh: number | undefined) {
+  return <FaBolt />;
+}
+
+function EnergyGaugeStatistic({
+  title,
+  energy_wh,
+  showIcon = true,
+  small = false,
+}: EnergyGaugeProps) {
+  if (energy_wh === undefined) {
+    return (
+      <Statistic
+        title={title}
+        value="N/A"
+        valueStyle={{ color: "gray" }}
+        prefix={<FaBolt />}
+        suffix="kWh"
+        className={small ? "small-statistic" : ""}
+      />
+    );
+  }
+
+  // Convert Wh to kWh for display but only show whole kWh (no decimals)
+  // Use floor so the displayed kWh increments only after a full kWh is accumulated.
+  const energy_kwh_int = Math.floor(energy_wh / 1000);
+  const tooltipWh = `${energy_wh.toLocaleString(undefined, { maximumFractionDigits: 0 })} Wh`;
+
+  return (
+    <Tooltip title={tooltipWh} placement="topLeft">
+      <Statistic
+        title={title}
+        value={energy_kwh_int}
+        precision={0}
+        valueStyle={{ color: "#3F51B5" }}
+        prefix={showIcon && getEnergyIcon(energy_wh)}
+        suffix="kWh"
+        className={small ? "small-statistic" : ""}
+      />
+    </Tooltip>
+  );
+}
+
+export { PowerGaugeStatistic, EnergyGaugeStatistic };
+
+// -------------- CURRENT GAUGE --------------
+
+interface CurrentGaugeProps {
+  title?: string;
+  current_a?: number; // instantaneous current in amperes
+  showIcon?: boolean;
+  showColor?: boolean;
+  small?: boolean;
+}
+
+function getCurrentColor(current_a: number): string {
+  // Basic mapping: <2A green, <8A gradient to orange, <16A gradient to red, else dark red
+  if (current_a < 2) return "#2cde73";
+  if (current_a < 8) return interpolateColor("#2cde73", "#ffad72", (current_a - 2) / 6);
+  if (current_a < 16) return interpolateColor("#ffad72", "#f76d5e", (current_a - 8) / 8);
+  return "#D82632";
+}
+
+function getCurrentIcon(current_a: number) {
+  // Re‑use bolt for active current, plug for 0A similar to power gauge visuals
+  if (current_a === 0) return <FaPlug />;
+  return <FaBolt />;
+}
+
+function CurrentGaugeStatistic({
+  title,
+  current_a,
+  showIcon = true,
+  showColor = true,
+  small = false,
+}: CurrentGaugeProps) {
+  const precision = 0;
+  return current_a !== undefined ? (
+    <Tooltip title={`${(current_a || precision).toFixed(0)} A`} placement="topLeft">
+      <Statistic
+        title={title}
+        value={current_a}
+        precision={precision}
+        valueStyle={{ color: showColor ? getCurrentColor(current_a) : "black" }}
+        prefix={showIcon && getCurrentIcon(current_a)}
+        suffix="A"
+        className={small ? "small-statistic" : ""}
+      />
+    </Tooltip>
+  ) : (
+    <Statistic
+      title={title}
+      value="N/A"
+      valueStyle={{ color: "gray" }}
+      prefix={<FaPlug />}
+      suffix="A"
+      className={small ? "small-statistic" : ""}
+    />
+  );
+}
+
+export { CurrentGaugeStatistic };

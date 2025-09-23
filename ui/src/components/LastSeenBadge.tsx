@@ -30,6 +30,7 @@ function LastSeenBadge({
             {!minimalDisplay && lastseen_fmt}
             {lastSeenValue !== undefined && (
               <LastSeenSecondsCounter
+                key={lastSeenDate?.getTime()}
                 lastSeenValue={lastSeenValue}
                 refreshIntervalMs={1000}
                 minimalDisplay={minimalDisplay}

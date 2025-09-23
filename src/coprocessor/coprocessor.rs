@@ -1,10 +1,11 @@
 use std::time::Duration;
 
 use ble_copro_stream_server::{
-    stream_channel::StreamChannel, stream_message::ChannelMessage, xiaomi::XiaomiRecord,
-    StreamServer, Timestamp,
+    linky::LinkyTicRecord, stream_channel::StreamChannel, stream_message::ChannelMessage,
+    xiaomi::XiaomiRecord, StreamServer, Timestamp,
 };
 use chrono::Utc;
+use log::warn;
 use rocket::error;
 use tokio::{sync::mpsc, time::sleep};
 
@@ -25,7 +26,8 @@ pub enum CoproStreamChannelStatus {
 
 #[derive(Debug)]
 pub enum CoproMessage {
-    XiaomiRecord(XiaomiRecord),
+    Xiaomi(XiaomiRecord),
+    LinkyTic(LinkyTicRecord),
     Status(CoproStreamChannelStatus),
 }
 
@@ -81,10 +83,12 @@ impl Coprocessor {
             State::Uninitialized => match StreamServer::init(listen_ip, listen_port).await {
                 Ok(server) => State::Listening(server),
                 Err(e) => {
-                    error!("Failed to start server: {}", e);
+                    error!("Failed to start Coprocessor server: {}", e);
                     Self::notify_stream_channel_status(
                         sender,
-                        CoproStreamChannelStatus::Error("Failed to start server".to_string()),
+                        CoproStreamChannelStatus::Error(
+                            "Failed to start Coprocessor server".to_string(),
+                        ),
                     )
                     .await;
                     sleep(COPRO_SERVER_INIT_RETRY_INTERVAL).await;
@@ -109,12 +113,26 @@ impl Coprocessor {
                 }
             },
             State::Connected(mut client, server) => {
-                while let Ok(ChannelMessage::Xiaomi(mut xiaomi_record)) = client.next().await {
-                    // override xiaomi_record timestamp with current time
-                    // TODO this needs to be changed to use Copro timestamp when available
-                    xiaomi_record.timestamp = Timestamp::Utc(Utc::now());
+                while let Ok(message) = client.next().await {
+                    match message {
+                        ChannelMessage::Xiaomi(mut xiaomi_record) => {
+                            // override xiaomi_record timestamp with current time
+                            // TODO this needs to be changed to use Copro timestamp when available
+                            xiaomi_record.timestamp = Timestamp::Utc(Utc::now());
 
-                    let _ = sender.send(CoproMessage::XiaomiRecord(xiaomi_record)).await;
+                            let _ = sender.send(CoproMessage::Xiaomi(xiaomi_record)).await;
+                        }
+                        ChannelMessage::LinkyTic(mut linky_tic_record) => {
+                            // override linky_tic_record timestamp with current time
+                            // TODO this needs to be changed to use Copro timestamp when available
+                            linky_tic_record.timestamp = Timestamp::Utc(Utc::now());
+
+                            let _ = sender.send(CoproMessage::LinkyTic(linky_tic_record)).await;
+                        }
+                        _ => {
+                            warn!("Unhandled channel message: {:?}", message);
+                        }
+                    }
                 }
 
                 info!("Connection closed");
