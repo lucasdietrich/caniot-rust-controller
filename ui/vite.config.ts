@@ -10,6 +10,14 @@ export default defineConfig({
   build: {
     outDir: "dist",
     assetsDir: "assets",
+    rollupOptions: {
+      onwarn(warning, warn) {
+        // google-protobuf uses eval() internally for transpilation detection;
+        // this is dead code in a bundled environment and can be safely ignored.
+        if (warning.code === "EVAL" && warning.id?.includes("google-protobuf")) return;
+        warn(warning);
+      },
+    },
   },
   resolve: {
     // This is require in order to have grpc-web-client-gen working

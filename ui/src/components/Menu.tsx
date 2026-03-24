@@ -2,7 +2,7 @@ import { Menu as AntMenu, Badge } from "antd";
 import { Link } from "react-router-dom";
 import type { MenuProps } from "antd";
 import { HomeOutlined, SettingFilled, PlusOutlined, UploadOutlined } from "@ant-design/icons";
-import { LuBluetooth, LuBluetoothConnected, LuSiren } from "react-icons/lu";
+import { LuBluetooth, LuSiren } from "react-icons/lu";
 import { MdOutlineGarage } from "react-icons/md";
 import { LiaTemperatureLowSolid } from "react-icons/lia";
 import { SiGrafana, SiPrometheus, SiHomeassistant } from "react-icons/si";
@@ -107,7 +107,7 @@ function AppMenu({ isMobile = false, uiDebugMode = false }: IMenuProps) {
     uiConfigState.data.shortcut.slice().sort((a, b) => (a.order || 0) - (b.order || 0)).forEach((s) => {
       if (menuItems.find((mi) => mi && mi.key === s.name)) return; // avoid duplicates
       const target = s.menu_order || "before_settings";
-      const item: any = {
+      const item: NonNullable<MenuProps["items"]>[number] = {
         key: s.name,
         label: createLink(s),
         icon: mapIcon(s),

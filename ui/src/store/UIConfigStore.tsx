@@ -1,5 +1,4 @@
 import EventEmitter from "events";
-import { cp } from "fs";
 
 export interface ShortcutConfig {
   name: string;
@@ -70,11 +69,12 @@ class UIConfigStore extends EventEmitter {
       const json = (await resp.json()) as UiConfigResponse;
       console.log("Fetched UI config:", json);
       this.setState({ data: json, loading: false, lastUpdated: Date.now() });
-    } catch (e: any) {
-      if (e.name === "AbortError") {
+    } catch (e) {
+      const err = e as Error;
+      if (err.name === "AbortError") {
         return; // ignore aborted
       }
-      this.setState({ error: e.message || "Unknown error", loading: false });
+      this.setState({ error: err.message || "Unknown error", loading: false });
     }
   }
 }

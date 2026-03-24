@@ -30,8 +30,8 @@ deploy_release: deploy_config deploy_static deploy_bin_release
 deploy_debug: deploy_config deploy_static deploy_bin_debug
 
 deploy_static:
-	ssh rpi "mkdir -p /home/root/rust-controller/ui/dist"
-	scp -rp ui/dist/* rpi:/home/root/rust-controller/ui/dist
+	ssh $(TARGET) "mkdir -p /home/root/rust-controller/ui/dist"
+	scp -rp ui/dist/* $(TARGET):/home/root/rust-controller/ui/dist
 
 deploy_config:
 	scp scripts/caniot-controller.toml $(TARGET):~

@@ -40,7 +40,7 @@ function BleDevicesView({ refreshInterval = 5000, appContext }: IBleDevicesViewP
     return () => {
       clearInterval(intervalRefresh);
     };
-  }, [time]);
+  }, [time, refreshInterval]);
 
   // Determine if the copro device has an active alert that should be displayed
   let hasCoproAlertActive = false;

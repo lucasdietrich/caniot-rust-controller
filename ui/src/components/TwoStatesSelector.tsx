@@ -1,7 +1,8 @@
-import { Button, Form, Radio, RadioChangeEvent, Space } from "antd";
-import React, { useState } from "react";
+import { Button, Radio, RadioChangeEvent, Space } from "antd";
+import React from "react";
 
 // // enum for on/off/toogle
+// eslint-disable-next-line react-refresh/only-export-components
 export enum TwoStateCommand {
   OFF = 0,
   ON = 1,

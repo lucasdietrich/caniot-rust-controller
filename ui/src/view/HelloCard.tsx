@@ -3,7 +3,7 @@ import {
   HelloResponse,
 } from "@caniot-controller/caniot-api-grpc-web/api/ng_internal_pb";
 import internalStore from "../store/InternalStore";
-import { Card, Divider, List, Typography, Button } from "antd";
+import { Card, Button } from "antd";
 import { useEffect, useState } from "react";
 import { ReloadOutlined } from "@ant-design/icons";
 import Hello from "../components/HelloComponent";
@@ -23,7 +23,7 @@ function HelloCard({ user_name }: IHelloCardProps) {
     internalStore.hello(req, (resp: HelloResponse) => {
       setHelloResp(resp);
     });
-  }, [refreshData]);
+  }, [refreshData, user_name]);
 
   return (
     <Card title={"Hello " + user_name} bordered={false}>

@@ -1,31 +1,16 @@
 import {
-  Badge,
-  Card,
   Col,
-  Form,
-  Result,
   Row,
-  Slider,
-  SliderSingleProps,
-  Space,
-  Spin,
-  TimePicker,
 } from "antd";
 import React, { useEffect, useState } from "react";
 import HeaterModeSelector from "../components/HeaterModeSelector";
-import { CheckCircleFilled, CheckCircleOutlined, LoadingOutlined } from "@ant-design/icons";
 import { Command, State, Status } from "@caniot-controller/caniot-api-grpc-web/api/ng_heaters_pb";
 import heatersStore from "../store/HeatersStore";
-import { Empty } from "google-protobuf/google/protobuf/empty_pb";
-import Icon from "@ant-design/icons/lib/components/Icon";
 import DeviceDetailsCard from "../components/DeviceDetailsCard";
 import { Device } from "@caniot-controller/caniot-api-grpc-web/api/ng_devices_pb";
 import devicesStore from "../store/DevicesStore";
-import { DeviceId } from "@caniot-controller/caniot-api-grpc-web/api/common_pb";
 import LoadableCard from "../components/LoadableCard";
 import DeviceAlert from "../components/DeviceAlert";
-import dayjs from "dayjs";
-import HeatersSchedulingCard from "../components/HeatersSchedulingCard";
 
 interface IHeatersViewProps {
   refreshInterval?: number;
@@ -57,7 +42,7 @@ function HeatersView({
     return () => {
       clearInterval(interval);
     };
-  }, [time]);
+  }, [time, refreshInterval]);
 
   const onModeChange = (heaterIndex: number, mode: State) => {
     setLoading(true);

@@ -4,11 +4,10 @@ import {
   DevicesList,
 } from "@caniot-controller/caniot-api-grpc-web/api/ng_devices_pb";
 import { Timestamp } from "google-protobuf/google/protobuf/timestamp_pb";
-import { Table, TableProps, Button, Space, Tag, Badge } from "antd";
+import { Table, TableProps, Button, Space, Tag } from "antd";
 import devicesStore from "../store/DevicesStore";
 import { DeviceId, Endpoint } from "@caniot-controller/caniot-api-grpc-web/api/common_pb";
 import { Empty as ProtobufEmpty } from "google-protobuf/google/protobuf/empty_pb";
-import { useState } from "react";
 import DeviceDetailsCard from "./DeviceDetailsCard";
 import { LoadingOutlined } from "@ant-design/icons";
 import LastSeenBadge from "./LastSeenBadge";
@@ -46,9 +45,6 @@ const classColor: { [key: number]: string } = {
 };
 
 function DevicesTable({ devicesList }: IDevicesTableProps) {
-  const [nestedDevices, setNestedDevices] = useState<{ [key: number]: Device }>({});
-  const [isLoading, setIsLoading] = useState<{ [key: number]: boolean }>({});
-
   if (devicesList === undefined) {
     return undefined;
   }
@@ -98,7 +94,7 @@ function DevicesTable({ devicesList }: IDevicesTableProps) {
       title: "Tags",
       dataIndex: "tags",
       key: "tags",
-      render: ({ cls, sid }, record) => (
+      render: ({ cls, sid }, _record) => (
         <span>
           <Tag color={classColor[cls]}>Class {cls}</Tag>
           <Tag color="blue">id {sid}</Tag>
@@ -220,7 +216,7 @@ function DevicesTable({ devicesList }: IDevicesTableProps) {
       dataSource={data}
       expandable={{
         expandedRowRender: expandedRowRender,
-        rowExpandable: (record) => true,
+        rowExpandable: (_record) => true,
         // onExpand: onExpand,
       }}
     />

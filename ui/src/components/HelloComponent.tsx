@@ -1,10 +1,8 @@
 import {
-  HelloRequest,
   HelloResponse,
 } from "@caniot-controller/caniot-api-grpc-web/api/ng_internal_pb";
-import internalStore from "../store/InternalStore";
-import { Divider, List, Typography } from "antd";
-import { PropsWithChildren, useEffect, useState } from "react";
+import { List } from "antd";
+import { PropsWithChildren } from "react";
 import ListLabelledItem from "./ListLabelledItem";
 
 interface IHelloPropsComponent {

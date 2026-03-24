@@ -1,8 +1,6 @@
 import { Statistic, Tooltip } from "antd";
 import React from "react";
 import {
-  BsBatteryFull,
-  BsThermometer,
   BsThermometerHalf,
   BsThermometerHigh,
   BsThermometerLow,
@@ -18,7 +16,6 @@ import {
   FaDroplet,
   FaDropletSlash,
   FaTemperatureEmpty,
-  FaTemperatureHalf,
 } from "react-icons/fa6";
 import { LuBluetooth } from "react-icons/lu";
 import { MdSignalCellularConnectedNoInternet4Bar } from "react-icons/md";
@@ -39,6 +36,7 @@ const WINTER_SUMMER_TEMP_FEELING_DIFF_OUTDOOR = 6; // °C
  *                 0 will return colorFrom, 1 will return colorTo, 0.5 will return the midpoint, etc.
  * @returns A hex string representing the interpolated color, e.g. '#808000'
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export function interpolateColor(colorFrom: string, colorTo: string, weight: number): string {
   // Ensure weight is clamped between 0 and 1
   const w = Math.min(Math.max(weight, 0), 1);
@@ -224,7 +222,7 @@ interface HumidityGaugeProps {
   small?: boolean;
 }
 
-export function GetHumidityIcon(humidity: number) {
+export function GetHumidityIcon(_humidity: number) {
   return <FaDroplet />;
 }
 
@@ -401,7 +399,7 @@ interface EnergyGaugeProps {
   small?: boolean;
 }
 
-function getEnergyIcon(energy_wh: number | undefined) {
+function getEnergyIcon(_energy_wh: number | undefined) {
   return <FaBolt />;
 }
 

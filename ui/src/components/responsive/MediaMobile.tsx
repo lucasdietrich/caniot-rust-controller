@@ -3,7 +3,7 @@ import { MobileMaxSize } from "../../App";
 import Media from "react-media";
 
 interface MediaMobileProps {
-  render: (isMobile: boolean) => JSX.Element;
+  render: (isMobile: boolean) => React.ReactElement;
 }
 
 const queries = {

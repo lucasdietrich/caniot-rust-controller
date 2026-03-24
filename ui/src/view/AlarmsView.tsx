@@ -1,4 +1,4 @@
-import { Alert, Badge, Button, Checkbox, Col, List, Row, Slider, Tag, TimePicker } from "antd";
+import { Badge, Button, Checkbox, Col, List, Row, Slider, Tag, TimePicker } from "antd";
 import React, { useEffect, useState } from "react";
 import DeviceDetailsCard from "../components/DeviceDetailsCard";
 import { Device } from "@caniot-controller/caniot-api-grpc-web/api/ng_devices_pb";
@@ -7,7 +7,6 @@ import LoadableCard from "../components/LoadableCard";
 import ListGridItem from "../components/ListGridItem";
 import TwoStatesSelector, { TwoStateCommand } from "../components/TwoStatesSelector";
 import {
-  AlarmConfig,
   AlarmPartialConfig,
   OutdoorAlarmCommand,
   OutdoorAlarmLightsCommand,
@@ -16,7 +15,7 @@ import {
   TwoStates as gTwoStates,
 } from "@caniot-controller/caniot-api-grpc-web/api/ng_alarms_pb";
 import alarmsStore from "../store/AlarmsStore";
-import { MinusCircleOutlined, SyncOutlined } from "@ant-design/icons";
+import { MinusCircleOutlined } from "@ant-design/icons";
 import DeviceAlert from "../components/DeviceAlert";
 import AlarmDiagWidget from "../components/AlarmDiagWidget";
 import dayjs from "dayjs";
@@ -56,7 +55,7 @@ function AlarmsView({
     return () => {
       clearInterval(interval);
     };
-  }, [time]);
+  }, [time, refreshInterval]);
 
   enum Light {
     All = 0,
@@ -75,7 +74,7 @@ function AlarmsView({
           setSirenForceOffRequested(false);
         });
       },
-      (err) => {
+      (_err) => {
         setLoading(false);
       }
     );
@@ -296,6 +295,7 @@ function AlarmsView({
                           timeFormat
                         )}
                         onChange={(time) => {
+                          if (!time) return;
                           let partialConfig = new AlarmPartialConfig();
                           partialConfig.setAlarmAutoEnableTime(time.format("HH:mm:ss"));
                           updateAlarmConfig(partialConfig);
@@ -317,6 +317,7 @@ function AlarmsView({
                           timeFormat
                         )}
                         onChange={(time) => {
+                          if (!time) return;
                           let partialConfig = new AlarmPartialConfig();
                           partialConfig.setAlarmAutoDisableTime(time.format("HH:mm:ss"));
                           updateAlarmConfig(partialConfig);
@@ -354,7 +355,7 @@ function AlarmsView({
                         style={{}}
                         tooltip={{
                           placement: "top",
-                          visible: true,
+                          open: true,
                           formatter: (value) => `${value} s`,
                         }}
                       />
@@ -390,6 +391,7 @@ function AlarmsView({
                           timeFormat
                         )}
                         onChange={(time) => {
+                          if (!time) return;
                           let partialConfig = new AlarmPartialConfig();
                           partialConfig.setLightsAutoEnableTime(time.format("HH:mm:ss"));
                           updateAlarmConfig(partialConfig);
@@ -411,6 +413,7 @@ function AlarmsView({
                           timeFormat
                         )}
                         onChange={(time) => {
+                          if (!time) return;
                           let partialConfig = new AlarmPartialConfig();
                           partialConfig.setLightsAutoDisableTime(time.format("HH:mm:ss"));
                           updateAlarmConfig(partialConfig);

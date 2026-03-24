@@ -2,23 +2,9 @@ import { Card, Select, Slider, SliderSingleProps, Switch, Table, TimePicker } fr
 import { State } from "@caniot-controller/caniot-api-grpc-web/api/ng_heaters_pb";
 import React from "react";
 import dayjs from "dayjs";
-import { MoonOutlined } from "@ant-design/icons";
 import { getHeaterModeLabel } from "./HeaterModeSelector";
 
 const timeFormat = "HH:mm";
-
-const setpointMarks: SliderSingleProps["marks"] = {
-  15: "15°C",
-  18: "18°C",
-  20: "20°C",
-  21: "21°C",
-  25: {
-    style: {
-      color: "#f50",
-    },
-    label: <strong>25</strong>,
-  },
-};
 
 const timeMarks: SliderSingleProps["marks"] = {
   0: "00 H",
@@ -127,7 +113,7 @@ function HeatersSchedulingCard({ isMobile = false }: IHeatersSchedulingCardProps
           style={{}}
           tooltip={{
             placement: "top",
-            visible: true,
+            open: true,
             formatter: (value) => `${value} h`,
           }}
         />

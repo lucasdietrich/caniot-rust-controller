@@ -1,19 +1,10 @@
-import { notification } from "antd";
 import EventEmitter from "events";
 import { HandleError, HandleSuccess, getApiUrl } from "./helpers";
 
 import { Empty } from "google-protobuf/google/protobuf/empty_pb";
 // import google_protobuf_empty_pb from "google-protobuf/google/protobuf/empty_pb.js";
 
-import {
-  Action,
-  ActionResult,
-  Device,
-  DevicesList,
-} from "@caniot-controller/caniot-api-grpc-web/api/ng_devices_pb";
-
 import { CoproServiceClient } from "@caniot-controller/caniot-api-grpc-web/api/Ng_coproServiceClientPb";
-import { DeviceId } from "@caniot-controller/caniot-api-grpc-web/api/common_pb";
 import {
   CoproAlert,
   CoproDevice,

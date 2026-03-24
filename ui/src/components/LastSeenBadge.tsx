@@ -1,5 +1,5 @@
 import { Badge } from "antd";
-import React, { useEffect, useState } from "react";
+import React from "react";
 import LastSeenSecondsCounter from "./LastSeenSecondsCounter";
 import { SECONDS_TO_CONSIDER_ONLINE_CANIOT } from "../constants";
 

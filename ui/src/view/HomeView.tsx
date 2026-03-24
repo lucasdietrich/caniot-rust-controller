@@ -1,4 +1,4 @@
-import { Row, Col, Statistic } from "antd";
+import { Row, Col } from "antd";
 import { useEffect, useState } from "react";
 import { Device, DevicesList } from "@caniot-controller/caniot-api-grpc-web/api/ng_devices_pb";
 import devicesStore from "../store/DevicesStore";
@@ -11,7 +11,7 @@ import garageStore from "../store/GarageStore";
 import DeviceMetricsWidget from "../components/DeviceMetricsWidget";
 import DeviceAlert from "../components/DeviceAlert";
 import SoftwareInfosCard from "../components/SoftwareInfosCard";
-import { Infos, SoftwareInfos } from "@caniot-controller/caniot-api-grpc-web/api/ng_internal_pb";
+import { Infos } from "@caniot-controller/caniot-api-grpc-web/api/ng_internal_pb";
 import internalStore from "../store/InternalStore";
 import FirmwareInfosCard from "../components/FirmwareInfosCard";
 import ControllerStatsCard from "../components/ControllerStatsCard";
@@ -26,13 +26,11 @@ import {
 import coproStore from "../store/CoproStore";
 import BleDeviceMetricsWidget from "../components/BleDeviceMetricsWidget";
 import { AppContext } from "../App";
-import { HomeOutlined, DashboardOutlined, FireOutlined, UploadOutlined } from "@ant-design/icons";
+import { UploadOutlined } from "@ant-design/icons";
 import { SiGrafana, SiPrometheus, SiHomeassistant } from "react-icons/si";
 import { Badge } from "antd";
 import uiConfigStore, { ShortcutConfig } from "../store/UIConfigStore";
 import { useSyncExternalStore } from "react";
-
-const { Countdown } = Statistic;
 
 interface HomeProps {
   appContext: AppContext;
@@ -71,10 +69,6 @@ function HomeView({ appContext, refreshInterval = 5000, uiHomeBLEDevices = false
   const [time, setTime] = useState(Date.now());
 
   const navigate = useNavigate();
-
-  // Build base host/protocol for external services (assumes same host as controller)
-  const proto = window.location.protocol; // e.g. http: or https:
-  const host = window.location.hostname; // hostname only
 
   // subscribe to UI config to reuse dynamic shortcuts
   const uiConfigState = useSyncExternalStore(
@@ -174,7 +168,7 @@ function HomeView({ appContext, refreshInterval = 5000, uiHomeBLEDevices = false
     return () => {
       clearInterval(intervalRefresh);
     };
-  }, [time]);
+  }, [time, refreshInterval, uiHomeBLEDevices]);
 
   const garageDoorsStatusWidget = (
     <LoadableCard

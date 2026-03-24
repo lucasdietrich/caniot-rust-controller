@@ -1,8 +1,7 @@
 import { Device } from "@caniot-controller/caniot-api-grpc-web/api/ng_devices_pb";
-import { Badge, Card, List, Progress, Space, Table } from "antd";
-import React, { useEffect, useState } from "react";
+import { Badge, List, Space, Table } from "antd";
+import React from "react";
 import ListLabelledItem from "./ListLabelledItem";
-import { Timestamp } from "google-protobuf/google/protobuf/timestamp_pb";
 import LoadableCard from "./LoadableCard";
 import LastSeenBadge from "./LastSeenBadge";
 import { SECONDS_TO_CONSIDER_ONLINE_CANIOT } from "../constants";
@@ -14,12 +13,11 @@ interface IDeviceStatusCardProps {
   isMobile?: boolean;
 }
 
-function DeviceDetailsCard({ title, device, progress, isMobile = false }: IDeviceStatusCardProps) {
+function DeviceDetailsCard({ title, device, isMobile = false }: IDeviceStatusCardProps) {
   if (device === undefined) {
     return undefined;
   }
 
-  const isLoaded = device !== undefined;
   const isOnline = device.getLastseenfromnow() < SECONDS_TO_CONSIDER_ONLINE_CANIOT;
 
   return (
@@ -39,38 +37,31 @@ interface IDeviceCardContentProps {
 }
 
 function DeviceStatusCardContent({ device: resp }: IDeviceCardContentProps) {
-  let tempIn = "N/A",
-    tempExt0 = "N/A",
+  let tempExt0 = "N/A",
     tempExt1 = "N/A",
     tempExt2 = "N/A",
-    hasTempExt0 = false,
     hasTempExt1 = false,
     hasTempExt2 = false,
     inputs,
     ios_count = 0;
 
   let tempBoard = resp.hasBoardTemp() ? resp.getBoardTemp().toFixed(2) : "N/A";
-  let tempOut = resp.hasOutsideTemp() ? resp.getOutsideTemp().toFixed(2) : "N/A";
 
   if (resp.hasClass0()) {
     const c0 = resp.getClass0();
 
-    hasTempExt0 = c0?.hasExtTemp0() || false;
     hasTempExt1 = c0?.hasExtTemp1() || false;
     hasTempExt2 = c0?.hasExtTemp2() || false;
 
-    tempIn = c0?.hasIntTemp() ? c0.getIntTemp().toFixed(2) : "N/A";
     tempExt0 = c0?.hasExtTemp0() ? c0.getExtTemp0()?.toFixed(2) : "N/A";
     tempExt1 = c0?.hasExtTemp1() ? c0.getExtTemp1()?.toFixed(2) : "N/A";
     tempExt2 = c0?.hasExtTemp2() ? c0.getExtTemp2()?.toFixed(2) : "N/A";
   } else if (resp.hasClass1()) {
     const c1 = resp.getClass1();
 
-    hasTempExt0 = c1?.hasExtTemp0() || false;
     hasTempExt1 = c1?.hasExtTemp1() || false;
     hasTempExt2 = c1?.hasExtTemp2() || false;
 
-    tempIn = c1?.hasIntTemp() ? c1.getIntTemp().toFixed(2) : "N/A";
     tempExt0 = c1?.hasExtTemp0() ? c1.getExtTemp0()?.toFixed(2) : "N/A";
     tempExt1 = c1?.hasExtTemp1() ? c1.getExtTemp1()?.toFixed(2) : "N/A";
     tempExt2 = c1?.hasExtTemp2() ? c1.getExtTemp2()?.toFixed(2) : "N/A";

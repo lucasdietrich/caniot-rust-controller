@@ -1,5 +1,4 @@
-import { LoadingOutlined } from "@ant-design/icons";
-import { Badge, Button, Card, Progress } from "antd";
+import { Button, Progress } from "antd";
 import React from "react";
 
 interface IGarageDoorStatusProps {

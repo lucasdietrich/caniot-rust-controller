@@ -1,5 +1,5 @@
-import React, { Fragment, useEffect, useState } from "react";
-import { ConfigProvider, FloatButton, Layout, Switch, theme } from "antd";
+import React, { useEffect, useState } from "react";
+import { ConfigProvider, Layout, theme } from "antd";
 
 import { Routes, Route } from "react-router-dom";
 import HomeView from "./view/HomeView";
@@ -13,11 +13,8 @@ import SettingsView from "./view/SettingsView";
 import NoMatch from "./view/NoMatch";
 import Debug from "./view/Debug";
 import DemoView from "./view/DemoView";
-import Media from "react-media";
-
 import "./App.css";
 import {
-  PartialSettings,
   ResetStatsRequest,
   Settings,
 } from "@caniot-controller/caniot-api-grpc-web/api/ng_internal_pb";

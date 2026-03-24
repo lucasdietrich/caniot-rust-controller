@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Card, Row, Col, Badge, Space, Spin } from "antd";
-import GarageDoorStatus from "../components/GarageDoorStatus";
-import GarageGateStatus from "../components/GarageGateStatus";
+import { Row, Col } from "antd";
 import DeviceDetailsCard from "../components/DeviceDetailsCard";
 import {
   Command,
@@ -11,9 +9,7 @@ import {
 } from "@caniot-controller/caniot-api-grpc-web/api/ng_garage_pb";
 import { Device } from "@caniot-controller/caniot-api-grpc-web/api/ng_devices_pb";
 import garageStore from "../store/GarageStore";
-import { Empty } from "google-protobuf/google/protobuf/empty_pb";
 import devicesStore from "../store/DevicesStore";
-import { LoadingOutlined } from "@ant-design/icons";
 import LoadableCard from "../components/LoadableCard";
 import GarageDoorsStatus from "../components/GarageDoorsStatus";
 
@@ -47,7 +43,7 @@ function GarageDoorsView({
     return () => {
       clearInterval(intervalRefresh);
     };
-  }, [time]);
+  }, [time, refreshInterval]);
 
   const handleDoorClick = (commandType: Command) => {
     setLoading(true);

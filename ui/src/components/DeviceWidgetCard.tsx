@@ -1,7 +1,4 @@
-import { Card } from "antd";
 import React, { PropsWithChildren } from "react";
-import GarageDoorsView from "../view/GarageDoorsView";
-import GarageDoorsStatus from "./GarageDoorsStatus";
 import LoadableCard from "./LoadableCard";
 
 interface IDeviceWidgetCardProps {

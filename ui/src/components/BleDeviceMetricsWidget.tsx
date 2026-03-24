@@ -1,19 +1,16 @@
 import LoadableCard from "./LoadableCard";
-import { Device } from "@caniot-controller/caniot-api-grpc-web/api/ng_devices_pb";
 import { useNavigate } from "react-router-dom";
 import { Col, Divider, Row, Tooltip } from "antd";
 import TemperatureGaugeStatistic, {
   BatteryGaugeText,
   HumidityGaugeStatistic,
-  HumidityGaugeText,
   BleStatisticsText,
-  TemperatureGaugeText,
   PowerGaugeStatistic,
   EnergyGaugeStatistic,
   CurrentGaugeStatistic,
 } from "./Gauges";
 import LastSeenBadge from "./LastSeenBadge";
-import { TbCpu, TbPlugConnected } from "react-icons/tb";
+import { TbPlugConnected } from "react-icons/tb";
 import { CoproDevice } from "@caniot-controller/caniot-api-grpc-web/api/ng_copro_pb";
 import { SECONDS_TO_CONSIDER_ONLINE_BLE } from "../constants";
 
@@ -73,6 +70,7 @@ function BleDeviceMetricsWidget({
     >
       {(() => {
         const env = device?.getEnvironemental();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const valueExists = (v: any) => v !== undefined && v !== null;
 
         const tempVal = env?.getTemperature();
@@ -90,6 +88,7 @@ function BleDeviceMetricsWidget({
 
         const energy = device?.getEnergyMeter();
         const powerVal = energy?.getPower();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const currentVal = energy?.getCurrent?.() ?? (energy as any)?.getCurrent?.();
         const energyVal = energy?.getEnergy();
         const hasPower = valueExists(powerVal);
@@ -98,9 +97,13 @@ function BleDeviceMetricsWidget({
   const showEnergyRow = hasPower || hasCurrent || hasEnergy;
 
   // Min / Max for power & current (optional presence)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const powerMin = (energy as any)?.getPowerMin?.();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const powerMax = (energy as any)?.getPowerMax?.();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const currentMin = (energy as any)?.getCurrentMin?.();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const currentMax = (energy as any)?.getCurrentMax?.();
 
   const hasPowerMin = valueExists(powerMin);

@@ -2,15 +2,13 @@ import React, { useState } from "react";
 import {
   Button,
   Form,
-  Input,
   InputNumber,
   Radio,
-  Row,
   Select,
   Slider,
   Space,
 } from "antd";
-import { NumberOutlined, SearchOutlined } from "@ant-design/icons";
+import { NumberOutlined } from "@ant-design/icons";
 
 function CaniotQueryForm() {
   const [form] = Form.useForm();

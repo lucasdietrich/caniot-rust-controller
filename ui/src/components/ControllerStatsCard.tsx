@@ -1,4 +1,4 @@
-import { Card, List, Typography } from "antd";
+import { List } from "antd";
 import React from "react";
 import ListLabelledItem from "./ListLabelledItem";
 import { ControllerStats } from "@caniot-controller/caniot-api-grpc-web/api/ng_internal_pb";

@@ -1,4 +1,4 @@
-import { Badge, Card, Progress } from "antd";
+import { Progress } from "antd";
 import React from "react";
 
 interface IGarageGateStatusProps {

@@ -1,4 +1,3 @@
-import { notification } from "antd";
 import EventEmitter from "events";
 import { HandleError, HandleSuccess, getApiUrl } from "./helpers";
 
@@ -7,9 +6,7 @@ import { Empty } from "google-protobuf/google/protobuf/empty_pb";
 
 import {
   Status,
-  Command,
   CommandMessage,
-  DoorState,
 } from "@caniot-controller/caniot-api-grpc-web/api/ng_garage_pb";
 
 import { GarageServiceClient } from "@caniot-controller/caniot-api-grpc-web/api/Ng_garageServiceClientPb";

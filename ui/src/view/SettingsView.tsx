@@ -1,12 +1,6 @@
-import { Button, Card, Col, Divider, List, Row, Slider, Switch } from "antd";
-import React, { useEffect, useState } from "react";
-import ListLabelledItem from "../components/ListLabelledItem";
-import {
-  HelloRequest,
-  HelloResponse,
-  Settings,
-} from "@caniot-controller/caniot-api-grpc-web/api/ng_internal_pb";
-import internalStore from "../store/InternalStore";
+import { Button, Col, List, Row, Switch } from "antd";
+import React from "react";
+import { Settings } from "@caniot-controller/caniot-api-grpc-web/api/ng_internal_pb";
 import LoadableCard from "../components/LoadableCard";
 import ListGridItem from "../components/ListGridItem";
 import { Link } from "react-router-dom";

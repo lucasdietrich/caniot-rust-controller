@@ -1,8 +1,4 @@
-import { Row, Col, Card, Button, List, Typography, Space } from "antd";
-import Hello from "../components/HelloComponent";
-import { ReloadOutlined } from "@ant-design/icons";
-import HelloCard from "./HelloCard";
-import ListLabelledItem from "../components/ListLabelledItem";
+import { Card, Space } from "antd";
 import CaniotFramesTable from "../components/CaniotFramesTable";
 import CaniotQueryForm from "../components/CaniotQueryForm";
 

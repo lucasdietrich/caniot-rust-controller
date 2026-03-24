@@ -1,23 +1,12 @@
 import {
   HomeOutlined,
-  MinusOutlined,
   MoonOutlined,
   PoweroffOutlined,
-  ReloadOutlined,
-  SunFilled,
-  SunOutlined,
-  ThunderboltFilled,
-  ThunderboltOutlined,
 } from "@ant-design/icons";
-import { Command, State } from "@caniot-controller/caniot-api-grpc-web/api/ng_heaters_pb";
-import { Button, Form, Radio, RadioChangeEvent, Select, Space, Spin } from "antd";
-import React, { useEffect, useState } from "react";
+import { State } from "@caniot-controller/caniot-api-grpc-web/api/ng_heaters_pb";
+import { Form, Radio, RadioChangeEvent } from "antd";
+import React, { useEffect } from "react";
 import { LuLeaf, LuThermometerSnowflake } from "react-icons/lu";
-import { PiSnowflakeLight, PiSnowflakeThin } from "react-icons/pi";
-import { TbSnowflake } from "react-icons/tb";
-import heatersStore from "../store/HeatersStore";
-import useFormItemStatus from "antd/es/form/hooks/useFormItemStatus";
-import MediaMobile from "./responsive/MediaMobile";
 
 interface IHeaterModeSelectorProps {
   label: string;
@@ -90,7 +79,7 @@ function HeaterModeSelector({
 
   // Reseting the fields is required in order to have the initial values set correctly
   // https://github.com/ant-design/ant-design/issues/22372
-  useEffect(() => form.resetFields(), [initialMode]);
+  useEffect(() => form.resetFields(), [initialMode, form]);
 
   return (
     <Form form={form} initialValues={{ [heaterIndex]: initialMode }}>
@@ -125,4 +114,5 @@ function HeaterModeSelector({
 }
 
 export default HeaterModeSelector;
+// eslint-disable-next-line react-refresh/only-export-components
 export { getHeaterModeLabel };

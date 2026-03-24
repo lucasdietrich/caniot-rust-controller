@@ -1,12 +1,6 @@
 import {
-  CaretRightFilled,
-  CaretRightOutlined,
-  InfoCircleOutlined,
   LoadingOutlined,
   ReloadOutlined,
-  RightSquareOutlined,
-  SettingFilled,
-  SettingOutlined,
 } from "@ant-design/icons";
 import { Badge, Button, Card, Progress, Space, Spin } from "antd";
 import React, { PropsWithChildren } from "react";
