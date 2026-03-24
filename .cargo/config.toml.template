@@ -1,0 +1,39 @@
+[build]
+target = "aarch64-unknown-linux-gnu"
+
+[target.aarch64-unknown-linux-gnu]
+
+runner = "bash scripts/run-qemu.sh"
+#runner = "bash scripts/run-probe-rs.sh"
+
+rustflags = [
+    "-C",
+    "link-arg=-mcpu=cortex-a53+crc",
+    "-C",
+    "link-arg=-mbranch-protection=standard",
+    "-C",
+    "link-arg=-fstack-protector-strong",
+    "-C",
+    "link-arg=-O2",
+    "-C",
+    "link-arg=-D_FORTIFY_SOURCE=2",
+    "-C",
+    "link-arg=-Wformat",
+    "-C",
+    "link-arg=-Wformat-security",
+    "-C",
+    "link-arg=-Werror=format-security",
+    "-C",
+    "link-arg=--sysroot=/opt/ha/rpi3/sysroots/cortexa53-poky-linux",
+]
+
+linker = "/opt/ha/rpi3/sysroots/x86_64-pokysdk-linux/usr/bin/aarch64-poky-linux/aarch64-poky-linux-gcc"
+
+[env]
+LIBSQLITE3_SYS_USE_PKG_CONFIG = ""
+
+PKG_CONFIG_SYSROOT_DIR_aarch64-unknown-linux-gnu = "/opt/ha/rpi3/sysroots/cortexa53-poky-linux/usr/lib/"
+PKG_CONFIG_PATH_aarch64-unknown-linux-gnu = "/opt/ha/rpi3/sysroots/cortexa53-poky-linux/usr/lib/pkgconfig/"
+PKG_CONFIG_aarch64-unknown-linux-gnu = "/opt/ha/rpi3/sysroots/x86_64-pokysdk-linux/usr/bin/pkg-config"
+# When using Yocto SDK, the linker and flags can be obtained from the $CC environment variable
+# after sourcing the environment-setup script.

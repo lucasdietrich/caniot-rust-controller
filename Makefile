@@ -34,14 +34,19 @@ deploy_static:
 	scp -rp ui/dist/* rpi:/home/root/rust-controller/ui/dist
 
 deploy_config:
-	ssh rpi "mkdir -p /home/root/rust-controller"
-	scp scripts/caniot-controller.toml rpi:/home/root/rust-controller/caniot-controller.toml
+	scp scripts/caniot-controller.toml $(TARGET):~
+
+TARGET_ARCH ?= armv7-unknown-linux-gnueabihf
+TARGET ?= rpi3dev
 
 deploy_bin_release: target_release
-	scp target/armv7-unknown-linux-gnueabihf/release/caniot-controller rpi:/home/root/rust-controller/caniot-controller
+	scp target/$(TARGET_ARCH)/release/caniot-controller $(TARGET):~
 
 deploy_bin_debug: target
-	scp target/armv7-unknown-linux-gnueabihf/debug/caniot-controller rpi:/home/root/rust-controller/caniot-controller
+	scp target/$(TARGET_ARCH)/debug/caniot-controller $(TARGET):~
+
+echo:
+	echo "TARGET_ARCH: $(TARGET_ARCH)"
 
 ui:
 	make -C proto/grpc-web

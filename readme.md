@@ -20,6 +20,57 @@ I use Yocto to build a custom Linux distribution for my Raspberry Pi 2.
 ![res/pics/home.png](res/pics/home.png) ![pics/garage.png](res/pics/garage.png)
 ![pics/alarm.png](res/pics/alarm.png) ![pics/heaters.png](res/pics/heaters.png)
 
+## Pre-requisites
+
+- `sudo dnf install protobuf-compiler protobuf-devel`
+- `sudo dnf install grpcurl` (optional: for testing purpose)
+- Install nodejs, npm with nvm:
+  - `curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash`
+  - Install node with `nvm install node` then reload the terminal
+
+## Build for Raspberry Pi 3 (64 bits)
+
+- Rust version 1.92
+- Yocto Poky SDK for Raspberry Pi 3 (_HA_ personnal distribution)
+
+Configure `.cargo/config.toml` with :
+
+```
+[build]
+target = "aarch64-unknown-linux-gnu"
+
+[target.aarch64-unknown-linux-gnu]
+
+runner = "bash scripts/run-qemu.sh"
+#runner = "bash scripts/run-probe-rs.sh"
+
+# When using Yocto SDK, the linker and flags can be obtained from the $CC environment variable
+# after sourcing the environment-setup script.
+rustflags = [
+
+"-C", "link-arg=-mcpu=cortex-a53+crc",
+"-C", "link-arg=-mbranch-protection=standard",
+"-C", "link-arg=-fstack-protector-strong",
+"-C", "link-arg=-O2",
+"-C", "link-arg=-D_FORTIFY_SOURCE=2",
+"-C", "link-arg=-Wformat",
+"-C", "link-arg=-Wformat-security",
+"-C", "link-arg=-Werror=format-security",
+"-C", "link-arg=--sysroot=/opt/ha/rpi3/sysroots/cortexa53-poky-linux"
+]
+
+linker = "/opt/ha/rpi3/x86_64-pokysdk-linux/usr/bin/aarch64-poky-linux/aarch64-poky-linux-gcc"
+
+[env]
+LIBSQLITE3_SYS_USE_PKG_CONFIG = ""
+
+PKG_CONFIG_SYSROOT_DIR_aarch64-unknown-linux-gnu = "/opt/ha/rpi3/sysroots/cortexa53-poky-linux/usr/lib/"
+PKG_CONFIG_PATH_aarch64-unknown-linux-gnu = "/opt/ha/rpi3/sysroots/cortexa53-poky-linux/usr/lib/pkgconfig/"
+PKG_CONFIG_aarch64-unknown-linux-gnu = "/opt/ha/rpi3/sysroots/x86_64-pokysdk-linux/usr/bin/pkg-config"
+
+
+```
+
 ## Build for Raspberry Pi 2
 
 Requirements:
@@ -27,11 +78,6 @@ Requirements:
 - [Rust](https://www.rust-lang.org/tools/install) version 1.71.0
   - Rustup target `armv7-unknown-linux-gnueabihf` (install with `rustup target add armv7-unknown-linux-gnueabihf`)
 - Yocto Poky SDK for Raspberry Pi 2 (_Hypirl_ personnal distribution)
-- `sudo dnf install protobuf-compiler protobuf-devel`
-- `sudo dnf install grpcurl` (optional: for testing purpose)
-- Install nodejs, npm with nvm:
-  - `curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash`
-  - Install node with `nvm install node` then reload the terminal
 
 Configure `.cargo/config.toml` with
 
