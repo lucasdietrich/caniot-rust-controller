@@ -17,6 +17,35 @@ export default defineConfig({
         if (warning.code === "EVAL" && warning.id?.includes("google-protobuf")) return;
         warn(warning);
       },
+      output: {
+        manualChunks(id) {
+          if (
+            id.includes("node_modules/react/") ||
+            id.includes("node_modules/react-dom/") ||
+            id.includes("node_modules/react-router")
+          ) {
+            return "vendor-react";
+          }
+          if (id.includes("node_modules/@ant-design/icons")) {
+            return "vendor-antd-icons";
+          }
+          if (
+            id.includes("node_modules/antd/") ||
+            id.includes("node_modules/@ant-design/")
+          ) {
+            return "vendor-antd";
+          }
+          if (
+            id.includes("node_modules/google-protobuf") ||
+            id.includes("node_modules/grpc-web")
+          ) {
+            return "vendor-grpc";
+          }
+          if (id.includes("node_modules/")) {
+            return "vendor-misc";
+          }
+        },
+      },
     },
   },
   resolve: {

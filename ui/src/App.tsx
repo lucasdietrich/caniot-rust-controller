@@ -2,25 +2,26 @@ import React, { useEffect, useState } from "react";
 import { ConfigProvider, Layout, theme } from "antd";
 
 import { Routes, Route } from "react-router-dom";
-import HomeView from "./view/HomeView";
-import About from "./view/About";
-import DevicesView from "./view/DevicesView";
 import AppMenu from "./components/Menu";
-import HeatersView from "./view/HeatersView";
-import GarageDoorsView from "./view/GarageDoorsView";
-import AlarmsView from "./view/AlarmsView";
-import SettingsView from "./view/SettingsView";
-import NoMatch from "./view/NoMatch";
-import Debug from "./view/Debug";
-import DemoView from "./view/DemoView";
 import "./App.css";
+
+const HomeView = React.lazy(() => import("./view/HomeView"));
+const About = React.lazy(() => import("./view/About"));
+const DevicesView = React.lazy(() => import("./view/DevicesView"));
+const HeatersView = React.lazy(() => import("./view/HeatersView"));
+const GarageDoorsView = React.lazy(() => import("./view/GarageDoorsView"));
+const AlarmsView = React.lazy(() => import("./view/AlarmsView"));
+const SettingsView = React.lazy(() => import("./view/SettingsView"));
+const NoMatch = React.lazy(() => import("./view/NoMatch"));
+const Debug = React.lazy(() => import("./view/Debug"));
+const DemoView = React.lazy(() => import("./view/DemoView"));
+const BleDevicesView = React.lazy(() => import("./view/BleDevicesView"));
 import {
   ResetStatsRequest,
   Settings,
 } from "@caniot-controller/caniot-api-grpc-web/api/ng_internal_pb";
 import internalStore from "./store/InternalStore";
 import sessionStore from "./store/SessionStore";
-import BleDevicesView from "./view/BleDevicesView";
 
 const { Content, Sider } = Layout;
 
@@ -144,6 +145,7 @@ const App: React.FC = () => {
               borderRadius: borderRadiusLG,
             }}
           >
+            <React.Suspense fallback={null}>
             <Routes>
               <Route
                 path="/"
@@ -212,6 +214,7 @@ const App: React.FC = () => {
               <Route path="/demo" element={<DemoView />} />
               <Route path="*" element={<NoMatch />} />
             </Routes>
+            </React.Suspense>
           </Content>
         </Layout>
       </Layout>
