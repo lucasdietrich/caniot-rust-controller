@@ -10,7 +10,7 @@ use crate::{
         caniot_controller::caniot_devices_controller::{
             CaniotControllerError, CaniotDevicesController,
         },
-        copro_controller::CoproController,
+        copro_controller::{api_message::CoproApiMessage, CoproController},
         handle::{self, ControllerMessage},
         CaniotConfig,
     },
@@ -44,6 +44,7 @@ pub struct Controller<IF: CanInterfaceTrait> {
 }
 
 const API_CHANNEL_SIZE: u32 = 10;
+const COPRO_API_CHANNEL_SIZE: usize = 16;
 
 impl<IF: CanInterfaceTrait> Controller<IF> {
     pub(crate) fn new(
@@ -58,11 +59,12 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
                 .inernal_api_mpsc_size
                 .unwrap_or(API_CHANNEL_SIZE) as usize,
         );
+        let controller_handle = handle::ControllerHandle::new(sender);
 
         Ok(Self {
             caniot: CaniotDevicesController::new(iface, caniot_config, storage)?,
-            handle: handle::ControllerHandle::new(sender),
-            copro: CoproController::new(copro_handle)?,
+            copro: CoproController::new(copro_handle, controller_handle.clone())?,
+            handle: controller_handle,
             receiver,
             shutdown,
             stats: ControllerCoreStats::default(),
@@ -89,8 +91,14 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
                 Some(frame) = self.caniot.iface.recv_poll() => {
                     self.caniot.handle_can_frame(frame).await;
                 },
-                Some(copro_message) = self.copro.poll_message() => {
-                    self.copro.handle_message(copro_message).await;
+                message = self.copro.poll_message() => {
+                    match message {
+                        Some(msg) => self.copro.handle_message(msg).await,
+                        None => {
+                            error!("CoproController stream ended, shutting down");
+                            error!("WHAT TO DO ?!?!?!");
+                        }
+                    }
                 },
                 _ = sleep(sleep_time) => {
                     // Timeout of pending queries handled in handle_pending_queries_timeout()
@@ -100,6 +108,11 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
                     break;
                 }
             }
+
+            for event in self.caniot.pop_pending_sensor_change_events() {
+                self.copro.notify_sensor_change_event(event).await;
+            }
+
             self.stats.loop_runs += 1;
         }
 

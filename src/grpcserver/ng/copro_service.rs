@@ -1,13 +1,14 @@
 use crate::{
     controller::{
         copro_controller::{
-            device::BleDevice,
+            controller::{BleDevice, BleDevicePairingState},
             measurements::{
                 BleMeasurement, EnergyMeterMinMaxTrait, EnergyMeterTrait, EnvironmentalMinMaxTrait,
                 EnvironmentalTrait,
             },
+            sensor::BleSensor,
         },
-        device_filtering::DeviceFilter,
+        filtering::SensorFilter,
     },
     grpcserver::utc_to_prost_timestamp,
     shared::SharedHandle,
@@ -46,12 +47,41 @@ impl Into<m::copro_device::Measurements> for &BleMeasurement {
     }
 }
 
-impl Into<m::CoproDevice> for &BleDevice {
+impl From<&BleDevice> for m::BleDevice {
+    fn from(d: &BleDevice) -> Self {
+        let (pairing_state, pairing_code) = match d.pairing {
+            BleDevicePairingState::None => (m::BleDevicePairingState::BlePairingNone as i32, None),
+            BleDevicePairingState::Pending { code } => (
+                m::BleDevicePairingState::BlePairingPending as i32,
+                Some(code),
+            ),
+            BleDevicePairingState::Succeeded => {
+                (m::BleDevicePairingState::BlePairingSucceeded as i32, None)
+            }
+            BleDevicePairingState::Failed => {
+                (m::BleDevicePairingState::BlePairingFailed as i32, None)
+            }
+        };
+        m::BleDevice {
+            mac: d.addr.mac_string(),
+            connected: d.connected,
+            pairing_state,
+            pairing_code,
+            stats: Some(m::BleDeviceStats {
+                connection_events: d.stats.connection_events,
+                pairing_events: d.stats.pairing_events,
+                commands_received: d.stats.commands_received,
+            }),
+        }
+    }
+}
+
+impl Into<m::CoproDevice> for &BleSensor {
     fn into(self) -> m::CoproDevice {
         m::CoproDevice {
             mac: self.ble_addr.mac_string(),
             name: self.name.to_owned(),
-            r#type: self.device_type.to_string(),
+            r#type: self.sensor_type.to_string(),
             last_seen: Some(utc_to_prost_timestamp(&self.last_seen)),
             last_seen_from_now: Some(self.last_seen_from_now()),
             is_seen: true,
@@ -82,10 +112,10 @@ impl CoproService for NgCopro {
             .into_inner()
             .filter
             .map(|f| match f {
-                m::get_list_params::Filter::All(()) => DeviceFilter::All,
-                m::get_list_params::Filter::Name(name) => DeviceFilter::ByName(name),
+                m::get_list_params::Filter::All(()) => SensorFilter::All,
+                m::get_list_params::Filter::Name(name) => SensorFilter::ByName(name),
             })
-            .unwrap_or(DeviceFilter::All);
+            .unwrap_or(SensorFilter::All);
 
         let devices: Vec<m::CoproDevice> = self
             .shared
@@ -109,6 +139,24 @@ impl CoproService for NgCopro {
             active_alert: alert.as_ref().map(|a| a.into()),
             ..Default::default()
         }))
+    }
+
+    async fn get_ble_devices(
+        &self,
+        _req: tonic::Request<()>,
+    ) -> Result<tonic::Response<m::BleDevicesList>, tonic::Status> {
+        let devices = self.shared.controller_handle.get_ble_devices_state().await;
+        Ok(tonic::Response::new(m::BleDevicesList {
+            devices: devices.iter().map(|d| d.into()).collect(),
+        }))
+    }
+
+    async fn ble_remove_bonds(
+        &self,
+        _req: tonic::Request<()>,
+    ) -> Result<tonic::Response<()>, tonic::Status> {
+        self.shared.controller_handle.ble_remove_bonds().await;
+        Ok(tonic::Response::new(()))
     }
 }
 

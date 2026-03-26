@@ -41,7 +41,7 @@ impl NgGarage {
                 left_progress: status.left_door_status.progress().map(|p| p as u32),
                 right_closed: Into::<m::DoorState>::into(status.right_door_status.as_ref()).into(),
                 right_progress: status.right_door_status.progress().map(|p| p as u32),
-                gate_closed: Into::<m::DoorState>::into(!status.gate_open.as_ref()).into(),
+                gate_closed: Into::<m::DoorState>::into(status.gate_status.as_ref()).into(),
             }
         } else {
             m::Status {

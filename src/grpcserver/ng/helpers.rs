@@ -1,6 +1,6 @@
 use crate::{
     caniot as ct,
-    controller::{DeviceAlert, DeviceAlertType},
+    controller::{DeviceAlertType, SensorAlert},
     grpcserver::utc_to_prost_timestamp,
 };
 
@@ -64,7 +64,7 @@ impl Into<ng::DeviceIdInfos> for ct::DeviceId {
     }
 }
 
-impl Into<ng::DeviceAlert> for &DeviceAlert {
+impl Into<ng::DeviceAlert> for &SensorAlert {
     fn into(self) -> ng::DeviceAlert {
         ng::DeviceAlert {
             message: self.name.clone(),

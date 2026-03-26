@@ -11,7 +11,7 @@ use super::caniot_devices_controller::CaniotControllerError;
 
 pub struct PendingAction {
     pub action: DeviceAction,
-    send_to: oneshot::Sender<Result<DeviceActionResult, CaniotControllerError>>,
+    send_to: Option<oneshot::Sender<Result<DeviceActionResult, CaniotControllerError>>>,
 
     // Response from the device which completed the action
     pub response: Option<caniot::Response>,
@@ -20,7 +20,7 @@ pub struct PendingAction {
 impl PendingAction {
     pub fn new(
         action: DeviceAction,
-        send_to: oneshot::Sender<Result<DeviceActionResult, CaniotControllerError>>,
+        send_to: Option<oneshot::Sender<Result<DeviceActionResult, CaniotControllerError>>>,
     ) -> Self {
         Self {
             action,
@@ -34,7 +34,9 @@ impl PendingAction {
     }
 
     pub fn send(self, result: Result<DeviceActionResult, CaniotControllerError>) {
-        let _ = self.send_to.send(result);
+        if let Some(send_to) = self.send_to {
+            let _ = send_to.send(result);
+        }
     }
 }
 

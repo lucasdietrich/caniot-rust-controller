@@ -1,19 +1,26 @@
 use tokio::sync::oneshot;
 
-use crate::controller::{device_filtering::DeviceFilter, DeviceAlert};
+use crate::controller::{filtering::SensorFilter, SensorAlert};
 
-use super::{controller::CoproControllerStats, device::BleDevice};
+use super::{
+    controller::{BleDevice, CoproControllerStats},
+    sensor::BleSensor,
+};
 
 pub enum CoproApiMessage {
     GetDevices {
-        filter: DeviceFilter,
-        respond_to: oneshot::Sender<Vec<BleDevice>>,
+        filter: SensorFilter,
+        respond_to: oneshot::Sender<Vec<BleSensor>>,
     },
     GetAlert {
-        respond_to: oneshot::Sender<Option<DeviceAlert>>,
+        respond_to: oneshot::Sender<Option<SensorAlert>>,
     },
     GetStats {
         respond_to: oneshot::Sender<CoproControllerStats>,
     },
     ResetDevicesMeasuresStats,
+    BleRemoveBonds,
+    GetBleDevicesState {
+        respond_to: oneshot::Sender<Vec<BleDevice>>,
+    },
 }

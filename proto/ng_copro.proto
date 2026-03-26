@@ -16,6 +16,8 @@ message GetListParams {
 service CoproService {
   rpc GetList(GetListParams) returns (CoproDevicesList) {}
   rpc GetCoproAlert(google.protobuf.Empty) returns (CoproAlert) {}
+  rpc GetBleDevices(google.protobuf.Empty) returns (BleDevicesList) {}
+  rpc BleRemoveBonds(google.protobuf.Empty) returns (google.protobuf.Empty) {}
 }
 
 message CoproDevice {
@@ -67,3 +69,28 @@ message CoproDeviceStats { uint64 rx = 1; }
 message CoproDevicesList { repeated CoproDevice devices = 1; }
 
 message CoproAlert { optional DeviceAlert active_alert = 1; }
+
+enum BleDevicePairingState {
+  BLE_PAIRING_NONE = 0;
+  BLE_PAIRING_PENDING = 1;
+  BLE_PAIRING_SUCCEEDED = 2;
+  BLE_PAIRING_FAILED = 3;
+}
+
+message BleDeviceStats {
+  uint64 connection_events = 1;
+  uint64 pairing_events = 2;
+  uint64 commands_received = 3;
+}
+
+message BleDevice {
+  string mac = 1;
+  bool connected = 2;
+  BleDevicePairingState pairing_state = 3;
+  optional uint32 pairing_code = 4;   // set when pairing_state == BLE_PAIRING_PENDING
+  BleDeviceStats stats = 5;
+}
+
+message BleDevicesList {
+  repeated BleDevice devices = 1;
+}

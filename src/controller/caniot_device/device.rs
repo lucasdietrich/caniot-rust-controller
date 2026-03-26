@@ -8,8 +8,8 @@ use crate::{
         TSP,
     },
     controller::{
-        device_filtering::{FilterCriteria, FilterableDevice},
-        ActionTrait, DeviceAlert, JobTrait,
+        filtering::{FilterCriteria, FilterableSensor},
+        ActionTrait, JobTrait, SensorAlert,
     },
     utils::expirable::ExpirableTrait,
 };
@@ -272,11 +272,11 @@ impl CaniotDevice {
         });
     }
 
-    pub fn get_alert(&self) -> Option<DeviceAlert> {
+    pub fn get_alert(&self) -> Option<SensorAlert> {
         if !self.is_seen() {
             // TODO not fully implemented for now
             warn!("Get alert on unseen device");
-            Some(DeviceAlert::new_error("Capteur non détecté"))
+            Some(SensorAlert::new_error("Capteur non détecté"))
         } else if let Some(inner) = self.controller.as_ref() {
             inner.wrapper_get_alert()
         } else {
@@ -308,7 +308,7 @@ impl ExpirableTrait<Duration> for CaniotDevice {
     }
 }
 
-impl FilterableDevice for CaniotDevice {
+impl FilterableSensor for CaniotDevice {
     fn get_filter_name(&self) -> String {
         "".to_string()
     }
@@ -322,7 +322,7 @@ impl FilterableDevice for CaniotDevice {
         self.did.to_u8() as u32
     }
 
-    fn get_active_alert(&self) -> Option<DeviceAlert> {
+    fn get_active_alert(&self) -> Option<SensorAlert> {
         self.get_alert()
     }
 

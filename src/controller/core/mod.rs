@@ -1,9 +1,9 @@
 pub mod alert;
 pub mod controller;
-pub mod device_filtering;
+pub mod filtering;
 pub mod init;
 pub mod stats;
 
-pub use alert::{cmp_severity, DeviceAlert, DeviceAlertType};
+pub use alert::{cmp_severity, DeviceAlertType, SensorAlert};
 
 pub use stats::*;

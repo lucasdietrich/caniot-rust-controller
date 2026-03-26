@@ -6,6 +6,7 @@ import { Empty } from "google-protobuf/google/protobuf/empty_pb";
 
 import { CoproServiceClient } from "@caniot-controller/caniot-api-grpc-web/api/Ng_coproServiceClientPb";
 import {
+  BleDevicesList,
   CoproAlert,
   CoproDevice,
   CoproDevicesList,
@@ -68,6 +69,27 @@ class CoproStore extends EventEmitter {
       HandleSuccess("CoproStore::GetCoproAlert succeeded");
 
       callbackFunc(resp);
+    });
+  };
+
+  getBleDevices = (callbackFunc: (resp: BleDevicesList) => void) => {
+    this.client.getBleDevices(new Empty(), null, (err, resp) => {
+      if (err !== null) {
+        HandleError(err);
+        return;
+      }
+      callbackFunc(resp);
+    });
+  };
+
+  bleRemoveBonds = (callbackFunc: () => void) => {
+    this.client.bleRemoveBonds(new Empty(), null, (err, _resp) => {
+      if (err !== null) {
+        HandleError(err);
+        return;
+      }
+      HandleSuccess("CoproStore::BleRemoveBonds succeeded");
+      callbackFunc();
     });
   };
 }

@@ -9,16 +9,19 @@ use crate::caniot::{self as ct, DeviceId};
 use serde::Serialize;
 
 #[cfg(feature = "ble-copro")]
-use super::copro_controller::{controller::CoproControllerStats, device::BleDevice};
+use super::copro_controller::{
+    controller::{BleDevice, CoproControllerStats},
+    sensor::BleSensor,
+};
 
 use super::{
     caniot_controller::{
         api_message::CaniotApiMessage, caniot_devices_controller::CaniotControllerError,
     },
     copro_controller::api_message::CoproApiMessage,
-    device_filtering::{DeviceFilter, FilterCriteria},
-    ActionTrait, CaniotDeviceInfos, ControllerStats, DeviceAction, DeviceActionResult, DeviceAlert,
-    DeviceStats,
+    filtering::{FilterCriteria, SensorFilter},
+    ActionTrait, CaniotDeviceInfos, ControllerStats, DeviceAction, DeviceActionResult, DeviceStats,
+    SensorAlert,
 };
 
 pub enum ControllerMessage {
@@ -93,7 +96,7 @@ impl ControllerHandle {
     pub async fn get_caniot_devices_infos_list(&self) -> Vec<CaniotDeviceInfos> {
         self.caniot_query(|respond_to| {
             CaniotApiMessage::GetDevices {
-                filter: DeviceFilter::All,
+                filter: SensorFilter::All,
                 respond_to,
             }
             .into()
@@ -104,7 +107,7 @@ impl ControllerHandle {
     pub async fn get_caniot_devices_with_active_alert(&self) -> Vec<CaniotDeviceInfos> {
         self.caniot_query(|respond_to| {
             CaniotApiMessage::GetDevices {
-                filter: DeviceFilter::WithActiveAlert,
+                filter: SensorFilter::WithActiveAlert,
                 respond_to,
             }
             .into()
@@ -115,7 +118,7 @@ impl ControllerHandle {
     pub async fn get_caniot_device_infos(&self, did: DeviceId) -> Option<CaniotDeviceInfos> {
         self.caniot_query(|respond_to| {
             CaniotApiMessage::GetDevices {
-                filter: DeviceFilter::ByCriteria(FilterCriteria::CaniotId(did)),
+                filter: SensorFilter::ByCriteria(FilterCriteria::CaniotId(did)),
                 respond_to,
             }
             .into()
@@ -127,7 +130,7 @@ impl ControllerHandle {
 
     pub async fn get_caniot_device_infos_by_filter(
         &self,
-        filter: DeviceFilter,
+        filter: SensorFilter,
     ) -> Option<CaniotDeviceInfos> {
         self.caniot_query(|respond_to| CaniotApiMessage::GetDevices { filter, respond_to }.into())
             .await
@@ -148,12 +151,29 @@ impl ControllerHandle {
             CaniotApiMessage::DeviceAction {
                 did,
                 action,
-                respond_to,
+                respond_to: Some(respond_to),
                 timeout_ms,
             }
             .into()
         })
         .await
+    }
+
+    pub async fn caniot_device_action_no_response(
+        &self,
+        did: Option<DeviceId>,
+        action: DeviceAction,
+    ) {
+        let message = CaniotApiMessage::DeviceAction {
+            did,
+            action,
+            respond_to: None,
+            timeout_ms: None,
+        };
+        self.sender
+            .send(message.into())
+            .await
+            .expect("Failed to send IPC message to controller");
     }
 
     pub async fn caniot_reset_devices_measures_stats(&self) {
@@ -191,18 +211,28 @@ impl ControllerHandle {
         // Err(ControllerError::NotImplemented)
     }
 
+    // IS THIS FUNCTION OK ??
+    pub async fn caniot_device_action_inner_no_response<A: ActionTrait>(
+        &self,
+        did: Option<DeviceId>,
+        action: A,
+    ) {
+        self.caniot_device_action_no_response(did, DeviceAction::new_inner(action))
+            .await;
+    }
+
     pub async fn reset_caniot_devices_settings(&self) -> Result<(), CaniotControllerError> {
         self.caniot_query(|respond_to| CaniotApiMessage::DevicesResetSettings { respond_to }.into())
             .await
     }
 
     #[cfg(feature = "ble-copro")]
-    pub async fn get_copro_devices_list(&self) -> Vec<BleDevice> {
-        self.get_copro_devices_by_filter(DeviceFilter::All).await
+    pub async fn get_copro_devices_list(&self) -> Vec<BleSensor> {
+        self.get_copro_devices_by_filter(SensorFilter::All).await
     }
 
     #[cfg(feature = "ble-copro")]
-    pub async fn get_copro_devices_by_filter(&self, filter: DeviceFilter) -> Vec<BleDevice> {
+    pub async fn get_copro_devices_by_filter(&self, filter: SensorFilter) -> Vec<BleSensor> {
         let (respond_to, receiver) = oneshot::channel();
         let message = ControllerMessage::CoprocessorMessage(CoproApiMessage::GetDevices {
             filter,
@@ -216,7 +246,7 @@ impl ControllerHandle {
     }
 
     #[cfg(feature = "ble-copro")]
-    pub async fn get_copro_alert(&self) -> Option<DeviceAlert> {
+    pub async fn get_copro_alert(&self) -> Option<SensorAlert> {
         let (respond_to, receiver) = oneshot::channel();
         let message =
             ControllerMessage::CoprocessorMessage(CoproApiMessage::GetAlert { respond_to });
@@ -243,6 +273,28 @@ impl ControllerHandle {
     pub async fn reset_copro_devices_measures_stats(&self) {
         let message =
             ControllerMessage::CoprocessorMessage(CoproApiMessage::ResetDevicesMeasuresStats);
+        self.sender
+            .send(message)
+            .await
+            .expect("Failed to send IPC message to controller");
+    }
+
+    #[cfg(feature = "ble-copro")]
+    pub async fn get_ble_devices_state(&self) -> Vec<BleDevice> {
+        let (respond_to, receiver) = oneshot::channel();
+        let message = ControllerMessage::CoprocessorMessage(CoproApiMessage::GetBleDevicesState {
+            respond_to,
+        });
+        self.sender
+            .send(message)
+            .await
+            .expect("Failed to send IPC message to controller");
+        receiver.await.expect("IPC Sender dropped before response")
+    }
+
+    #[cfg(feature = "ble-copro")]
+    pub async fn ble_remove_bonds(&self) {
+        let message = ControllerMessage::CoprocessorMessage(CoproApiMessage::BleRemoveBonds);
         self.sender
             .send(message)
             .await

@@ -1,8 +1,9 @@
 use crate::{
     caniot::Xps,
     controller::{
-        ActionResultTrait, ActionTrait, ActionVerdict, DeviceAlert, DeviceControllerInfos,
-        DeviceControllerTrait, DeviceError, Verdict,
+        sensor_change_events::{GarageStateChanged, SensorChangeEvent, SensorChangeEventTrait},
+        ActionResultTrait, ActionTrait, ActionVerdict, DeviceControllerInfos,
+        DeviceControllerTrait, DeviceError, SensorAlert, Verdict,
     },
     ha::LOCATION_GARAGE,
     utils::{format_metric, monitorable_state::StateMonitor, SensorLabel},
@@ -78,7 +79,7 @@ impl From<&class0::Telemetry> for GarageIOState {
 pub struct GarageDoorStatus {
     pub left_door_status: StateMonitor<DoorState>,
     pub right_door_status: StateMonitor<DoorState>,
-    pub gate_open: StateMonitor<bool>,
+    pub gate_status: StateMonitor<DoorState>,
 }
 
 impl GarageDoorStatus {
@@ -86,32 +87,49 @@ impl GarageDoorStatus {
         Self {
             left_door_status: StateMonitor::init(ios.left_door_open.into()),
             right_door_status: StateMonitor::init(ios.right_door_open.into()),
-            gate_open: StateMonitor::init(ios.gate_open),
+            gate_status: StateMonitor::init(ios.gate_open.into()),
         }
     }
 
-    fn update(&mut self, ios: GarageIOState, stats: &mut GarageDoorStats) {
-        self.left_door_status
+    fn update(&mut self, ios: GarageIOState, stats: &mut GarageDoorStats) -> GarageStateChanged {
+        let left_door_changed = self
+            .left_door_status
             .update(ios.left_door_open.into())
             .map(|old| {
                 if old.is_closed() {
                     stats.left_door_open_count += 1;
                 }
-            });
+            })
+            .is_some();
 
-        self.right_door_status
+        let right_door_changed = self
+            .right_door_status
             .update(ios.right_door_open.into())
             .map(|old| {
                 if old.is_closed() {
                     stats.right_door_open_count += 1;
                 }
-            });
+            })
+            .is_some();
 
-        self.gate_open.update(ios.gate_open).map(|old| {
-            if !old {
-                stats.gate_open_count += 1;
-            }
-        });
+        let gate_changed = self
+            .gate_status
+            .update(ios.gate_open.into())
+            .map(|old| {
+                if old.is_closed() {
+                    stats.gate_open_count += 1;
+                }
+            })
+            .is_some();
+
+        GarageStateChanged {
+            left_door_changed,
+            right_door_changed,
+            gate_changed,
+            left_door_state: self.left_door_status.get(),
+            right_door_state: self.right_door_status.get(),
+            gate_state: self.gate_status.get(),
+        }
     }
 }
 
@@ -237,13 +255,16 @@ impl DeviceControllerTrait for GarageController {
         &mut self,
         _frame: &crate::caniot::ResponseData,
         as_class_blc: &Option<BoardClassTelemetry>,
-        _ctx: &mut crate::controller::ProcessContext,
+        ctx: &mut crate::controller::ProcessContext,
     ) -> Result<crate::controller::Verdict, crate::controller::DeviceError> {
         if let Some(telemetry) = as_class_blc {
             if let Some(telemetry) = telemetry.as_class0() {
                 let ios = GarageIOState::from(telemetry);
                 if let Some(ref mut status) = self.status {
-                    status.update(ios, &mut self.stats);
+                    if let Some(change_event) = status.update(ios, &mut self.stats).into_option() {
+                        ctx.sensor_change_events
+                            .push(SensorChangeEvent::GarageStateChanged(change_event));
+                    }
                 } else {
                     self.status = Some(GarageDoorStatus::init(ios));
                 }
@@ -253,10 +274,13 @@ impl DeviceControllerTrait for GarageController {
         Ok(Verdict::None)
     }
 
-    fn get_alert(&self) -> Option<DeviceAlert> {
+    fn get_alert(&self) -> Option<SensorAlert> {
         self.status.as_ref().and_then(|s| {
-            if s.left_door_status.is_open() || s.right_door_status.is_open() || *s.gate_open {
-                Some(DeviceAlert::new_warning("Porte(s) de garage ouverte(s)"))
+            if s.left_door_status.is_open()
+                || s.right_door_status.is_open()
+                || s.gate_status.is_open()
+            {
+                Some(SensorAlert::new_warning("Porte(s) de garage ouverte(s)"))
             } else {
                 None
             }
@@ -287,7 +311,7 @@ impl DeviceControllerTrait for GarageController {
 
             metrics.push(format_metric(
                 "door_open",
-                *status.gate_open as u32,
+                *status.gate_status as u32,
                 vec![&label_ctrl, &label_location, &label_gate],
             ));
 

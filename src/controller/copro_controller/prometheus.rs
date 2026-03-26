@@ -4,9 +4,9 @@ use crate::{
 };
 use std::fmt::Write;
 
-use super::device::BleDevice;
+use super::sensor::BleSensor;
 
-impl<'a> PrometheusExporterTrait<'a> for BleDevice {
+impl<'a> PrometheusExporterTrait<'a> for BleSensor {
     type Label = DeviceLabel;
 
     fn export(&self, labels: impl AsRef<[&'a Self::Label]>) -> String {

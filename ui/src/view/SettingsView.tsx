@@ -1,9 +1,10 @@
-import { Button, Col, List, Row, Switch } from "antd";
+import { Button, Col, List, Row, Switch, Tabs } from "antd";
 import React from "react";
 import { Settings } from "@caniot-controller/caniot-api-grpc-web/api/ng_internal_pb";
 import LoadableCard from "../components/LoadableCard";
 import ListGridItem from "../components/ListGridItem";
 import { Link } from "react-router-dom";
+import BlePairingView from "./BlePairingView";
 
 interface ISettingsProps {
   settings?: Settings;
@@ -36,10 +37,16 @@ function SettingsView({
   const loading = settings === undefined;
 
   return (
-    <Row gutter={24}>
-      <Col xl={14} xs={24}>
-        {" "}
-        <LoadableCard title="Settings" loading={loading} isMobile={isMobile}>
+    <Tabs
+      items={[
+        {
+          key: "settings",
+          label: "Paramètres",
+          children: (
+            <Row gutter={24}>
+              <Col xl={14} xs={24}>
+                {" "}
+                <LoadableCard title="Settings" loading={loading} isMobile={isMobile}>
           <List>
             <List.Item>
               <span style={{ fontWeight: "bold" }}>Général (UI)</span>
@@ -87,9 +94,18 @@ function SettingsView({
             </Link>
           </ListGridItem>
         </LoadableCard>
-      </Col>
-      <Col xl={14} xs={24}></Col>
-    </Row>
+              </Col>
+              <Col xl={14} xs={24}></Col>
+            </Row>
+          ),
+        },
+        {
+          key: "ble-devices",
+          label: "Appareils BLE",
+          children: <BlePairingView isMobile={isMobile} />,
+        },
+      ]}
+    />
   );
 }
 

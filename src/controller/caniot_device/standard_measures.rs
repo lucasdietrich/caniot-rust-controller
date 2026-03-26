@@ -1,4 +1,3 @@
-
 use crate::{
     caniot::{traits::TempSensType, BoardClassTelemetry},
     utils::{monitorable_measure::ValueMonitor, Scheduling},

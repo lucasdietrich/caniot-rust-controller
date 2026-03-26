@@ -1,11 +1,11 @@
 use std::{sync::Arc, time::Instant};
 
-use crate::{controller::device_filtering::DeviceFilter, shared::Shared};
+use crate::{controller::filtering::SensorFilter, shared::Shared};
 
 use super::LOCATION_ATTIC;
 
 pub async fn control_attic_heaters(shared: &Arc<Shared>) {
-    let filter = DeviceFilter::ByLocation(LOCATION_ATTIC.to_owned());
+    let filter = SensorFilter::ByLocation(LOCATION_ATTIC.to_owned());
 
     let instant = Instant::now();
 

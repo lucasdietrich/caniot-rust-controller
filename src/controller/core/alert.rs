@@ -13,14 +13,14 @@ pub enum DeviceAlertType {
 }
 
 #[derive(Debug, Serialize, Clone)]
-pub struct DeviceAlert {
+pub struct SensorAlert {
     pub name: String,
     pub timestamp: DateTime<Utc>,
     pub alert_type: DeviceAlertType,
     pub description: Option<String>,
 }
 
-impl DeviceAlert {
+impl SensorAlert {
     pub fn new(string: &str, alert_type: DeviceAlertType, description: Option<&str>) -> Self {
         Self {
             name: string.to_string(),
@@ -60,7 +60,7 @@ impl DeviceAlert {
     }
 }
 
-pub fn cmp_severity(a: &Option<DeviceAlert>, b: &Option<DeviceAlert>) -> Ordering {
+pub fn cmp_severity(a: &Option<SensorAlert>, b: &Option<SensorAlert>) -> Ordering {
     match (a, b) {
         (Some(a), Some(b)) => a.cmp_severity(b),
         (Some(_), None) => Ordering::Greater,

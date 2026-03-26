@@ -12,9 +12,9 @@ use crate::{
     caniot::{self, RequestData, Response, Xps},
     controller::{
         alarms::{actions::SirenAction, types::OutdoorAlarmCommand},
-        ActionResultTrait, ActionTrait, ActionVerdict, ConfigTrait, DeviceAlert,
-        DeviceControllerInfos, DeviceControllerTrait, DeviceError, DeviceJobImpl,
-        PartialConfigTrait, ProcessContext, UpdateJobVerdict, Verdict,
+        ActionResultTrait, ActionTrait, ActionVerdict, ConfigTrait, DeviceControllerInfos,
+        DeviceControllerTrait, DeviceError, DeviceJobImpl, PartialConfigTrait, ProcessContext,
+        SensorAlert, UpdateJobVerdict, Verdict,
     },
     ha::LOCATION_OUTSIDE,
     utils::{
@@ -328,17 +328,17 @@ impl DeviceControllerTrait for AlarmController {
         )
     }
 
-    fn get_alert(&self) -> Option<DeviceAlert> {
+    fn get_alert(&self) -> Option<SensorAlert> {
         if self.ios.is_siren_on() {
-            Some(DeviceAlert::new_warning(
+            Some(SensorAlert::new_warning(
                 "Sirene d'alarme extérieure active",
             ))
         } else if *self.alarm.sabotage {
-            Some(DeviceAlert::new_error(
+            Some(SensorAlert::new_error(
                 "Sabotage d'alarme (extérieure) détecté",
             ))
         } else if self.alarm.is_armed() {
-            Some(DeviceAlert::new_ok("Alarme extérieure active"))
+            Some(SensorAlert::new_ok("Alarme extérieure active"))
         } else {
             None
         }

@@ -4,10 +4,7 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use tokio::time::sleep;
 
-use crate::{
-    ha::attic,
-    shared::Shared,
-};
+use crate::{ha::attic, shared::Shared};
 
 #[derive(Debug, Error)]
 pub enum HaError {}

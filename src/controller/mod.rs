@@ -5,6 +5,7 @@ pub mod config;
 pub mod copro_controller;
 pub mod core;
 pub mod handle;
+pub mod sensor_change_events;
 
 #[allow(unused_imports, ambiguous_glob_reexports)]
 pub use caniot_device::*;

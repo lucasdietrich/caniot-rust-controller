@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
 
-use crate::controller::alert::{DeviceAlert, DeviceAlertType};
+use crate::controller::alert::{DeviceAlertType, SensorAlert};
 
 pub enum AlertSeverity {
     #[allow(dead_code)]
@@ -22,10 +22,10 @@ pub struct Alert {
     pub timestamp: DateTime<Utc>,
 }
 
-impl TryFrom<DeviceAlert> for Alert {
+impl TryFrom<SensorAlert> for Alert {
     type Error = &'static str;
 
-    fn try_from(alert: DeviceAlert) -> Result<Self, Self::Error> {
+    fn try_from(alert: SensorAlert) -> Result<Self, Self::Error> {
         Ok(Alert {
             alert_type: AlertType::DeviceAlert(alert.name),
             severity: match alert.alert_type {
