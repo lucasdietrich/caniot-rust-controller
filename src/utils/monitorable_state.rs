@@ -86,10 +86,12 @@ where
 }
 
 pub trait MonitorableResultTrait {
+    #[allow(dead_code)]
     fn has_changed(&self) -> bool;
     fn is_falling(&self) -> bool;
     fn is_rising(&self) -> bool;
 
+    #[allow(dead_code)]
     fn is_unchanged(&self) -> bool {
         !self.has_changed()
     }

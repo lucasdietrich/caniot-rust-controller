@@ -5,6 +5,7 @@ use model::can_controller_server::{CanController, CanControllerServer};
 use model::*;
 
 pub mod model {
+    #![allow(dead_code)]
     tonic::include_proto!("legacy");
 }
 
@@ -12,6 +13,7 @@ use crate::{controller::GarageDoorCommand, shared::SharedHandle};
 
 #[derive(Debug)]
 pub struct LegacyCaniotController {
+    #[allow(dead_code)]
     pub shared: SharedHandle,
 }
 

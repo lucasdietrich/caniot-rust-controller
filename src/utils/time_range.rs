@@ -2,6 +2,7 @@ use chrono::{DateTime, Local, NaiveTime, Utc};
 
 // Represent a time range in the Local timezone
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[allow(dead_code)]
 pub struct TimeRange {
     // Included boundary
     lower_bound: NaiveTime,
@@ -12,6 +13,7 @@ pub struct TimeRange {
     inverted: bool,
 }
 
+#[allow(dead_code)]
 impl TimeRange {
     pub fn new(lower_bound: NaiveTime, upper_bound: NaiveTime) -> Self {
         Self {

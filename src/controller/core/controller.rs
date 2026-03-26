@@ -10,7 +10,7 @@ use crate::{
         caniot_controller::caniot_devices_controller::{
             CaniotControllerError, CaniotDevicesController,
         },
-        copro_controller::{api_message::CoproApiMessage, CoproController},
+        copro_controller::CoproController,
         handle::{self, ControllerMessage},
         CaniotConfig,
     },
@@ -44,6 +44,7 @@ pub struct Controller<IF: CanInterfaceTrait> {
 }
 
 const API_CHANNEL_SIZE: u32 = 10;
+#[allow(dead_code)]
 const COPRO_API_CHANNEL_SIZE: usize = 16;
 
 impl<IF: CanInterfaceTrait> Controller<IF> {

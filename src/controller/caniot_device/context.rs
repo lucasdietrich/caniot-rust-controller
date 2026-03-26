@@ -1,7 +1,6 @@
 use std::{collections::HashMap, future::Future, pin::Pin, sync::Arc};
 
 use chrono::{DateTime, Utc};
-use tokio::sync::mpsc;
 
 use crate::{
     caniot::Attribute,

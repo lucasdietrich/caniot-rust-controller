@@ -64,6 +64,7 @@ pub struct NightLightsContext {
     pub auto_active: bool,
 
     // Desired duration for the lights to stay on when presence is detected
+    #[allow(dead_code)]
     pub desired_duration: Duration,
 }
 

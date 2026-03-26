@@ -16,6 +16,7 @@ pub type SharedHandle = Arc<Shared>;
 #[derive(Debug)]
 pub struct Shared {
     /// The Tokio runtime
+    #[allow(dead_code)]
     pub rt: Arc<Runtime>,
 
     /// The CAN controller handle
@@ -41,6 +42,7 @@ pub struct Shared {
 }
 
 #[derive(Serialize, Debug, Clone, Copy)]
+#[allow(dead_code)]
 pub struct ServerStats {}
 
 impl Shared {

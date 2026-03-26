@@ -86,6 +86,7 @@ impl DeviceControllerTrait for DemoController {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub enum DemoAction {
     GetActive,
     Activate,
@@ -94,6 +95,7 @@ pub enum DemoAction {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub enum DemoActionResult {
     Active(bool),
 }

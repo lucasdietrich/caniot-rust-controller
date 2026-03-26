@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub enum FirmwareStatus {
     Running,
     Updating,

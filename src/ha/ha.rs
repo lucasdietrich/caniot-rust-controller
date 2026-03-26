@@ -20,6 +20,7 @@ impl Default for HaConfig {
 
 pub struct Ha {
     shared: Arc<Shared>,
+    #[allow(dead_code)]
     config: HaConfig,
 }
 

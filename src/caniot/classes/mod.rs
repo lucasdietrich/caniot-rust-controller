@@ -6,6 +6,7 @@ pub mod telemetry;
 pub mod traits;
 pub mod utils;
 
+#[allow(unused_imports)]
 pub use command::BoardClassCommand;
 pub use telemetry::BoardClassTelemetry;
 

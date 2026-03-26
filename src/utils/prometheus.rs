@@ -64,6 +64,7 @@ pub fn format_metric<'a>(
 #[derive(Clone)]
 pub enum DeviceLabel {
     Name(String),
+    #[allow(dead_code)]
     Controller(String),
     Medium(String),
     Mac(String),

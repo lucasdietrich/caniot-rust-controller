@@ -1,3 +1,4 @@
+#[allow(dead_code)]
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum SettingValue {
     String(String),
@@ -7,12 +8,14 @@ pub enum SettingValue {
     NaiveTime(chrono::NaiveTime),
 }
 
+#[allow(dead_code)]
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct SettingAction {
     name: &'static str,
     value: Option<SettingValue>,
 }
 
+#[allow(dead_code)]
 impl SettingAction {
     pub fn write(name: &'static str, value: SettingValue) -> Self {
         Self {

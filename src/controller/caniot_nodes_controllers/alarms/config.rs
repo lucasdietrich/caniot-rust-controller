@@ -10,6 +10,7 @@ use crate::{
 use super::jobs::{AlarmJob, AutoAction, AutoDevice};
 
 #[derive(Debug, Clone, Serialize, Default, Deserialize)]
+#[allow(dead_code)]
 pub struct AlarmDetectionTimeRangeConfig {
     lower_bound: NaiveTime,
     upper_bound: NaiveTime,

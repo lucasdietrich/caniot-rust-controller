@@ -29,6 +29,7 @@ pub trait FilterableSensor {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub enum FilterCriteria {
     CaniotId(caniot::DeviceId),
     CaniotControllerName(String),
@@ -36,6 +37,7 @@ pub enum FilterCriteria {
 }
 
 #[derive(Debug, Default, Clone)]
+#[allow(dead_code)]
 pub enum SensorFilter {
     #[default]
     All, // All sensors sorted by did

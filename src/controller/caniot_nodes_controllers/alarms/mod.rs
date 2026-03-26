@@ -11,4 +11,5 @@ mod outdoor_test;
 
 pub mod config;
 
+#[allow(unused_imports)]
 pub use config::{AlarmConfig, AlarmDetectionTimeRangeConfig, AlarmPartialConfig};

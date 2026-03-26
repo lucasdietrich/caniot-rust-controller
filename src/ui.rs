@@ -38,6 +38,7 @@ pub struct UiConfig {
 }
 
 impl UiConfig {
+    #[allow(dead_code)]
     pub fn shortcuts_sorted(&self) -> Vec<Shortcut> {
         let mut v = self.shortcut.clone().unwrap_or_default();
         v.sort_by_key(|s| s.order);

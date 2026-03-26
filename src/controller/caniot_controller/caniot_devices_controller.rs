@@ -8,7 +8,6 @@ use chrono::{DateTime, Utc};
 use itertools::{partition, Itertools};
 
 use socketcan::CanDataFrame;
-use tokio::sync::mpsc;
 use tokio::sync::oneshot::Sender;
 
 use crate::bus::{CanInterfaceError, CanInterfaceTrait};

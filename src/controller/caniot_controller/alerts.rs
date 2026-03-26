@@ -2,6 +2,7 @@ use chrono::{DateTime, Utc};
 
 use crate::controller::alert::{DeviceAlertType, SensorAlert};
 
+#[allow(dead_code)]
 pub enum AlertSeverity {
     #[allow(dead_code)]
     Debug,
@@ -10,12 +11,14 @@ pub enum AlertSeverity {
     Error,
 }
 
+#[allow(dead_code)]
 pub enum AlertType {
     DeviceAlert(String),
     #[allow(dead_code)]
     DeviceReboot,
 }
 
+#[allow(dead_code)]
 pub struct Alert {
     pub alert_type: AlertType,
     pub severity: AlertSeverity,

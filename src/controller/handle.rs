@@ -44,6 +44,7 @@ pub struct ControllerHandle {
 }
 
 #[derive(Debug, Clone, Serialize)]
+#[allow(dead_code)]
 pub struct DeviceStatsEntry {
     pub did: ct::DeviceId,
     pub last_seen: Option<DateTime<Utc>>,

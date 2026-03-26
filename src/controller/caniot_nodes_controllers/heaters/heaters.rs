@@ -19,6 +19,7 @@ pub struct HeatersController {
 
     // Monitor the number of received telemetry frames for the status endpoint "ApplicationDefault"
     pub status_telemetry_rx_count: usize,
+    #[allow(dead_code)]
     pub status_telemetry_req_sent: bool,
 }
 

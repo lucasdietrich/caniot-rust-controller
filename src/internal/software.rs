@@ -1,4 +1,4 @@
-use chrono::{DateTime, NaiveDateTime, Utc};
+use chrono::{DateTime, Utc};
 
 #[derive(Debug, Clone)]
 pub struct SoftwareBuildInfos {
@@ -39,9 +39,8 @@ impl Default for SoftwareBuildInfos {
 
         // parse as seconds since epoch (UTC) : e.g. 1719567302
         let build_date = build_date.map(|s| {
-            let naive = NaiveDateTime::from_timestamp_opt(s.parse::<i64>().unwrap(), 0)
-                .expect("Failed to parse build date");
-            DateTime::<Utc>::from_naive_utc_and_offset(naive, Utc)
+            DateTime::<Utc>::from_timestamp(s.parse::<i64>().unwrap(), 0)
+                .expect("Failed to parse build date")
         });
 
         Self {

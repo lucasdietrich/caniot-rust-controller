@@ -9,14 +9,14 @@ pub async fn control_attic_heaters(shared: &Arc<Shared>) {
 
     let instant = Instant::now();
 
-    if let Some(caniot) = shared
+    if let Some(_caniot) = shared
         .controller_handle
         .get_caniot_device_infos_by_filter(filter.clone())
         .await
     {
         // debug!("CANIOT {:#?}", caniot);
 
-        if let Some(ble) = shared
+        if let Some(_ble) = shared
             .controller_handle
             .get_copro_devices_by_filter(filter)
             .await
@@ -24,7 +24,7 @@ pub async fn control_attic_heaters(shared: &Arc<Shared>) {
         {
             // debug!("BLE {:#?}", ble);
 
-            let diff = Instant::now().duration_since(instant);
+            let _diff = Instant::now().duration_since(instant);
             // println!("Diff: {:?}", diff);
         }
     }

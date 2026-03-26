@@ -11,6 +11,7 @@ pub fn utc_to_prost_timestamp(dt: &DateTime<Utc>) -> Timestamp {
     }
 }
 
+#[allow(dead_code)]
 pub fn local_to_prost_timestamp(dt: &DateTime<Local>) -> Timestamp {
     let ts = dt.timestamp_nanos_opt().unwrap_or_default();
 
