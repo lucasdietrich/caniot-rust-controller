@@ -156,6 +156,7 @@ impl Coprocessor {
                                 }
                                 TxCoproMessage::SensorChangeEvent(SensorChangeEvent::GarageStateChanged(event)) => {
                                     let indication: DeviceCtrlStateMsg = DeviceCtrlStateMsg::GarageDoors(event.into());
+                                    log::info!("Sending garage state change indication to copro: {:?}", indication);
                                     if let Err(e) = client.send_indication(indication).await {
                                         error!("Failed to send message to copro: {}", e);
                                         break;
