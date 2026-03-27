@@ -27,6 +27,7 @@ interface BleDeviceRow {
   connectionEvents: number;
   pairingEvents: number;
   commandsReceived: number;
+  lastSeen?: Date;
 }
 
 function BlePairingView({ isMobile = false, refreshInterval = 2000 }: IBlePairingViewProps) {
@@ -56,6 +57,7 @@ function BlePairingView({ isMobile = false, refreshInterval = 2000 }: IBlePairin
           connectionEvents: d.getStats()?.getConnectionEvents() ?? 0,
           pairingEvents: d.getStats()?.getPairingEvents() ?? 0,
           commandsReceived: d.getStats()?.getCommandsReceived() ?? 0,
+          lastSeen: d.getLastSeen()?.toDate(),
         }))
       );
       setLoading(false);
@@ -138,6 +140,14 @@ function BlePairingView({ isMobile = false, refreshInterval = 2000 }: IBlePairin
       dataIndex: "commandsReceived",
       key: "commandsReceived",
       width: 120,
+    },
+    {
+      title: "Dernière activité",
+      dataIndex: "lastSeen",
+      key: "lastSeen",
+      width: 200,
+      render: (lastSeen?: Date) =>
+        lastSeen ? lastSeen.toLocaleString() : "—",
     },
   ];
 

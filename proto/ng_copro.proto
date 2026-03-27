@@ -6,7 +6,7 @@ import "common.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/empty.proto";
 
-message GetListParams { 
+message GetListParams {
   oneof filter {
     google.protobuf.Empty all = 1;
     string name = 2;
@@ -87,10 +87,10 @@ message BleDevice {
   string mac = 1;
   bool connected = 2;
   BleDevicePairingState pairing_state = 3;
-  optional uint32 pairing_code = 4;   // set when pairing_state == BLE_PAIRING_PENDING
+  optional uint32 pairing_code =
+      4; // set when pairing_state == BLE_PAIRING_PENDING
   BleDeviceStats stats = 5;
+  google.protobuf.Timestamp last_seen = 6;
 }
 
-message BleDevicesList {
-  repeated BleDevice devices = 1;
-}
+message BleDevicesList { repeated BleDevice devices = 1; }

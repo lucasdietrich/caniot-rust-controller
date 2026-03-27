@@ -72,6 +72,7 @@ impl From<&BleDevice> for m::BleDevice {
                 pairing_events: d.stats.pairing_events,
                 commands_received: d.stats.commands_received,
             }),
+            last_seen: Some(utc_to_prost_timestamp(&d.last_seen)),
         }
     }
 }

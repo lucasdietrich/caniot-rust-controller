@@ -26,7 +26,7 @@ use crate::{
     utils::{PrometheusExporterTrait, PrometheusNoLabel},
 };
 
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use log::{error, info, warn};
 use thiserror::Error;
 
@@ -81,6 +81,7 @@ pub struct BleDevice {
     pub connected: bool,
     pub pairing: BleDevicePairingState,
     pub stats: BleDeviceStats,
+    pub last_seen: DateTime<Utc>,
 }
 
 impl<'a> PrometheusExporterTrait<'a> for CoproControllerStats {
@@ -213,7 +214,9 @@ impl CoproController {
     }
 
     fn get_or_insert_ble_device(&mut self, addr: BleAddress) -> &mut BleDevice {
+        let now = Utc::now();
         if let Some(pos) = self.devices.iter().position(|d| d.addr == addr) {
+            self.devices[pos].last_seen = now;
             &mut self.devices[pos]
         } else {
             self.devices.push(BleDevice {
@@ -221,6 +224,7 @@ impl CoproController {
                 connected: false,
                 pairing: BleDevicePairingState::None,
                 stats: BleDeviceStats::default(),
+                last_seen: now,
             });
             self.devices.last_mut().unwrap()
         }
@@ -243,6 +247,7 @@ impl CoproController {
                         self.devices.remove(pos);
                     } else {
                         self.devices[pos].connected = false;
+                        self.devices[pos].last_seen = Utc::now();
                     }
                 }
             }
@@ -260,6 +265,7 @@ impl CoproController {
                 info!("BLE device {} pairing cancelled/failed", event.addr);
                 if let Some(dev) = self.devices.iter_mut().find(|d| d.addr == event.addr) {
                     dev.pairing = BleDevicePairingState::Failed;
+                    dev.last_seen = Utc::now();
                 }
             }
             BleControlMessage::Pairing(PairingEvent::PairingSucceeded) => {
