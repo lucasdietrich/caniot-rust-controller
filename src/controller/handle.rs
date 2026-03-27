@@ -24,7 +24,7 @@ use super::{
     SensorAlert,
 };
 
-pub enum ControllerMessage {
+pub enum ControllerApiMessage {
     GetStats {
         respond_to: oneshot::Sender<ControllerStats>,
     },
@@ -32,7 +32,7 @@ pub enum ControllerMessage {
     CoprocessorMessage(CoproApiMessage),
 }
 
-impl From<CaniotApiMessage> for ControllerMessage {
+impl From<CaniotApiMessage> for ControllerApiMessage {
     fn from(msg: CaniotApiMessage) -> Self {
         Self::CaniotMessage(msg)
     }
@@ -40,7 +40,7 @@ impl From<CaniotApiMessage> for ControllerMessage {
 
 #[derive(Debug, Clone)]
 pub struct ControllerHandle {
-    sender: mpsc::Sender<ControllerMessage>,
+    sender: mpsc::Sender<ControllerApiMessage>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -52,7 +52,7 @@ pub struct DeviceStatsEntry {
 }
 
 impl ControllerHandle {
-    pub fn new(sender: mpsc::Sender<ControllerMessage>) -> Self {
+    pub fn new(sender: mpsc::Sender<ControllerApiMessage>) -> Self {
         Self { sender }
     }
 
@@ -78,7 +78,7 @@ impl ControllerHandle {
     /// message to the controller actor. Wait for the response and return it.
     async fn caniot_query<R>(
         &self,
-        build_message_closure: impl FnOnce(oneshot::Sender<R>) -> ControllerMessage,
+        build_message_closure: impl FnOnce(oneshot::Sender<R>) -> ControllerApiMessage,
     ) -> R {
         let (sender, receiver) = oneshot::channel();
         let message = build_message_closure(sender);
@@ -90,7 +90,7 @@ impl ControllerHandle {
     }
 
     pub async fn get_controller_stats(&self) -> ControllerStats {
-        self.caniot_query(|respond_to| ControllerMessage::GetStats { respond_to })
+        self.caniot_query(|respond_to| ControllerApiMessage::GetStats { respond_to })
             .await
     }
 
@@ -165,7 +165,7 @@ impl ControllerHandle {
         did: Option<DeviceId>,
         action: DeviceAction,
     ) {
-        let message = CaniotApiMessage::DeviceAction {
+        let message: CaniotApiMessage = CaniotApiMessage::DeviceAction {
             did,
             action,
             respond_to: None,
@@ -235,7 +235,7 @@ impl ControllerHandle {
     #[cfg(feature = "ble-copro")]
     pub async fn get_copro_devices_by_filter(&self, filter: SensorFilter) -> Vec<BleSensor> {
         let (respond_to, receiver) = oneshot::channel();
-        let message = ControllerMessage::CoprocessorMessage(CoproApiMessage::GetDevices {
+        let message = ControllerApiMessage::CoprocessorMessage(CoproApiMessage::GetDevices {
             filter,
             respond_to,
         });
@@ -250,7 +250,7 @@ impl ControllerHandle {
     pub async fn get_copro_alert(&self) -> Option<SensorAlert> {
         let (respond_to, receiver) = oneshot::channel();
         let message =
-            ControllerMessage::CoprocessorMessage(CoproApiMessage::GetAlert { respond_to });
+            ControllerApiMessage::CoprocessorMessage(CoproApiMessage::GetAlert { respond_to });
         self.sender
             .send(message)
             .await
@@ -262,7 +262,7 @@ impl ControllerHandle {
     pub async fn get_copro_controller_stats(&self) -> CoproControllerStats {
         let (respond_to, receiver) = oneshot::channel();
         let message =
-            ControllerMessage::CoprocessorMessage(CoproApiMessage::GetStats { respond_to });
+            ControllerApiMessage::CoprocessorMessage(CoproApiMessage::GetStats { respond_to });
         self.sender
             .send(message)
             .await
@@ -273,7 +273,7 @@ impl ControllerHandle {
     #[cfg(feature = "ble-copro")]
     pub async fn reset_copro_devices_measures_stats(&self) {
         let message =
-            ControllerMessage::CoprocessorMessage(CoproApiMessage::ResetDevicesMeasuresStats);
+            ControllerApiMessage::CoprocessorMessage(CoproApiMessage::ResetDevicesMeasuresStats);
         self.sender
             .send(message)
             .await
@@ -283,9 +283,10 @@ impl ControllerHandle {
     #[cfg(feature = "ble-copro")]
     pub async fn get_ble_devices_state(&self) -> Vec<BleDevice> {
         let (respond_to, receiver) = oneshot::channel();
-        let message = ControllerMessage::CoprocessorMessage(CoproApiMessage::GetBleDevicesState {
-            respond_to,
-        });
+        let message =
+            ControllerApiMessage::CoprocessorMessage(CoproApiMessage::GetBleDevicesState {
+                respond_to,
+            });
         self.sender
             .send(message)
             .await
@@ -295,7 +296,7 @@ impl ControllerHandle {
 
     #[cfg(feature = "ble-copro")]
     pub async fn ble_remove_bonds(&self) {
-        let message = ControllerMessage::CoprocessorMessage(CoproApiMessage::BleRemoveBonds);
+        let message = ControllerApiMessage::CoprocessorMessage(CoproApiMessage::BleRemoveBonds);
         self.sender
             .send(message)
             .await

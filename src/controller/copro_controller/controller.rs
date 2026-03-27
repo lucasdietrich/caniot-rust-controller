@@ -320,8 +320,10 @@ impl CoproController {
         }
     }
 
-    async fn remove_bonds(&mut self) {
-        let _ = self.handle.tx.send(TxCoproMessage::RemoveBonds).await;
+    fn request_remove_bonds(&mut self) {
+        if let Err(err) = self.handle.tx.try_send(TxCoproMessage::RemoveBonds) {
+            error!("Failed to send remove bonds message to copro: {}", err);
+        }
     }
 
     // Return a list of devices with given filter
@@ -347,7 +349,7 @@ impl CoproController {
         }
     }
 
-    pub async fn handle_api_message(&mut self, message: CoproApiMessage) -> Result<(), CoproError> {
+    pub fn handle_api_message(&mut self, message: CoproApiMessage) -> Result<(), CoproError> {
         match message {
             CoproApiMessage::GetDevices { respond_to, filter } => {
                 let devices = self.get_devices(filter);
@@ -368,7 +370,7 @@ impl CoproController {
                 respond_to.send(self.devices.clone()).ok();
             }
             CoproApiMessage::BleRemoveBonds => {
-                self.remove_bonds().await;
+                self.request_remove_bonds();
             }
         }
 

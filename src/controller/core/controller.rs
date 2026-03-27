@@ -11,7 +11,7 @@ use crate::{
             CaniotControllerError, CaniotDevicesController,
         },
         copro_controller::CoproController,
-        handle::{self, ControllerMessage},
+        handle::{self, ControllerApiMessage},
         CaniotConfig,
     },
     coprocessor::CoproHandle,
@@ -37,15 +37,13 @@ pub struct Controller<IF: CanInterfaceTrait> {
 
     shutdown: Shutdown,
 
-    receiver: mpsc::Receiver<handle::ControllerMessage>,
-    handle: handle::ControllerHandle,
+    api_receiver: mpsc::Receiver<handle::ControllerApiMessage>,
+    api_handle: handle::ControllerHandle,
 
     stats: ControllerCoreStats,
 }
 
-const API_CHANNEL_SIZE: u32 = 10;
-#[allow(dead_code)]
-const COPRO_API_CHANNEL_SIZE: usize = 16;
+const API_CHANNEL_SIZE: u32 = 50;
 
 impl<IF: CanInterfaceTrait> Controller<IF> {
     pub(crate) fn new(
@@ -65,15 +63,15 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
         Ok(Self {
             caniot: CaniotDevicesController::new(iface, caniot_config, storage)?,
             copro: CoproController::new(copro_handle, controller_handle.clone())?,
-            handle: controller_handle,
-            receiver,
+            api_handle: controller_handle,
+            api_receiver: receiver,
             shutdown,
             stats: ControllerCoreStats::default(),
         })
     }
 
     pub fn get_handle(&self) -> handle::ControllerHandle {
-        self.handle.clone()
+        self.api_handle.clone()
     }
 
     pub async fn run(mut self) -> Result<(), ()> {
@@ -86,9 +84,6 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
             let sleep_time = self.caniot.loop_process(&sys_now, &utc_now).await;
 
             select! {
-                Some(message) = self.receiver.recv() => {
-                    let _ = self.handle_api_message(message).await;
-                },
                 Some(frame) = self.caniot.iface.recv_poll() => {
                     self.caniot.handle_can_frame(frame).await;
                 },
@@ -101,13 +96,16 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
                         }
                     }
                 },
-                _ = sleep(sleep_time) => {
-                    // Timeout of pending queries handled in handle_pending_queries_timeout()
+                Some(message) = self.api_receiver.recv() => {
+                    let _ = self.handle_api_message(message).await;
                 },
                 _ = self.shutdown.recv() => {
                     warn!("Received shutdown signal, exiting ...");
                     break;
                 }
+                _ = sleep(sleep_time) => {
+                    // Timeout of pending queries handled in handle_pending_queries_timeout()
+                },
             }
 
             for event in self.caniot.pop_pending_sensor_change_events() {
@@ -122,11 +120,11 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
 
     pub async fn handle_api_message(
         &mut self,
-        message: ControllerMessage,
+        message: ControllerApiMessage,
     ) -> Result<(), ControllerError> {
         self.stats.api_rx += 1;
         match message {
-            ControllerMessage::GetStats { respond_to } => {
+            ControllerApiMessage::GetStats { respond_to } => {
                 let stats = ControllerStats {
                     caniot: self.caniot.stats,
                     core: self.stats,
@@ -134,11 +132,11 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
                 };
                 let _ = respond_to.send(stats);
             }
-            ControllerMessage::CaniotMessage(caniot_message) => {
+            ControllerApiMessage::CaniotMessage(caniot_message) => {
                 self.caniot.handle_api_message(caniot_message).await?;
             }
-            ControllerMessage::CoprocessorMessage(copro_message) => {
-                self.copro.handle_api_message(copro_message).await?;
+            ControllerApiMessage::CoprocessorMessage(copro_message) => {
+                self.copro.handle_api_message(copro_message)?;
             }
         }
 

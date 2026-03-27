@@ -22,8 +22,8 @@ use crate::controller::{
 
 use super::CoproConfig;
 
-const COPRO_MSG_TX_CHANNEL_SIZE: usize = 10;
-const COPRO_MSG_RX_CHANNEL_SIZE: usize = 10;
+const COPRO_MSG_TX_CHANNEL_SIZE: usize = 5;
+const COPRO_MSG_RX_CHANNEL_SIZE: usize = 20;
 const COPRO_SERVER_INIT_RETRY_INTERVAL: Duration = Duration::from_secs(5);
 const COPRO_SERVER_ACCEPT_RETRY_INTERVAL: Duration = Duration::from_secs(5);
 
@@ -149,6 +149,7 @@ impl Coprocessor {
                         Some(tx_message) = txq_receiver.recv() => {
                             match tx_message {
                                 TxCoproMessage::RemoveBonds => {
+                                    log::info!("Sending remove bonds indication to copro");
                                     if let Err(e) = client.send_indication(BleControlAction::RemoveAllBonds).await {
                                         error!("Failed to send message to copro: {}", e);
                                         break;
