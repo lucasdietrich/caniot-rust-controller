@@ -9,7 +9,7 @@ import {
   BleDevicesList,
   BleDevicePairingState,
 } from "@caniot-controller/caniot-api-grpc-web/api/ng_copro_pb";
-import { Badge, Button, Space, TableProps, Table, Tag, Tooltip } from "antd";
+import { Badge, Button, Descriptions, Space, TableProps, Table, Tag, Tooltip } from "antd";
 import React, { useEffect, useState } from "react";
 import coproStore from "../store/CoproStore";
 
@@ -128,34 +128,54 @@ function BlePairingView({ isMobile = false, refreshInterval = 2000 }: IBlePairin
       dataIndex: "connectionEvents",
       key: "connectionEvents",
       width: 120,
+      responsive: ["md"],
     },
     {
       title: "Appairages",
       dataIndex: "pairingEvents",
       key: "pairingEvents",
       width: 120,
+      responsive: ["md"],
     },
     {
       title: "Commandes",
       dataIndex: "commandsReceived",
       key: "commandsReceived",
       width: 120,
+      responsive: ["md"],
     },
     {
       title: "Dernière activité",
       dataIndex: "lastSeen",
       key: "lastSeen",
       width: 200,
+      responsive: ["md"],
       render: (lastSeen?: Date) =>
         lastSeen ? lastSeen.toLocaleString() : "—",
     },
   ];
+
+  const expandable: TableProps<BleDeviceRow>["expandable"] = isMobile
+    ? {
+        expandedRowRender: (record) => (
+          <Descriptions size="small" column={2} style={{ margin: 0 }}>
+            <Descriptions.Item label="Connexions">{record.connectionEvents}</Descriptions.Item>
+            <Descriptions.Item label="Appairages">{record.pairingEvents}</Descriptions.Item>
+            <Descriptions.Item label="Commandes">{record.commandsReceived}</Descriptions.Item>
+            <Descriptions.Item label="Dernière activité">
+              {record.lastSeen ? record.lastSeen.toLocaleString() : "—"}
+            </Descriptions.Item>
+          </Descriptions>
+        ),
+      }
+    : undefined;
 
   return (
     <Space direction="vertical" style={{ width: "100%" }}>
       <Table
         dataSource={rows}
         columns={columns}
+        expandable={expandable}
         loading={loading}
         size={isMobile ? "small" : "middle"}
         pagination={false}
