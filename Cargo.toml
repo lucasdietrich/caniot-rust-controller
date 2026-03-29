@@ -71,7 +71,7 @@ as-any = "0.3"
 # BLE can
 [dependencies.ble-copro-stream-server]
 git = "https://github.com/lucasdietrich/zephyr-linux-ble-copro.git"
-rev = "1e86c5e4965f6e494e3a2b56c177eb6fb5060fb2"
+rev = "8565baebaf32b890c7b4309f31dd1e6c9f174168"
 # path = "/home/lucas/zephyrproject-ble/zephyr-linux-ble-copro/ble-copro-stream-server-rs"
 optional = true
 features = ["tcp-keep-alive", "chrono"]

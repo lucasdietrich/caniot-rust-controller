@@ -7,10 +7,12 @@ import { Empty } from "google-protobuf/google/protobuf/empty_pb";
 import { CoproServiceClient } from "@caniot-controller/caniot-api-grpc-web/api/Ng_coproServiceClientPb";
 import {
   BleDevicesList,
+  BlePairingAdvParams,
   CoproAlert,
   CoproDevice,
   CoproDevicesList,
   GetListParams,
+  PairingAdvState,
 } from "@caniot-controller/caniot-api-grpc-web/api/ng_copro_pb";
 
 class CoproStore extends EventEmitter {
@@ -90,6 +92,29 @@ class CoproStore extends EventEmitter {
       }
       HandleSuccess("CoproStore::BleRemoveBonds succeeded");
       callbackFunc();
+    });
+  };
+
+  bleEnablePairingAdv = (durationS: number, callbackFunc: () => void) => {
+    const params = new BlePairingAdvParams();
+    params.setDurationS(durationS);
+    this.client.bleEnablePairingAdv(params, null, (err, _resp) => {
+      if (err !== null) {
+        HandleError(err);
+        return;
+      }
+      HandleSuccess("CoproStore::BleEnablePairingAdv succeeded");
+      callbackFunc();
+    });
+  };
+
+  getPairingAdvState = (callbackFunc: (resp: PairingAdvState) => void) => {
+    this.client.getPairingAdvState(new Empty(), null, (err, resp) => {
+      if (err !== null) {
+        HandleError(err);
+        return;
+      }
+      callbackFunc(resp);
     });
   };
 }

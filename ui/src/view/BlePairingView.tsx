@@ -3,6 +3,7 @@ import {
   KeyOutlined,
   LinkOutlined,
   MinusOutlined,
+  WifiOutlined,
 } from "@ant-design/icons";
 import {
   BleDevice,
@@ -12,6 +13,8 @@ import {
 import { Badge, Button, Descriptions, Space, TableProps, Table, Tag, Tooltip } from "antd";
 import React, { useEffect, useState } from "react";
 import coproStore from "../store/CoproStore";
+
+const PAIRING_ADV_DURATION_S = 60;
 
 interface IBlePairingViewProps {
   isMobile?: boolean;
@@ -35,12 +38,21 @@ function BlePairingView({ isMobile = false, refreshInterval = 2000 }: IBlePairin
   const [loading, setLoading] = useState(true);
   const [time, setTime] = useState(Date.now());
   const [removingBonds, setRemovingBonds] = useState(false);
+  const [pairingAdvActive, setPairingAdvActive] = useState(false);
+  const [pairingAdvDuration, setPairingAdvDuration] = useState(0);
 
   const handleRemoveBonds = () => {
     setRemovingBonds(true);
     coproStore.bleRemoveBonds(() => {
       setRemovingBonds(false);
       setTime(Date.now());
+    });
+  };
+
+  const handleEnablePairingAdv = () => {
+    coproStore.bleEnablePairingAdv(PAIRING_ADV_DURATION_S, () => {
+      // Optimistically mark as active; state will be confirmed on next poll
+      setPairingAdvActive(true);
     });
   };
 
@@ -61,6 +73,11 @@ function BlePairingView({ isMobile = false, refreshInterval = 2000 }: IBlePairin
         }))
       );
       setLoading(false);
+    });
+
+    coproStore.getPairingAdvState((resp) => {
+      setPairingAdvActive(resp.getActive());
+      setPairingAdvDuration(resp.getDurationS());
     });
 
     const interval = setInterval(() => setTime(Date.now()), refreshInterval);
@@ -181,14 +198,35 @@ function BlePairingView({ isMobile = false, refreshInterval = 2000 }: IBlePairin
         pagination={false}
         locale={{ emptyText: "Aucun appareil BLE détecté" }}
       />
-      <Button
-        type="primary"
-        danger
-        loading={removingBonds}
-        onClick={handleRemoveBonds}
-      >
-        Supprimer tous les appairages
-      </Button>
+      <Space wrap>
+        <Tooltip
+          title={
+            pairingAdvActive
+              ? `Fenêtre d'appairage ouverte (${pairingAdvDuration}s) — en attente de la fin…`
+              : `Ouvre une fenêtre d'appairage de ${PAIRING_ADV_DURATION_S} secondes`
+          }
+        >
+          <Button
+            type="primary"
+            icon={<WifiOutlined />}
+            loading={pairingAdvActive}
+            disabled={pairingAdvActive}
+            onClick={handleEnablePairingAdv}
+          >
+            {pairingAdvActive
+              ? `Appairage en cours (${pairingAdvDuration}s)…`
+              : "Activer le mode appairage"}
+          </Button>
+        </Tooltip>
+        <Button
+          type="primary"
+          danger
+          loading={removingBonds}
+          onClick={handleRemoveBonds}
+        >
+          Supprimer tous les appairages
+        </Button>
+      </Space>
     </Space>
   );
 }

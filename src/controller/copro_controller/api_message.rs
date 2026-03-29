@@ -23,4 +23,10 @@ pub enum CoproApiMessage {
     GetBleDevicesState {
         respond_to: oneshot::Sender<Vec<BleDevice>>,
     },
+    BleEnablePairingAdv {
+        duration_s: u32,
+    },
+    GetPairingAdvState {
+        respond_to: oneshot::Sender<(bool, u32)>,
+    },
 }

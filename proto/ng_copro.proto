@@ -18,6 +18,9 @@ service CoproService {
   rpc GetCoproAlert(google.protobuf.Empty) returns (CoproAlert) {}
   rpc GetBleDevices(google.protobuf.Empty) returns (BleDevicesList) {}
   rpc BleRemoveBonds(google.protobuf.Empty) returns (google.protobuf.Empty) {}
+  rpc BleEnablePairingAdv(BlePairingAdvParams) returns (google.protobuf.Empty) {
+  }
+  rpc GetPairingAdvState(google.protobuf.Empty) returns (PairingAdvState) {}
 }
 
 message CoproDevice {
@@ -94,3 +97,10 @@ message BleDevice {
 }
 
 message BleDevicesList { repeated BleDevice devices = 1; }
+
+message BlePairingAdvParams { uint32 duration_s = 1; }
+
+message PairingAdvState {
+  bool active = 1;
+  uint32 duration_s = 2;
+}

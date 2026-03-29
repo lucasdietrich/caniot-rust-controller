@@ -46,6 +46,7 @@ pub enum RxCoproMessage {
 #[derive(Debug)]
 pub enum TxCoproMessage {
     RemoveBonds,
+    EnablePairingAdv { duration_s: u32 },
     SensorChangeEvent(SensorChangeEvent),
 }
 
@@ -152,6 +153,13 @@ impl Coprocessor {
                                     log::info!("Sending remove bonds indication to copro");
                                     if let Err(e) = client.send_indication(BleControlAction::RemoveAllBonds).await {
                                         error!("Failed to send message to copro: {}", e);
+                                        break;
+                                    }
+                                }
+                                TxCoproMessage::EnablePairingAdv { duration_s } => {
+                                    log::info!("Sending enable pairing adv indication to copro ({}s)", duration_s);
+                                    if let Err(e) = client.send_indication(BleControlAction::EnablePairingAdv { duration_s }).await {
+                                        error!("Failed to send enable pairing adv to copro: {}", e);
                                         break;
                                     }
                                 }

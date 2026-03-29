@@ -159,6 +159,29 @@ impl CoproService for NgCopro {
         self.shared.controller_handle.ble_remove_bonds().await;
         Ok(tonic::Response::new(()))
     }
+
+    async fn ble_enable_pairing_adv(
+        &self,
+        req: tonic::Request<m::BlePairingAdvParams>,
+    ) -> Result<tonic::Response<()>, tonic::Status> {
+        let duration_s = req.into_inner().duration_s;
+        self.shared
+            .controller_handle
+            .ble_enable_pairing_adv(duration_s)
+            .await;
+        Ok(tonic::Response::new(()))
+    }
+
+    async fn get_pairing_adv_state(
+        &self,
+        _req: tonic::Request<()>,
+    ) -> Result<tonic::Response<m::PairingAdvState>, tonic::Status> {
+        let (active, duration_s) = self.shared.controller_handle.get_pairing_adv_state().await;
+        Ok(tonic::Response::new(m::PairingAdvState {
+            active,
+            duration_s,
+        }))
+    }
 }
 
 pub fn get_ng_copro_server(shared: SharedHandle) -> CoproServiceServer<NgCopro> {

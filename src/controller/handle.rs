@@ -302,4 +302,30 @@ impl ControllerHandle {
             .await
             .expect("Failed to send IPC message to controller");
     }
+
+    #[cfg(feature = "ble-copro")]
+    pub async fn ble_enable_pairing_adv(&self, duration_s: u32) {
+        let message =
+            ControllerApiMessage::CoprocessorMessage(CoproApiMessage::BleEnablePairingAdv {
+                duration_s,
+            });
+        self.sender
+            .send(message)
+            .await
+            .expect("Failed to send IPC message to controller");
+    }
+
+    #[cfg(feature = "ble-copro")]
+    pub async fn get_pairing_adv_state(&self) -> (bool, u32) {
+        let (respond_to, receiver) = oneshot::channel();
+        let message =
+            ControllerApiMessage::CoprocessorMessage(CoproApiMessage::GetPairingAdvState {
+                respond_to,
+            });
+        self.sender
+            .send(message)
+            .await
+            .expect("Failed to send IPC message to controller");
+        receiver.await.expect("IPC Sender dropped before response")
+    }
 }

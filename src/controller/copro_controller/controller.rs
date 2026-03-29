@@ -48,6 +48,10 @@ pub struct CoproController {
 
     // Connection/pairing/bonding state
     devices: Vec<BleDevice>,
+
+    // Pairing advertising state
+    pairing_adv_active: bool,
+    pairing_adv_duration_s: u32,
 }
 
 #[derive(Debug, Error)]
@@ -110,6 +114,8 @@ impl CoproController {
             copro_status: CoproStreamChannelStatus::Disconnected,
             stats: CoproControllerStats::default(),
             devices: Vec::new(),
+            pairing_adv_active: false,
+            pairing_adv_duration_s: 0,
         })
     }
 
@@ -231,16 +237,16 @@ impl CoproController {
     }
 
     async fn handle_ble_control_message(&mut self, event: BleControlPayload) {
+        info!("BLE event: {}", event);
+
         match event.message {
             BleControlMessage::Connection(ConnectionEvent::Connected) => {
-                info!("BLE device {} connected", event.addr);
                 let device = self.get_or_insert_ble_device(event.addr);
 
                 device.connected = true;
                 device.stats.connection_events += 1;
             }
             BleControlMessage::Connection(ConnectionEvent::Disconnected) => {
-                info!("BLE device {} disconnected", event.addr);
                 // remove device if not paired, otherwise keep it with connected = false (to keep pairing state and stats)
                 if let Some(pos) = self.devices.iter().position(|d| d.addr == event.addr) {
                     if self.devices[pos].pairing == BleDevicePairingState::None {
@@ -252,30 +258,40 @@ impl CoproController {
                 }
             }
             BleControlMessage::Pairing(PairingEvent::PairingCode { code }) => {
-                info!(
-                    "BLE device {} requested pairing, code is {}",
-                    event.addr, code
-                );
                 let device = self.get_or_insert_ble_device(event.addr);
 
                 device.pairing = BleDevicePairingState::Pending { code };
                 device.stats.pairing_events += 1;
             }
             BleControlMessage::Pairing(PairingEvent::PairingCancelled) => {
-                info!("BLE device {} pairing cancelled/failed", event.addr);
                 if let Some(dev) = self.devices.iter_mut().find(|d| d.addr == event.addr) {
                     dev.pairing = BleDevicePairingState::Failed;
                     dev.last_seen = Utc::now();
                 }
             }
             BleControlMessage::Pairing(PairingEvent::PairingSucceeded) => {
-                info!("BLE device {} pairing succeeded", event.addr);
                 self.get_or_insert_ble_device(event.addr).pairing =
                     BleDevicePairingState::Succeeded;
             }
             BleControlMessage::Pairing(PairingEvent::AllBondsRemoved) => {
-                info!("All BLE bonds removed");
                 self.devices.clear();
+            }
+            BleControlMessage::Pairing(PairingEvent::PairingAdvStarted { duration_s }) => {
+                info!("Pairing advertising started for {} seconds", duration_s);
+                self.pairing_adv_active = true;
+                self.pairing_adv_duration_s = duration_s;
+            }
+            BleControlMessage::Pairing(PairingEvent::PairingAdvStopped) => {
+                info!("Pairing advertising stopped");
+                self.pairing_adv_active = false;
+                self.pairing_adv_duration_s = 0;
+            }
+            // Update device address to identity address
+            BleControlMessage::IdentityResolved { rpa, identity } => {
+                if let Some(pos) = self.devices.iter().position(|d| d.addr == rpa) {
+                    self.devices[pos].addr = identity;
+                    self.devices[pos].last_seen = Utc::now();
+                }
             }
         }
 
@@ -341,6 +357,16 @@ impl CoproController {
         }
     }
 
+    fn request_enable_pairing_adv(&mut self, duration_s: u32) {
+        if let Err(err) = self
+            .handle
+            .tx
+            .try_send(TxCoproMessage::EnablePairingAdv { duration_s })
+        {
+            error!("Failed to send enable pairing adv message to copro: {}", err);
+        }
+    }
+
     // Return a list of devices with given filter
     fn get_devices(&self, filter: SensorFilter) -> Vec<BleSensor> {
         let filter_function = filter.get_filter_function::<BleSensor>();
@@ -386,6 +412,14 @@ impl CoproController {
             }
             CoproApiMessage::BleRemoveBonds => {
                 self.request_remove_bonds();
+            }
+            CoproApiMessage::BleEnablePairingAdv { duration_s } => {
+                self.request_enable_pairing_adv(duration_s);
+            }
+            CoproApiMessage::GetPairingAdvState { respond_to } => {
+                respond_to
+                    .send((self.pairing_adv_active, self.pairing_adv_duration_s))
+                    .ok();
             }
         }
 
