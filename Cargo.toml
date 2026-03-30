@@ -1,6 +1,6 @@
 [package]
 name = "caniot-controller"
-version = "0.2.3"
+version = "0.3.0"
 edition = "2021"
 description = "CANIOT Rust Controller"
 homepage = "https://github.com/lucasdietrich/caniot-rust-controller.git"
