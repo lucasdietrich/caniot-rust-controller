@@ -38,7 +38,12 @@ prost = "0.13"
 prost-types = "0.13"
 
 # database (always sqlite)
-sqlx = { version = "0.8.2", features = ["runtime-tokio", "macros", "sqlite"] }
+sqlx = { version = "0.8.2", features = [
+    "runtime-tokio",
+    "macros",
+
+    "sqlite-unbundled",
+] }
 
 # Webserver
 rocket = { version = "0.5.1", features = ["json"] }
