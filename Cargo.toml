@@ -26,10 +26,7 @@ futures-util = "0.3"
 
 # CAN interface
 
-socketcan = { git = "https://github.com/socketcan-rs/socketcan-rs.git", rev = "c3004f0d7c600cd3964cd8655fd26f670d7c87e7", features = [
-    "tokio",
-    "async-std",
-] }
+socketcan = { version = "3.5.0", features = ["tokio", "async-std"] }
 embedded-can = "0.4"
 # grpc
 tonic = "0.12"
