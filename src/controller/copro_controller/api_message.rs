@@ -29,4 +29,7 @@ pub enum CoproApiMessage {
     GetPairingAdvState {
         respond_to: oneshot::Sender<(bool, u32)>,
     },
+    GetFirmwareVersion {
+        respond_to: oneshot::Sender<Option<String>>,
+    },
 }

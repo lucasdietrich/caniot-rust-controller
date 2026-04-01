@@ -6,10 +6,11 @@ import LoadableCard from "./LoadableCard";
 
 interface FirmwareInfosCardProps {
   infos?: FirmwareInfos;
+  bleCoproFirmwareVersion?: string;
   isMobile?: boolean;
 }
 
-function FirmwareInfosCard({ infos, isMobile = false }: FirmwareInfosCardProps) {
+function FirmwareInfosCard({ infos, bleCoproFirmwareVersion, isMobile = false }: FirmwareInfosCardProps) {
   return (
     <LoadableCard loading={!infos} title="Firmware" bordered={false} isMobile={isMobile}>
       <List>
@@ -21,6 +22,9 @@ function FirmwareInfosCard({ infos, isMobile = false }: FirmwareInfosCardProps) 
         </ListLabelledItem>
         <ListLabelledItem label="Date de build">
           {infos?.getBuild()?.getBuildDate()?.toDate().toLocaleString() ?? "N/A"}
+        </ListLabelledItem>
+        <ListLabelledItem label="Version firmware BLE Coprocesseur">
+          {bleCoproFirmwareVersion ?? "N/A"}
         </ListLabelledItem>
       </List>
     </LoadableCard>

@@ -21,6 +21,8 @@ service CoproService {
   rpc BleEnablePairingAdv(BlePairingAdvParams) returns (google.protobuf.Empty) {
   }
   rpc GetPairingAdvState(google.protobuf.Empty) returns (PairingAdvState) {}
+  rpc GetBleFirmwareVersion(google.protobuf.Empty)
+      returns (BleFirmwareVersion) {}
 }
 
 message CoproDevice {
@@ -104,3 +106,5 @@ message PairingAdvState {
   bool active = 1;
   uint32 duration_s = 2;
 }
+
+message BleFirmwareVersion { optional string version = 1; }

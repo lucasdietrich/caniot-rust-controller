@@ -182,6 +182,18 @@ impl CoproService for NgCopro {
             duration_s,
         }))
     }
+
+    async fn get_ble_firmware_version(
+        &self,
+        _req: tonic::Request<()>,
+    ) -> Result<tonic::Response<m::BleFirmwareVersion>, tonic::Status> {
+        let version = self
+            .shared
+            .controller_handle
+            .get_copro_firmware_version()
+            .await;
+        Ok(tonic::Response::new(m::BleFirmwareVersion { version }))
+    }
 }
 
 pub fn get_ng_copro_server(shared: SharedHandle) -> CoproServiceServer<NgCopro> {

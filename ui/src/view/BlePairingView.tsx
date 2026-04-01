@@ -10,9 +10,11 @@ import {
   BleDevicesList,
   BleDevicePairingState,
 } from "@caniot-controller/caniot-api-grpc-web/api/ng_copro_pb";
-import { Badge, Button, Descriptions, Space, TableProps, Table, Tag, Tooltip } from "antd";
+import { Badge, Button, Descriptions, Space, TableProps, Table, Tag, Tooltip, Typography } from "antd";
 import React, { useEffect, useState } from "react";
 import coproStore from "../store/CoproStore";
+
+const { Text } = Typography;
 
 const PAIRING_ADV_DURATION_S = 60;
 
@@ -40,6 +42,7 @@ function BlePairingView({ isMobile = false, refreshInterval = 2000 }: IBlePairin
   const [removingBonds, setRemovingBonds] = useState(false);
   const [pairingAdvActive, setPairingAdvActive] = useState(false);
   const [pairingAdvDuration, setPairingAdvDuration] = useState(0);
+  const [bleFirmwareVersion, setBleFirmwareVersion] = useState<string | undefined>(undefined);
 
   const handleRemoveBonds = () => {
     setRemovingBonds(true);
@@ -78,6 +81,10 @@ function BlePairingView({ isMobile = false, refreshInterval = 2000 }: IBlePairin
     coproStore.getPairingAdvState((resp) => {
       setPairingAdvActive(resp.getActive());
       setPairingAdvDuration(resp.getDurationS());
+    });
+
+    coproStore.getBleFirmwareVersion((resp) => {
+      setBleFirmwareVersion(resp.hasVersion() ? resp.getVersion() : undefined);
     });
 
     const interval = setInterval(() => setTime(Date.now()), refreshInterval);
@@ -226,6 +233,11 @@ function BlePairingView({ isMobile = false, refreshInterval = 2000 }: IBlePairin
         >
           Supprimer tous les appairages
         </Button>
+        {bleFirmwareVersion && (
+          <Text type="secondary" style={{ alignSelf: "center" }}>
+            Firmware Coprocesseur BLE : <Text code>{bleFirmwareVersion}</Text>
+          </Text>
+        )}
       </Space>
     </Space>
   );

@@ -402,7 +402,7 @@ dependencies = [
 [[package]]
 name = "ble-copro-stream-server"
 version = "0.1.0"
-source = "git+https://github.com/lucasdietrich/zephyr-linux-ble-copro.git?rev=8565baebaf32b890c7b4309f31dd1e6c9f174168#8565baebaf32b890c7b4309f31dd1e6c9f174168"
+source = "git+https://github.com/lucasdietrich/zephyr-linux-ble-copro.git?rev=883b2704578d9214571ac23c5ae348aeb82955c0#883b2704578d9214571ac23c5ae348aeb82955c0"
 dependencies = [
  "byteorder",
  "chrono",

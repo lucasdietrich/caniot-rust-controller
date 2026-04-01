@@ -2,6 +2,7 @@ use std::time::Duration;
 
 use ble_copro_stream_server::{
     ble_control::{BleControlAction, BleControlPayload},
+    control_channel::ControlMessage,
     device_control::{self, DeviceCtrlCommandMsg, DeviceCtrlStateMsg, GarageDoorsState},
     linky::LinkyTicRecord,
     stream_channel::StreamChannel,
@@ -10,7 +11,6 @@ use ble_copro_stream_server::{
     StreamServer, Timestamp,
 };
 use chrono::Utc;
-use log::warn;
 use rocket::error;
 use tokio::{select, sync::mpsc, time::sleep};
 
@@ -41,6 +41,7 @@ pub enum RxCoproMessage {
     Status(CoproStreamChannelStatus),
     BleControlEvent(BleControlPayload),
     DeviceControlCommand(DeviceCtrlCommandMsg),
+    Control(ControlMessage),
 }
 
 #[derive(Debug)]
@@ -202,9 +203,14 @@ impl Coprocessor {
                                             .send(RxCoproMessage::DeviceControlCommand(command))
                                             .await;
                                     }
-                                    _ => {
-                                        warn!("Unhandled channel message: {:?}", message);
+                                    ChannelMessage::Control(control_msg) => {
+                                        let _ = rxq_sender
+                                            .send(RxCoproMessage::Control(control_msg))
+                                            .await;
                                     }
+                                    // _ => {
+                                    //     log::warn!("Unhandled channel message: {:?}", message);
+                                    // }
                                 },
                                 Err(err) => {
                                     error!("Error reading from stream channel: {}", err);

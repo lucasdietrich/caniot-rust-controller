@@ -6,6 +6,7 @@ import { Empty } from "google-protobuf/google/protobuf/empty_pb";
 
 import { CoproServiceClient } from "@caniot-controller/caniot-api-grpc-web/api/Ng_coproServiceClientPb";
 import {
+  BleFirmwareVersion,
   BleDevicesList,
   BlePairingAdvParams,
   CoproAlert,
@@ -110,6 +111,16 @@ class CoproStore extends EventEmitter {
 
   getPairingAdvState = (callbackFunc: (resp: PairingAdvState) => void) => {
     this.client.getPairingAdvState(new Empty(), null, (err, resp) => {
+      if (err !== null) {
+        HandleError(err);
+        return;
+      }
+      callbackFunc(resp);
+    });
+  };
+
+  getBleFirmwareVersion = (callbackFunc: (resp: BleFirmwareVersion) => void) => {
+    this.client.getBleFirmwareVersion(new Empty(), null, (err, resp) => {
       if (err !== null) {
         HandleError(err);
         return;

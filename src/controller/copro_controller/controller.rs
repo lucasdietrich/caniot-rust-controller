@@ -1,6 +1,7 @@
 use ble_copro_stream_server::{
     ble::BleAddress,
     ble_control::{BleControlMessage, BleControlPayload, ConnectionEvent, PairingEvent},
+    control_channel::{ControlMessage, FirmwareVersion},
     device_control::{DeviceCtrlCmd, DeviceCtrlCommandMsg},
     linky::LinkyTicRecord,
     xiaomi::XiaomiRecord,
@@ -52,6 +53,9 @@ pub struct CoproController {
     // Pairing advertising state
     pairing_adv_active: bool,
     pairing_adv_duration_s: u32,
+
+    // BLE Coprocessor firmware version (received on each connection)
+    firmware_version: Option<FirmwareVersion>,
 }
 
 #[derive(Debug, Error)]
@@ -116,6 +120,7 @@ impl CoproController {
             devices: Vec::new(),
             pairing_adv_active: false,
             pairing_adv_duration_s: 0,
+            firmware_version: None,
         })
     }
 
@@ -324,8 +329,18 @@ impl CoproController {
             .await;
     }
 
+    async fn handle_control_message(&mut self, control_msg: ControlMessage) {
+        match control_msg {
+            ControlMessage::FirmwareVersion(version) => {
+                info!("BLE Coprocessor firmware version: {}", version);
+                self.firmware_version = Some(version);
+            }
+        }
+    }
+
     pub async fn handle_message(&mut self, message: RxCoproMessage) {
         match message {
+            RxCoproMessage::Control(control_msg) => self.handle_control_message(control_msg).await,
             RxCoproMessage::Xiaomi(record) => self.handle_xiaomi_message(record).await,
             RxCoproMessage::LinkyTic(record) => self.handle_linky_tic_message(record).await,
             RxCoproMessage::BleControlEvent(event) => self.handle_ble_control_message(event).await,
@@ -346,7 +361,11 @@ impl CoproController {
                 "BLE Coprocessor dongle undetected",
             )),
             CoproStreamChannelStatus::Connected => {
-                Some(SensorAlert::new_ok("BLE Coprocessor dongle connected"))
+                let alert = SensorAlert::new_ok("BLE Coprocessor dongle connected");
+                Some(match &self.firmware_version {
+                    Some(v) => alert.with_description(&format!("Version firmware : {}", v)),
+                    None => alert,
+                })
             }
         }
     }
@@ -363,7 +382,10 @@ impl CoproController {
             .tx
             .try_send(TxCoproMessage::EnablePairingAdv { duration_s })
         {
-            error!("Failed to send enable pairing adv message to copro: {}", err);
+            error!(
+                "Failed to send enable pairing adv message to copro: {}",
+                err
+            );
         }
     }
 
@@ -419,6 +441,11 @@ impl CoproController {
             CoproApiMessage::GetPairingAdvState { respond_to } => {
                 respond_to
                     .send((self.pairing_adv_active, self.pairing_adv_duration_s))
+                    .ok();
+            }
+            CoproApiMessage::GetFirmwareVersion { respond_to } => {
+                respond_to
+                    .send(self.firmware_version.as_ref().map(|v| v.as_semver_string()))
                     .ok();
             }
         }
