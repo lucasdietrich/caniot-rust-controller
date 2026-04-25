@@ -189,8 +189,6 @@ impl DeviceJobState {
                 _ => {}
             }
         }
-
-        sleep(std::time::Duration::from_millis(500));
     }
 }
 
