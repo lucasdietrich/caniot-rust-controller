@@ -41,8 +41,8 @@ pub struct CaniotDeviceInfos {
     pub ui_view_name: Option<String>,
 }
 
-impl Into<CaniotDeviceInfos> for &CaniotDevice {
-    fn into(self) -> CaniotDeviceInfos {
+impl CaniotDevice {
+    pub fn get_device_infos(&self) -> CaniotDeviceInfos {
         // If controller get the controller infos
         let mut controller_display_name = None;
         let mut controller_name = None;

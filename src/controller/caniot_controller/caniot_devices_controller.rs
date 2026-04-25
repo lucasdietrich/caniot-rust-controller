@@ -400,7 +400,7 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
             .iter()
             .filter(|(_, device)| filter_function(device))
             .sorted_by(|(_, a), (_, b)| sort_function(a, b))
-            .map(|(_, device)| device.into())
+            .map(|(_, device)| device.get_device_infos())
             .collect()
     }
 
