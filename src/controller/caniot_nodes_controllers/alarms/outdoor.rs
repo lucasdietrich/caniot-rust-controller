@@ -452,7 +452,6 @@ impl DeviceControllerTrait for AlarmController {
         match job {
             AlarmJob::DailyAuto(time, AutoDevice::Alarm, action) => {
                 if !self.config.auto_alarm_enable {
-                    info!("Unscheduling daily auto alarm job");
                     return UpdateJobVerdict::Unschedule;
                 } else if (*action == AutoAction::Enable)
                     && (self.config.auto_alarm_enable_time != *time)
@@ -466,7 +465,6 @@ impl DeviceControllerTrait for AlarmController {
             }
             AlarmJob::DailyAuto(time, AutoDevice::Lights, action) => {
                 if !self.config.auto_lights_enable {
-                    info!("Unscheduling daily auto lights job");
                     return UpdateJobVerdict::Unschedule;
                 } else if (*action == AutoAction::Enable)
                     && (self.config.auto_lights_enable_time != *time)

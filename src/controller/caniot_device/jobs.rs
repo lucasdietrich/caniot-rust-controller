@@ -228,7 +228,7 @@ impl DeviceJobsContext {
         }
     }
 
-    // Lots of processing happens here
+    // TODO Lots of processing happens here, this could be optimized
     pub fn get_first_ready_job(&mut self, now: &DateTime<Utc>) -> Option<&mut DeviceJobState> {
         // Remove outdated jobs
         self.scheduled_jobs.retain_mut(|job| !job.is_outdated());
@@ -238,6 +238,9 @@ impl DeviceJobsContext {
 
         // sort the ready jobs by their next occurrence (soonest first)
         self.scheduled_jobs[..partition_point].sort_by_key(|job| job.next_occurrence.clone());
+
+        // Update the last evaluation time
+        self.last_eval = *now;
 
         // Return the first ready job if it exists
         match partition_point {
@@ -275,7 +278,10 @@ impl DeviceJobsContext {
                     job.reinit(&self.last_eval);
                     true
                 }
-                UpdateJobVerdict::Unschedule => false,
+                UpdateJobVerdict::Unschedule => {
+                    info!("Unscheduling job {:?}", job.definition);
+                    false
+                }
             }
         });
     }
