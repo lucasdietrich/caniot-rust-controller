@@ -184,6 +184,7 @@ impl AlarmsService for NgAlarms {
                 .caniot_device_action_inner(None, action, None)
                 .await
                 .map_err(|e| {
+                    log::error!("Error in send_outdoor_alarm_command: {} ({:?})", e, e);
                     Status::internal(format!(
                         "Error in send_outdoor_alarm_command: {} ({:?})",
                         e, e
