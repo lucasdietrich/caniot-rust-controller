@@ -1,6 +1,6 @@
 use chrono::{DateTime, Duration, Utc};
 
-use log::{debug, warn};
+use log::{debug, info, warn};
 
 use crate::{
     caniot::{
@@ -35,7 +35,7 @@ pub struct CaniotDevice {
     pub controller: Option<Box<dyn DeviceControllerWrapperTrait>>,
 
     // Scheduled process
-    jobs: DeviceJobsContext,
+    pub jobs: DeviceJobsContext,
 
     // Last class telemetry values
     pub measures: DeviceMeasures,
@@ -191,7 +191,7 @@ impl CaniotDevice {
                 }
             }
             ResponseData::Attribute { key, value } => {
-                println!(
+                info!(
                     "Received attribute {} with value {} for device {}",
                     key, value, self.did
                 );
@@ -210,51 +210,46 @@ impl CaniotDevice {
     // Process a single device job
     // * Returns the result of the job processing if a job was processed
     // * Returns None if no job was processed
-    pub fn process_one_job(
+    pub fn process_first_job(
         &mut self,
         now: &DateTime<Utc>,
         ctx: &mut ProcessContext,
-        more_jobs: &mut bool,
     ) -> Result<Verdict, DeviceError> {
-        let mut ready_jobs_iterator = self.jobs.monitor_ready_jobs(now);
+        let job = self
+            .jobs
+            .get_first_ready_job(now)
+            .ok_or(DeviceError::NoJobToProcess)?;
 
-        if let Some(job) = ready_jobs_iterator.next() {
-            // Tell the caller that there are more jobs to process
-            *more_jobs = true;
+        // Update stats
+        self.stats.jobs_processed += 1;
 
-            // Update stats
-            self.stats.jobs_processed += 1;
+        debug!("Processing {:?}", job);
 
-            debug!("Processing {:?}", job);
-
-            /* Handle special jobs */
-            match job.definition {
-                DeviceJobDefinition::Scheduled(ref job) => {
-                    if downcast_job_as::<DeviceMeasuresResetJob>(job).is_some() {
-                        self.measures.reset_minmax();
-                    }
+        /* Handle special jobs */
+        match job.definition {
+            DeviceJobDefinition::Scheduled(ref job) => {
+                if downcast_job_as::<DeviceMeasuresResetJob>(job).is_some() {
+                    self.measures.reset_minmax();
                 }
-                _ => {}
-            };
+            }
+            _ => {}
+        };
 
-            let result = if let Some(ref mut inner) = self.controller {
-                inner.wrapper_process_one_job(&job.definition, now, ctx)
-            } else {
-                warn!(
-                    "No controller to process job {:?} for device {}",
-                    job.definition, self.did
-                );
-                Ok(Verdict::None)
-            };
-
-            // Advance the job
-            job.advance();
-
-            // return
-            result
+        let result = if let Some(ref mut inner) = self.controller {
+            inner.wrapper_process_one_job(&job.definition, now, ctx)
         } else {
+            warn!(
+                "No controller to process job {:?} for device {}",
+                job.definition, self.did
+            );
             Ok(Verdict::None)
-        }
+        };
+
+        // Advance the job
+        job.advance();
+
+        // return
+        result
     }
 
     pub fn register_new_jobs(&mut self, jobs_definitions: Vec<Box<dyn JobTrait>>) {

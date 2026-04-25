@@ -347,21 +347,19 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
         now: &DateTime<Utc>,
     ) -> Result<(), CaniotControllerError> {
         let storage = self.storage.clone();
-        for (did, device) in self
+        for device in self
             .devices
-            .iter_mut()
-            .filter(|(_, device)| device.is_expired(now))
+            .values_mut()
+            .filter(|device| device.is_expired(now))
         {
             loop {
                 let mut device_ctx = ProcessContext::new(None, storage.clone());
-                let mut more_jobs = false;
-
-                match device.process_one_job(now, &mut device_ctx, &mut more_jobs) {
+                match device.process_first_job(now, &mut device_ctx) {
                     Ok(verdict) => {
                         match verdict {
                             Verdict::None => {}
                             Verdict::Request(request) => {
-                                let request = Request::new(*did, request);
+                                let request = Request::new(device.did, request);
                                 Self::iface_send_caniot_frame(
                                     &mut self.iface,
                                     &mut self.stats,
@@ -377,14 +375,13 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
 
                         Self::device_update_from_context(device, device_ctx).await?;
                     }
+                    Err(DeviceError::NoJobToProcess) => {
+                        info!("No more job to process for device {}", device.did);
+                        break;
+                    }
                     Err(err) => {
                         error!("Failed to process device job: {}", err);
                     }
-                }
-
-                // If no more jobs, break the loop
-                if !more_jobs {
-                    break;
                 }
             }
         }

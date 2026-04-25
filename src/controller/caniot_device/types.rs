@@ -12,6 +12,8 @@ pub enum DeviceError {
     UnsupportedAction,
     #[error("Unsupported job for device")]
     UnsupportedJob,
+    #[error("No job to process")]
+    NoJobToProcess,
     #[error("No action result")]
     NoActionResult,
     #[error("Not implemented")]

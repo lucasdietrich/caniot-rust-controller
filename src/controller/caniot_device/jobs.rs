@@ -1,4 +1,4 @@
-use std::{fmt::Debug, thread::sleep};
+use std::fmt::Debug;
 
 use as_any::AsAny;
 use chrono::{DateTime, Duration, Utc};
@@ -67,11 +67,25 @@ impl DeviceJobDefinition {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd)]
 enum NextDatetime {
     Immediate,
     Never,
     At(DateTime<Utc>),
+}
+
+impl Ord for NextDatetime {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        match (self, other) {
+            (NextDatetime::Immediate, NextDatetime::Immediate) => std::cmp::Ordering::Equal,
+            (NextDatetime::Immediate, _) => std::cmp::Ordering::Less,
+            (_, NextDatetime::Immediate) => std::cmp::Ordering::Greater,
+            (NextDatetime::Never, NextDatetime::Never) => std::cmp::Ordering::Equal,
+            (NextDatetime::Never, _) => std::cmp::Ordering::Greater,
+            (_, NextDatetime::Never) => std::cmp::Ordering::Less,
+            (NextDatetime::At(dt1), NextDatetime::At(dt2)) => dt1.cmp(dt2),
+        }
+    }
 }
 
 impl NextDatetime {
@@ -100,26 +114,6 @@ impl ExpirableTrait<Duration> for NextDatetime {
                 }
             }
         }
-    }
-}
-
-pub struct JobsIterator<'a> {
-    ready_jobs: std::slice::IterMut<'a, DeviceJobState>,
-}
-
-impl<'a> JobsIterator<'a> {
-    pub fn new(ready_jobs: &'a mut [DeviceJobState]) -> Self {
-        Self {
-            ready_jobs: ready_jobs.iter_mut(),
-        }
-    }
-}
-
-impl<'a> Iterator for JobsIterator<'a> {
-    type Item = &'a mut DeviceJobState;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.ready_jobs.next()
     }
 }
 
@@ -175,12 +169,12 @@ impl DeviceJobState {
         matches!(self.next_occurrence, NextDatetime::Never)
     }
 
+    // Advance the job state to the next event
     pub fn advance(&mut self) {
         if let Some(iterator) = &mut self.iterator {
             let next_dt = iterator
                 .next()
                 .map_or(NextDatetime::Never, NextDatetime::At);
-            println!("Advancing job {:?} to {:?}", self.definition, next_dt);
             self.next_occurrence = next_dt;
         } else {
             match self.definition.get_scheduling() {
@@ -216,9 +210,6 @@ pub struct DeviceJobsContext {
 
     // Keep track of the last time the jobs were evaluated (monitored)
     last_eval: DateTime<Utc>,
-
-    // Optimization to avoid re-evaluating the jobs too often
-    eval_in: Option<Duration>,
 }
 
 impl DeviceJobsContext {
@@ -231,31 +222,28 @@ impl DeviceJobsContext {
             ),
         ];
 
-        let init_eval_in = init_jobs.ttl(&first_eval);
-
         Self {
             last_eval: first_eval,
-            eval_in: init_eval_in,
             scheduled_jobs: init_jobs,
         }
     }
 
-    // Remove outdated jobs and return an iterator over the ready jobs
-    pub fn monitor_ready_jobs(&mut self, now: &DateTime<Utc>) -> JobsIterator<'_> {
+    // Lots of processing happens here
+    pub fn get_first_ready_job(&mut self, now: &DateTime<Utc>) -> Option<&mut DeviceJobState> {
         // Remove outdated jobs
         self.scheduled_jobs.retain_mut(|job| !job.is_outdated());
 
         // Partition the list of jobs in two parts: ready and unready jobs
         let partition_point = partition(&mut self.scheduled_jobs, |job| job.is_ready(now));
 
-        // Split the list in two parts: ready and unready jobs
-        let (ready_jobs, unready_jobs) = self.scheduled_jobs.split_at_mut(partition_point);
+        // sort the ready jobs by their next occurrence (soonest first)
+        self.scheduled_jobs[..partition_point].sort_by_key(|job| job.next_occurrence.clone());
 
-        // Calculate the next evaluation time of unready jobs
-        self.eval_in = unready_jobs.iter().ttl(now);
-
-        // Return iterator over ready jobs
-        JobsIterator::new(ready_jobs)
+        // Return the first ready job if it exists
+        match partition_point {
+            0 => None,
+            _ => self.scheduled_jobs.get_mut(0),
+        }
     }
 
     pub fn register_new_jobs(&mut self, jobs_definitions: Vec<Box<dyn JobTrait>>) {
@@ -268,7 +256,6 @@ impl DeviceJobsContext {
         // Perform the registration + calculation if the jobs changed
         if !new_definitions.is_empty() {
             self.scheduled_jobs.extend(new_definitions);
-            self.eval_in = self.scheduled_jobs.ttl(&self.last_eval);
         }
     }
 
