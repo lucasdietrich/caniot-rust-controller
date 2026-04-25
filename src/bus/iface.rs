@@ -1,4 +1,3 @@
-use log::error;
 use serde::{Deserialize, Serialize};
 
 use socketcan::{CanDataFrame, Error as CanError};

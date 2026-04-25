@@ -12,34 +12,37 @@ use crate::{
     caniot::{self, RequestData, Response, Xps},
     controller::{
         alarms::{actions::SirenAction, types::OutdoorAlarmCommand},
-        ActionResultTrait, ActionTrait, ActionVerdict, ConfigTrait, DeviceAlert,
-        DeviceControllerInfos, DeviceControllerTrait, DeviceError, DeviceJobImpl,
-        PartialConfigTrait, ProcessContext, UpdateJobVerdict, Verdict,
+        ActionResultTrait, ActionTrait, ActionVerdict, ConfigTrait, DeviceControllerInfos,
+        DeviceControllerTrait, DeviceError, DeviceJobImpl, PartialConfigTrait, ProcessContext,
+        SensorAlert, UpdateJobVerdict, Verdict,
     },
     ha::LOCATION_OUTSIDE,
     utils::{
         format_metric,
-        monitorable_state::{MonitorableResultTrait, StateMonitor},
+        monitorable_state::{MonitorableResultTrait, StateMonitor, TimeBoolMonitor},
         SensorLabel,
     },
 };
 
+const LIGHTS_MAX_ON_DURATION: Duration = Duration::seconds(300);
+const SIREN_MAX_ON_DURATION: Duration = Duration::seconds(120);
+
 #[derive(Debug, Clone, Default)]
 pub struct AlarmContext {
-    pub state: StateMonitor<AlarmEnable>,
+    pub alarm_enabled: StateMonitor<AlarmEnable>,
 
     pub last_siren_activation: Option<DateTime<Utc>>,
 
-    pub sabotage: StateMonitor<bool>,
+    pub sabotage: TimeBoolMonitor,
 }
 
 impl AlarmContext {
     pub fn set_enable(&mut self, state: &AlarmEnable) -> Option<AlarmEnable> {
-        self.state.update(state.clone())
+        self.alarm_enabled.update(state.clone())
     }
 
     pub fn is_armed(&self) -> bool {
-        matches!(self.state.as_ref(), AlarmEnable::Armed)
+        matches!(self.alarm_enabled.as_ref(), AlarmEnable::Armed)
     }
 }
 
@@ -64,6 +67,7 @@ pub struct NightLightsContext {
     pub auto_active: bool,
 
     // Desired duration for the lights to stay on when presence is detected
+    #[allow(dead_code)]
     pub desired_duration: Duration,
 }
 
@@ -136,9 +140,14 @@ pub struct AlarmController {
     pub ios: DeviceIOState,
     // ios state
 
-    // general state
-    pub south_detector: StateMonitor<bool>,
-    pub east_detector: StateMonitor<bool>,
+    // general state (inputs monitoring)
+    pub south_detector: TimeBoolMonitor,
+    pub east_detector: TimeBoolMonitor,
+
+    // output monitoring
+    pub siren_monitor: TimeBoolMonitor,
+    pub south_light_monitor: TimeBoolMonitor,
+    pub east_light_monitor: TimeBoolMonitor,
 
     // internal state
     pub alarm: AlarmContext,
@@ -198,12 +207,35 @@ impl AlarmController {
     ) -> Option<RequestData> {
         self.ios = new_state;
 
-        let mut command = OutdoorAlarmCommand::default();
+        let south_detector_result = self
+            .south_detector
+            .update(self.ios.get_south_detector(), now);
+        let east_detector_result = self.east_detector.update(self.ios.get_east_detector(), now);
+        let sabotage_result = self.alarm.sabotage.update(self.ios.get_sabotage(), now);
 
-        let (south_detector_result, east_detector_result, sabotage_result) = (
-            self.east_detector.update(self.ios.get_east_detector()),
-            self.south_detector.update(self.ios.get_south_detector()),
-            self.alarm.sabotage.update(self.ios.get_sabotage()),
+        self.siren_monitor.update(self.ios.is_siren_on(), now);
+        self.south_light_monitor
+            .update(self.ios.get_south_light(), now);
+        self.east_light_monitor
+            .update(self.ios.get_east_light(), now);
+
+        info!("status update - siren: {}, south detector: {}, east detector: {}, sabotage: {}, south light: {}, east light: {}",
+            self.siren_monitor.get(),
+            self.south_detector.get(),
+            self.east_detector.get(),
+            self.alarm.sabotage.get(),
+            self.south_light_monitor.get(),
+            self.east_light_monitor.get(),
+        );
+
+        info!(
+            "time on detectors (sec) - siren: {} east: {}, south: {}, sabotage: {} lights south: {}, east: {}",
+            self.siren_monitor.get_total_time_high(&now).as_seconds_f32(),
+            self.east_detector.get_total_time_high(&now).as_seconds_f32(),
+            self.south_detector.get_total_time_high(&now).as_seconds_f32(),
+            self.alarm.sabotage.get_total_time_low(&now).as_seconds_f32(),
+            self.south_light_monitor.get_total_time_high(&now).as_seconds_f32(),
+            self.east_light_monitor.get_total_time_high(&now).as_seconds_f32(),
         );
 
         let mut detector_triggered = false;
@@ -219,6 +251,7 @@ impl AlarmController {
             self.stats.last_event = Some(*now);
         }
 
+        let mut command = OutdoorAlarmCommand::default();
         let mut trigger_siren = false;
         if detector_triggered {
             info!("Presence detected");
@@ -241,6 +274,8 @@ impl AlarmController {
                 warn!("Sabotage detected while alarm is armed, activating siren");
                 trigger_siren = true;
             }
+        } else if sabotage_result.is_falling() {
+            info!("Sabotage cleared");
         }
 
         if trigger_siren {
@@ -253,6 +288,20 @@ impl AlarmController {
             } else {
                 warn!("Siren activation blocked by minimum interval");
             }
+        }
+
+        // sanity check, if the siren or lamps where high for a too long time, reset them to avoid annoying the neighbor
+        if self.east_light_monitor.time_high_since_last_change(&now) > LIGHTS_MAX_ON_DURATION {
+            warn!("East light has been on for too long, resetting it");
+            command.set_east_light(Xps::Reset);
+        }
+        if self.south_light_monitor.time_high_since_last_change(&now) > LIGHTS_MAX_ON_DURATION {
+            warn!("South light has been on for too long, resetting it");
+            command.set_south_light(Xps::Reset);
+        }
+        if self.siren_monitor.time_high_since_last_change(&now) > SIREN_MAX_ON_DURATION {
+            warn!("Siren has been on for too long, resetting it");
+            command.set_siren(Xps::Reset);
         }
 
         command.has_effect().then(|| command.into_request())
@@ -328,17 +377,17 @@ impl DeviceControllerTrait for AlarmController {
         )
     }
 
-    fn get_alert(&self) -> Option<DeviceAlert> {
+    fn get_alert(&self) -> Option<SensorAlert> {
         if self.ios.is_siren_on() {
-            Some(DeviceAlert::new_warning(
+            Some(SensorAlert::new_warning(
                 "Sirene d'alarme extérieure active",
             ))
         } else if *self.alarm.sabotage {
-            Some(DeviceAlert::new_error(
+            Some(SensorAlert::new_error(
                 "Sabotage d'alarme (extérieure) détecté",
             ))
         } else if self.alarm.is_armed() {
-            Some(DeviceAlert::new_ok("Alarme extérieure active"))
+            Some(SensorAlert::new_ok("Alarme extérieure active"))
         } else {
             None
         }

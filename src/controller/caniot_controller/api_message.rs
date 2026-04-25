@@ -1,7 +1,7 @@
 use tokio::sync::oneshot;
 
 use crate::caniot::{self as ct, DeviceId};
-use crate::controller::device_filtering::DeviceFilter;
+use crate::controller::filtering::SensorFilter;
 use crate::controller::CaniotDeviceInfos;
 use crate::controller::{ActionTrait, DeviceAction};
 
@@ -9,7 +9,7 @@ use super::caniot_devices_controller::CaniotControllerError;
 
 pub enum CaniotApiMessage {
     GetDevices {
-        filter: DeviceFilter,
+        filter: SensorFilter,
         respond_to: oneshot::Sender<Vec<CaniotDeviceInfos>>,
     },
     Query {
@@ -24,8 +24,9 @@ pub enum CaniotApiMessage {
     DeviceAction {
         did: Option<DeviceId>,
         action: DeviceAction,
-        respond_to:
+        respond_to: Option<
             oneshot::Sender<Result<<DeviceAction as ActionTrait>::Result, CaniotControllerError>>,
+        >,
         timeout_ms: Option<u32>,
     },
     DevicesResetSettings {

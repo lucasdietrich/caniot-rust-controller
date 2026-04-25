@@ -2,3 +2,4 @@
 caniot-controller_*.bb
 /caniot.db*
 /.cargo/config.toml
+/tmp

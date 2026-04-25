@@ -93,6 +93,7 @@ impl InnerFrameTrait for ResponseData {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct ErrorData {
     pub error: ErrorCode,
 }

@@ -4,10 +4,7 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use tokio::time::sleep;
 
-use crate::{
-    ha::attic,
-    shared::Shared,
-};
+use crate::{ha::attic, shared::Shared};
 
 #[derive(Debug, Error)]
 pub enum HaError {}
@@ -23,6 +20,7 @@ impl Default for HaConfig {
 
 pub struct Ha {
     shared: Arc<Shared>,
+    #[allow(dead_code)]
     config: HaConfig,
 }
 

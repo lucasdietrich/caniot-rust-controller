@@ -5,7 +5,7 @@ use std::{
 
 use crate::{
     caniot::{self, BoardClassTelemetry, Response},
-    controller::{downcast_job_as, DeviceAlert, JobTrait},
+    controller::{downcast_job_as, JobTrait, SensorAlert},
     database::{SettingsError, SettingsStore},
 };
 
@@ -136,7 +136,7 @@ pub trait DeviceControllerTrait: Send + Debug + Default {
     fn get_infos(&self) -> DeviceControllerInfos;
 
     // Retrieve active alert if any
-    fn get_alert(&self) -> Option<DeviceAlert> {
+    fn get_alert(&self) -> Option<SensorAlert> {
         None
     }
 
@@ -235,7 +235,7 @@ pub trait DeviceControllerWrapperTrait: Send + Debug {
 
     fn wrapper_get_infos(&self) -> DeviceControllerInfos;
 
-    fn wrapper_get_alert(&self) -> Option<DeviceAlert>;
+    fn wrapper_get_alert(&self) -> Option<SensorAlert>;
 
     fn wrapper_get_metrics(&self) -> Vec<String>;
 
@@ -321,7 +321,7 @@ impl<T: DeviceControllerTrait> DeviceControllerWrapperTrait for T {
         self.get_infos()
     }
 
-    fn wrapper_get_alert(&self) -> Option<DeviceAlert> {
+    fn wrapper_get_alert(&self) -> Option<SensorAlert> {
         self.get_alert()
     }
 

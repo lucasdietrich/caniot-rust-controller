@@ -4,6 +4,13 @@ NAME="caniot-controller"
 TARGET="rpi"
 TARGET_ARCH="${TARGET_ARCH:-armv7-unknown-linux-gnueabihf}"
 
+# check if CANIOT_ENV_SOURCED exists
+if [ -z "$CANIOT_ENV_SOURCED" ]; then
+    echo "Error: .env file not sourced. Please source the .env file before running this script."
+    echo "Run 'source .env' to source the .env file."
+    exit 1
+fi
+
 # parse second argument as build type
 if [ "$2" == "release" ]; then
     BUILD_TYPE="release"

@@ -5,7 +5,7 @@ use serde::Serialize;
 
 use crate::{
     caniot::{self, traits::TempSensType},
-    controller::DeviceAlert,
+    controller::SensorAlert,
     utils::{join_labels, DeviceLabel, PrometheusExporterTrait},
 };
 
@@ -35,7 +35,7 @@ pub struct CaniotDeviceInfos {
     pub outside_temp_avg: Option<f32>,
 
     // current alert
-    pub active_alert: Option<DeviceAlert>,
+    pub active_alert: Option<SensorAlert>,
 
     // ui view name
     pub ui_view_name: Option<String>,

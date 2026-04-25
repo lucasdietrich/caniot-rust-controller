@@ -12,6 +12,7 @@ where
     type Instant: Add<D, Output = Self::Instant>; // Instant/timestamp type for which the duration can be added to obtain a new instant
 
     /// Returns whether the object is expirable, i.e. has a time to expire.
+    #[allow(dead_code)]
     fn is_expirable(&self, now: &Self::Instant) -> bool {
         self.ttl(now).is_some()
     }

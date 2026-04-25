@@ -4,6 +4,7 @@ use chrono::{DateTime, Utc};
 
 use crate::{
     caniot::Attribute,
+    controller::sensor_change_events::SensorChangeEvent,
     database::{SettingsStore, Storage},
 };
 
@@ -38,6 +39,9 @@ pub struct ProcessContext<'f> {
     // });
     pub storage_update_future:
         Option<Pin<Box<dyn Future<Output = Result<(), DeviceError>> + Send + 'f>>>,
+
+    // Sensor change event sender
+    pub sensor_change_events: Vec<SensorChangeEvent>,
 }
 
 impl<'f> ProcessContext<'f> {
@@ -49,6 +53,7 @@ impl<'f> ProcessContext<'f> {
             storage,
             update_attributes: HashMap::new(),
             storage_update_future: None,
+            sensor_change_events: vec![],
         }
     }
 

@@ -12,7 +12,7 @@ listen = "0.0.0.0:50051"
 
 [database]
 # connection_string = "postgres://caniot:caniot@localhost/caniot"
-# connection_string = "sqlite://caniot.db"
+connection_string = "sqlite://tmp/caniot.db"
 retry_interval = 1
 # retries = 3
 

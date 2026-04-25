@@ -1,9 +1,10 @@
 pub mod alert;
 pub mod controller;
-pub mod device_filtering;
+pub mod filtering;
 pub mod init;
 pub mod stats;
 
-pub use alert::{cmp_severity, DeviceAlert, DeviceAlertType};
+#[allow(unused_imports)]
+pub use alert::{cmp_severity, DeviceAlertType, SensorAlert};
 
 pub use stats::*;

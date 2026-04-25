@@ -17,7 +17,8 @@ use crate::controller::caniot_controller::api_message::CaniotApiMessage;
 use crate::controller::caniot_controller::auto_attach::device_init_controller;
 use crate::controller::caniot_controller::pending_action::PendingAction;
 use crate::controller::caniot_controller::pending_query::{PendingQuery, PendingQueryTenant};
-use crate::controller::device_filtering::DeviceFilter;
+use crate::controller::filtering::SensorFilter;
+use crate::controller::sensor_change_events::SensorChangeEvent;
 use crate::controller::{
     ActionVerdict, CaniotConfig, CaniotDevice, CaniotDeviceInfos, CaniotDevicesConfig,
     DeviceAction, DeviceActionResult, DeviceError, ProcessContext, Verdict,
@@ -100,6 +101,9 @@ pub struct CaniotDevicesController<IF: CanInterfaceTrait> {
     // caniot devices
     pending_queries: Vec<PendingQuery>,
     devices: HashMap<DeviceId, CaniotDevice>, // caniot devices
+
+    // pending sensor change events
+    pending_sensor_change_events: Vec<SensorChangeEvent>,
 }
 
 impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
@@ -116,6 +120,7 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
 
             pending_queries: Vec::new(),
             devices: HashMap::new(),
+            pending_sensor_change_events: Vec::new(),
         })
     }
 
@@ -297,6 +302,11 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
             }
         }
 
+        // unstack sensor change events unordered
+        while let Some(event) = device_ctx.sensor_change_events.pop() {
+            self.pending_sensor_change_events.push(event);
+        }
+
         Self::device_update_from_context(device, device_ctx).await?;
 
         // Let the device compute the action result if any
@@ -361,6 +371,10 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
                             }
                         }
 
+                        while let Some(event) = device_ctx.sensor_change_events.pop() {
+                            self.pending_sensor_change_events.push(event);
+                        }
+
                         Self::device_update_from_context(device, device_ctx).await?;
                     }
                     Err(err) => {
@@ -379,7 +393,7 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
     }
 
     // Return a list of devices with given filter
-    fn get_devices_infos(&self, filter: DeviceFilter) -> Vec<CaniotDeviceInfos> {
+    fn get_devices_infos(&self, filter: SensorFilter) -> Vec<CaniotDeviceInfos> {
         let filter_function = filter.get_filter_function::<CaniotDevice>();
         let sort_function = filter.get_sort_function::<CaniotDevice>();
         self.devices
@@ -425,14 +439,18 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
         &mut self,
         did: Option<DeviceId>,
         action: DeviceAction,
-        respond_to: Sender<Result<DeviceActionResult, CaniotControllerError>>,
+        respond_to: Option<Sender<Result<DeviceActionResult, CaniotControllerError>>>,
         timeout_ms: Option<u32>,
     ) {
         let result = self.handle_api_device_action_inner(did, action).await;
 
         match result {
             Ok(ActionResultOrPending::Result(result)) => {
-                let _ = respond_to.send(Ok(result));
+                if let Some(respond_to) = respond_to {
+                    let _ = respond_to.send(Ok(result));
+                } else {
+                    // No response expected, do nothing
+                }
             }
             Ok(ActionResultOrPending::Pending(action, request)) => {
                 let tenant = PendingQueryTenant::Action(PendingAction::new(action, respond_to));
@@ -450,7 +468,11 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
                 .await;
             }
             Err(err) => {
-                let _ = respond_to.send(Err(err));
+                if let Some(respond_to) = respond_to {
+                    let _ = respond_to.send(Err(err));
+                } else {
+                    // No response expected, do nothing
+                }
             }
         }
     }
@@ -481,7 +503,11 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
         }
         .map_err(CaniotControllerError::from);
 
+        let mut events = device_ctx.sensor_change_events.clone();
         Self::device_update_from_context(device, device_ctx).await?;
+        while let Some(event) = events.pop() {
+            self.pending_sensor_change_events.push(event);
+        }
 
         result
     }
@@ -524,6 +550,9 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
                 for device in self.devices.values_mut() {
                     let mut ctx = ProcessContext::new(None, self.storage.clone());
                     device.reset_settings(&mut ctx);
+                    while let Some(event) = ctx.sensor_change_events.pop() {
+                        self.pending_sensor_change_events.push(event);
+                    }
                     Self::device_update_from_context(device, ctx).await?;
                 }
                 let _ = respond_to.send(Ok(()));
@@ -578,5 +607,9 @@ impl<IF: CanInterfaceTrait> CaniotDevicesController<IF> {
         }
 
         sleep_time
+    }
+
+    pub fn pop_pending_sensor_change_events(&mut self) -> Vec<SensorChangeEvent> {
+        self.pending_sensor_change_events.drain(..).collect()
     }
 }

@@ -128,10 +128,12 @@ pub trait AsPayload<K: PayloadType>:
         self.clone().into()
     }
 
+    #[allow(dead_code)]
     fn to_raw_vec(&self) -> Vec<u8> {
         self.to_payload().into_raw_vec()
     }
 
+    #[allow(dead_code)]
     fn try_from_raw(data: &[u8]) -> Result<Self, ProtocolError> {
         Payload::<K>::try_from(data).and_then(|payload| Self::try_from(&payload))
     }

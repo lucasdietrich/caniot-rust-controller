@@ -6,10 +6,14 @@ import { Empty } from "google-protobuf/google/protobuf/empty_pb";
 
 import { CoproServiceClient } from "@caniot-controller/caniot-api-grpc-web/api/Ng_coproServiceClientPb";
 import {
+  BleFirmwareVersion,
+  BleDevicesList,
+  BlePairingAdvParams,
   CoproAlert,
   CoproDevice,
   CoproDevicesList,
   GetListParams,
+  PairingAdvState,
 } from "@caniot-controller/caniot-api-grpc-web/api/ng_copro_pb";
 
 class CoproStore extends EventEmitter {
@@ -67,6 +71,60 @@ class CoproStore extends EventEmitter {
 
       HandleSuccess("CoproStore::GetCoproAlert succeeded");
 
+      callbackFunc(resp);
+    });
+  };
+
+  getBleDevices = (callbackFunc: (resp: BleDevicesList) => void) => {
+    this.client.getBleDevices(new Empty(), null, (err, resp) => {
+      if (err !== null) {
+        HandleError(err);
+        return;
+      }
+      callbackFunc(resp);
+    });
+  };
+
+  bleRemoveBonds = (callbackFunc: () => void) => {
+    this.client.bleRemoveBonds(new Empty(), null, (err, _resp) => {
+      if (err !== null) {
+        HandleError(err);
+        return;
+      }
+      HandleSuccess("CoproStore::BleRemoveBonds succeeded");
+      callbackFunc();
+    });
+  };
+
+  bleEnablePairingAdv = (durationS: number, callbackFunc: () => void) => {
+    const params = new BlePairingAdvParams();
+    params.setDurationS(durationS);
+    this.client.bleEnablePairingAdv(params, null, (err, _resp) => {
+      if (err !== null) {
+        HandleError(err);
+        return;
+      }
+      HandleSuccess("CoproStore::BleEnablePairingAdv succeeded");
+      callbackFunc();
+    });
+  };
+
+  getPairingAdvState = (callbackFunc: (resp: PairingAdvState) => void) => {
+    this.client.getPairingAdvState(new Empty(), null, (err, resp) => {
+      if (err !== null) {
+        HandleError(err);
+        return;
+      }
+      callbackFunc(resp);
+    });
+  };
+
+  getBleFirmwareVersion = (callbackFunc: (resp: BleFirmwareVersion) => void) => {
+    this.client.getBleFirmwareVersion(new Empty(), null, (err, resp) => {
+      if (err !== null) {
+        HandleError(err);
+        return;
+      }
       callbackFunc(resp);
     });
   };

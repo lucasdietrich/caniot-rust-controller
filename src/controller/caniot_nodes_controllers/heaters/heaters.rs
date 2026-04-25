@@ -3,8 +3,8 @@ use chrono::{DateTime, Utc};
 use crate::{
     caniot::{self, BoardClassTelemetry, Endpoint, HeatingMode, Response},
     controller::{
-        ActionResultTrait, ActionTrait, ActionVerdict, DeviceAlert, DeviceControllerInfos,
-        DeviceControllerTrait, DeviceError, DeviceJobImpl, ProcessContext, Verdict,
+        ActionResultTrait, ActionTrait, ActionVerdict, DeviceControllerInfos,
+        DeviceControllerTrait, DeviceError, DeviceJobImpl, ProcessContext, SensorAlert, Verdict,
     },
     ha::LOCATION_ATTIC,
 };
@@ -19,6 +19,7 @@ pub struct HeatersController {
 
     // Monitor the number of received telemetry frames for the status endpoint "ApplicationDefault"
     pub status_telemetry_rx_count: usize,
+    #[allow(dead_code)]
     pub status_telemetry_req_sent: bool,
 }
 
@@ -124,15 +125,15 @@ impl DeviceControllerTrait for HeatersController {
         Ok(Verdict::default())
     }
 
-    fn get_alert(&self) -> Option<DeviceAlert> {
+    fn get_alert(&self) -> Option<SensorAlert> {
         if self.status_telemetry_rx_count == 0 {
             Some(
-                DeviceAlert::new_warning("Etat du chauffage inconnu")
+                SensorAlert::new_warning("Etat du chauffage inconnu")
                     .with_description("Pas de télémesure reçue pour l'état du chauffage"),
             )
         } else if !self.status.power_status {
             Some(
-                DeviceAlert::new_warning("Chauffage non alimenté")
+                SensorAlert::new_warning("Chauffage non alimenté")
                     .with_description("Pas de présence tension sur le chauffage"),
             )
         } else if self
@@ -142,7 +143,7 @@ impl DeviceControllerTrait for HeatersController {
             .any(|&mode| mode.heater_on(false))
         {
             Some(
-                DeviceAlert::new_notification("Chauffage allumé")
+                SensorAlert::new_notification("Chauffage allumé")
                     .with_description("Au moins un chauffage est allumé"),
             )
         } else {

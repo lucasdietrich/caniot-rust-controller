@@ -97,7 +97,7 @@ impl Storage {
         Ok(())
     }
 
-    pub fn get_settings_store(&self) -> SettingsStore {
+    pub fn get_settings_store(&self) -> SettingsStore<'_> {
         SettingsStore::new(&self.pool)
     }
 }

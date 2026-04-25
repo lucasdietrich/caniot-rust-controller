@@ -243,7 +243,7 @@ impl DeviceJobsContext {
     }
 
     // Remove outdated jobs and return an iterator over the ready jobs
-    pub fn monitor_ready_jobs(&mut self, now: &DateTime<Utc>) -> JobsIterator {
+    pub fn monitor_ready_jobs(&mut self, now: &DateTime<Utc>) -> JobsIterator<'_> {
         // Remove outdated jobs
         self.scheduled_jobs.retain_mut(|job| !job.is_outdated());
 

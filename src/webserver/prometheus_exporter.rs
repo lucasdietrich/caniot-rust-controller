@@ -1,5 +1,5 @@
 use crate::{
-    controller::copro_controller::device::BleDeviceType,
+    controller::copro_controller::sensor::BleSersorType,
     shared::SharedHandle,
     utils::{DeviceLabel, PrometheusExporterTrait},
 };
@@ -41,7 +41,7 @@ pub async fn export(shared: &SharedHandle) -> String {
         let name_label = DeviceLabel::Name(device_infos.name.clone());
         let mut device_labels = vec![&name_label, &medium_label];
 
-        let mac_label_opt = (device_infos.device_type != BleDeviceType::LinkyTIC)
+        let mac_label_opt = (device_infos.sensor_type != BleSersorType::LinkyTIC)
             .then(|| DeviceLabel::Mac(device_infos.ble_addr.mac_string()));
         if let Some(mac_label) = mac_label_opt.as_ref() {
             device_labels.push(mac_label);

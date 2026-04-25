@@ -23,6 +23,7 @@ pub enum TempSensType {
 }
 
 pub trait ClassTelemetryTrait: AsPayload<Ty> {
+    #[allow(dead_code)]
     fn to_response(self) -> caniot::ResponseData {
         caniot::ResponseData::Telemetry {
             endpoint: caniot::Endpoint::BoardControl,

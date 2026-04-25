@@ -1,6 +1,6 @@
 [package]
 name = "caniot-controller"
-version = "0.2.3"
+version = "0.3.0"
 edition = "2021"
 description = "CANIOT Rust Controller"
 homepage = "https://github.com/lucasdietrich/caniot-rust-controller.git"
@@ -26,10 +26,7 @@ futures-util = "0.3"
 
 # CAN interface
 
-socketcan = { git = "https://github.com/socketcan-rs/socketcan-rs.git", rev = "c3004f0d7c600cd3964cd8655fd26f670d7c87e7", features = [
-    "tokio",
-    "async-std",
-] }
+socketcan = { version = "3.5.0", features = ["tokio", "async-std"] }
 embedded-can = "0.4"
 # grpc
 tonic = "0.12"
@@ -38,7 +35,12 @@ prost = "0.13"
 prost-types = "0.13"
 
 # database (always sqlite)
-sqlx = { version = "0.8.2", features = ["runtime-tokio", "macros", "sqlite"] }
+sqlx = { version = "0.8.2", features = [
+    "runtime-tokio",
+    "macros",
+
+    "sqlite-unbundled",
+] }
 
 # Webserver
 rocket = { version = "0.5.1", features = ["json"] }
@@ -71,7 +73,7 @@ as-any = "0.3"
 # BLE can
 [dependencies.ble-copro-stream-server]
 git = "https://github.com/lucasdietrich/zephyr-linux-ble-copro.git"
-rev = "9f462c90b3b7cfb2229270d4bae113665be7a40c"
+rev = "883b2704578d9214571ac23c5ae348aeb82955c0"
 # path = "/home/lucas/zephyrproject-ble/zephyr-linux-ble-copro/ble-copro-stream-server-rs"
 optional = true
 features = ["tcp-keep-alive", "chrono"]

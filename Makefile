@@ -38,12 +38,13 @@ deploy_config:
 
 TARGET_ARCH ?= armv7-unknown-linux-gnueabihf
 TARGET ?= rpi3dev
+BUILDDIR := $(or $(CARGO_RUST_TARGET),target)
 
 deploy_bin_release: target_release
-	scp target/$(TARGET_ARCH)/release/caniot-controller $(TARGET):~
+	scp $(BUILDDIR)/$(TARGET_ARCH)/release/caniot-controller $(TARGET):~
 
 deploy_bin_debug: target
-	scp target/$(TARGET_ARCH)/debug/caniot-controller $(TARGET):~
+	scp $(BUILDDIR)/$(TARGET_ARCH)/debug/caniot-controller $(TARGET):~
 
 echo:
 	echo "TARGET_ARCH: $(TARGET_ARCH)"

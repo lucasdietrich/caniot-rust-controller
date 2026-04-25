@@ -66,6 +66,8 @@ function HomeView({ appContext, refreshInterval = 5000, uiHomeBLEDevices = false
 
   const [coproAlert, setCoproAlert] = useState<CoproAlert | undefined>(undefined);
 
+  const [bleCoproFirmwareVersion, setBleCoproFirmwareVersion] = useState<string | undefined>(undefined);
+
   const [time, setTime] = useState(Date.now());
 
   const navigate = useNavigate();
@@ -162,6 +164,10 @@ function HomeView({ appContext, refreshInterval = 5000, uiHomeBLEDevices = false
 
     coproStore.getCoproAlert((resp: CoproAlert) => {
       setCoproAlert(resp);
+    });
+
+    coproStore.getBleFirmwareVersion((resp) => {
+      setBleCoproFirmwareVersion(resp.hasVersion() ? resp.getVersion() : undefined);
     });
 
     const intervalRefresh = setInterval(() => setTime(Date.now()), refreshInterval);
@@ -412,7 +418,7 @@ function HomeView({ appContext, refreshInterval = 5000, uiHomeBLEDevices = false
             <SoftwareInfosCard infos={infos?.getSoftware()} isMobile={appContext.isMobile} />
           </Col>
           <Col xs={24} xl={12} style={{ marginBottom: 8 }}>
-            <FirmwareInfosCard infos={infos?.getFirmware()} isMobile={appContext.isMobile} />
+            <FirmwareInfosCard infos={infos?.getFirmware()} bleCoproFirmwareVersion={bleCoproFirmwareVersion} isMobile={appContext.isMobile} />
           </Col>
           <Col xs={24} xl={12} style={{ marginBottom: 8 }}>
             <ControllerStatsCard
