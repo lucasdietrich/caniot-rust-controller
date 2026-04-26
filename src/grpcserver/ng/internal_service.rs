@@ -218,6 +218,7 @@ impl InternalService for NgInternal {
                 .await
         }
 
+        #[cfg(feature = "ble-copro")]
         if request.copro_measures_stats {
             self.shared
                 .controller_handle

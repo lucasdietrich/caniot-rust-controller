@@ -4,17 +4,17 @@ use chrono::Utc;
 use thiserror::Error;
 use tokio::{select, sync::mpsc, time::sleep};
 
+#[cfg(feature = "ble-copro")]
+use crate::controller::copro_controller::CoproController;
 use crate::{
     bus::CanInterfaceTrait,
     controller::{
         caniot_controller::caniot_devices_controller::{
             CaniotControllerError, CaniotDevicesController,
         },
-        copro_controller::CoproController,
         handle::{self, ControllerApiMessage},
         CaniotConfig,
     },
-    coprocessor::CoproHandle,
     database::Storage,
     shutdown::Shutdown,
 };
@@ -33,7 +33,8 @@ pub enum ControllerError {
 
 pub struct Controller<IF: CanInterfaceTrait> {
     caniot: CaniotDevicesController<IF>,
-    copro: CoproController,
+    #[cfg(feature = "ble-copro")]
+    copro: crate::controller::copro_controller::CoproController,
 
     shutdown: Shutdown,
 
@@ -49,7 +50,7 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
     pub(crate) fn new(
         iface: IF,
         caniot_config: CaniotConfig,
-        copro_handle: CoproHandle,
+        #[cfg(feature = "ble-copro")] copro_handle: crate::coprocessor::CoproHandle,
         storage: Arc<Storage>,
         shutdown: Shutdown,
     ) -> Result<Self, ControllerError> {
@@ -62,7 +63,12 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
 
         Ok(Self {
             caniot: CaniotDevicesController::new(iface, caniot_config, storage)?,
-            copro: CoproController::new(copro_handle, controller_handle.clone())?,
+            #[cfg(feature = "ble-copro")]
+            copro: CoproController::new(
+                #[cfg(feature = "ble-copro")]
+                copro_handle,
+                controller_handle.clone(),
+            )?,
             api_handle: controller_handle,
             api_receiver: receiver,
             shutdown,
@@ -83,6 +89,7 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
 
             let sleep_time = self.caniot.loop_process(&sys_now, &utc_now).await;
 
+            #[cfg(feature = "ble-copro")]
             select! {
                 Some(frame) = self.caniot.iface.recv_poll() => {
                     self.caniot.handle_can_frame(frame).await;
@@ -108,6 +115,24 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
                 },
             }
 
+            #[cfg(not(feature = "ble-copro"))]
+            select! {
+                Some(frame) = self.caniot.iface.recv_poll() => {
+                    self.caniot.handle_can_frame(frame).await;
+                },
+                Some(message) = self.api_receiver.recv() => {
+                    let _ = self.handle_api_message(message).await;
+                },
+                _ = self.shutdown.recv() => {
+                    warn!("Received shutdown signal, exiting ...");
+                    break;
+                }
+                _ = sleep(sleep_time) => {
+                    // Timeout of pending queries handled in handle_pending_queries_timeout()
+                },
+            }
+
+            #[cfg(feature = "ble-copro")]
             for event in self.caniot.pop_pending_sensor_change_events() {
                 self.copro.notify_sensor_change_event(event).await;
             }
@@ -135,6 +160,7 @@ impl<IF: CanInterfaceTrait> Controller<IF> {
             ControllerApiMessage::CaniotMessage(caniot_message) => {
                 self.caniot.handle_api_message(caniot_message).await?;
             }
+            #[cfg(feature = "ble-copro")]
             ControllerApiMessage::CoprocessorMessage(copro_message) => {
                 self.copro.handle_api_message(copro_message)?;
             }

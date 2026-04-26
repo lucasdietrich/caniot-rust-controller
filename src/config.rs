@@ -5,7 +5,6 @@ use toml;
 
 use crate::bus::CanConfig;
 use crate::controller::CaniotConfig;
-use crate::coprocessor::CoproConfig;
 use crate::database::DatabaseConfig;
 use crate::ha::ha::HaConfig;
 use crate::ui::UiConfig;
@@ -18,7 +17,8 @@ pub struct AppConfig {
     pub ui: UiConfig,
     pub can: CanConfig,
     pub caniot: CaniotConfig,
-    pub copro: CoproConfig,
+    #[cfg(feature = "ble-copro")]
+    pub copro: crate::coprocessor::CoproConfig,
     pub web: WebserverConfig,
     pub database: DatabaseConfig,
     pub grpc: GrpcConfig,

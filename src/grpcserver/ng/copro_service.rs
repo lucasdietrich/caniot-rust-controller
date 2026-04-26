@@ -9,6 +9,7 @@ use crate::{
             sensor::BleSensor,
         },
         filtering::SensorFilter,
+        SensorAlert,
     },
     grpcserver::utc_to_prost_timestamp,
     shared::SharedHandle,
@@ -134,7 +135,7 @@ impl CoproService for NgCopro {
         &self,
         _req: tonic::Request<()>,
     ) -> Result<tonic::Response<m::CoproAlert>, tonic::Status> {
-        let alert = self.shared.controller_handle.get_copro_alert().await;
+        let alert: Option<SensorAlert> = self.shared.controller_handle.get_copro_alert().await;
 
         Ok(tonic::Response::new(m::CoproAlert {
             active_alert: alert.as_ref().map(|a| a.into()),

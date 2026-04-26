@@ -16,6 +16,7 @@ pub async fn control_attic_heaters(shared: &Arc<Shared>) {
     {
         // debug!("CANIOT {:#?}", caniot);
 
+        #[cfg(feature = "ble-copro")]
         if let Some(_ble) = shared
             .controller_handle
             .get_copro_devices_by_filter(filter)

@@ -8,6 +8,7 @@ mod bus;
 mod caniot;
 mod config;
 mod controller;
+#[cfg(feature = "ble-copro")]
 mod coprocessor;
 mod database;
 mod grpcserver;

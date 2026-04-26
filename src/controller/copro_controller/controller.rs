@@ -20,11 +20,12 @@ use crate::{
         sensor_change_events::SensorChangeEvent,
         GarageAction, GarageDoorCommand, SensorAlert,
     },
-    coprocessor::{
-        coprocessor::{CoproStreamChannelStatus, TxCoproMessage},
-        CoproHandle, RxCoproMessage,
-    },
     utils::{PrometheusExporterTrait, PrometheusNoLabel},
+};
+
+use crate::coprocessor::{
+    coprocessor::{CoproStreamChannelStatus, TxCoproMessage},
+    CoproHandle, RxCoproMessage,
 };
 
 use chrono::{DateTime, Utc};

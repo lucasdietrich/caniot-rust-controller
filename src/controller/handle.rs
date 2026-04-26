@@ -6,6 +6,8 @@ use chrono::{DateTime, Utc};
 use tokio::sync::{mpsc, oneshot};
 
 use crate::caniot::{self as ct, DeviceId};
+#[cfg(feature = "ble-copro")]
+use crate::controller::{copro_controller::api_message::CoproApiMessage, SensorAlert};
 use serde::Serialize;
 
 #[cfg(feature = "ble-copro")]
@@ -18,10 +20,8 @@ use super::{
     caniot_controller::{
         api_message::CaniotApiMessage, caniot_devices_controller::CaniotControllerError,
     },
-    copro_controller::api_message::CoproApiMessage,
     filtering::{FilterCriteria, SensorFilter},
     ActionTrait, CaniotDeviceInfos, ControllerStats, DeviceAction, DeviceActionResult, DeviceStats,
-    SensorAlert,
 };
 
 pub enum ControllerApiMessage {
@@ -29,6 +29,7 @@ pub enum ControllerApiMessage {
         respond_to: oneshot::Sender<ControllerStats>,
     },
     CaniotMessage(CaniotApiMessage),
+    #[cfg(feature = "ble-copro")]
     CoprocessorMessage(CoproApiMessage),
 }
 

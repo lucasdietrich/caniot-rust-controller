@@ -1,5 +1,4 @@
 use crate::{
-    controller::copro_controller::sensor::BleSersorType,
     shared::SharedHandle,
     utils::{DeviceLabel, PrometheusExporterTrait},
 };
@@ -8,15 +7,20 @@ pub async fn export(shared: &SharedHandle) -> String {
     let mut buf = String::new();
 
     let caniot_controller_stats = shared.controller_handle.get_controller_stats().await;
+    buf.push_str(&caniot_controller_stats.export(&[]));
     let caniot_devices_infos = shared
         .controller_handle
         .get_caniot_devices_infos_list()
         .await;
-    let copro_controller_stats = shared.controller_handle.get_copro_controller_stats().await;
-    let ble_devices = shared.controller_handle.get_copro_devices_list().await;
 
-    buf.push_str(&caniot_controller_stats.export(&[]));
-    buf.push_str(&copro_controller_stats.export(&[]));
+    #[cfg(feature = "ble-copro")]
+    buf.push_str(
+        &shared
+            .controller_handle
+            .get_copro_controller_stats()
+            .await
+            .export(&[]),
+    );
 
     let medium_label = DeviceLabel::Medium("CAN".to_string());
     for device_infos in caniot_devices_infos {
@@ -36,18 +40,23 @@ pub async fn export(shared: &SharedHandle) -> String {
         buf.push_str(&device_infos.export(&device_labels));
     }
 
-    let medium_label = DeviceLabel::Medium("BLE".to_string());
-    for device_infos in ble_devices {
-        let name_label = DeviceLabel::Name(device_infos.name.clone());
-        let mut device_labels = vec![&name_label, &medium_label];
+    #[cfg(feature = "ble-copro")]
+    {
+        use crate::controller::copro_controller::sensor::BleSersorType;
+        let medium_label = DeviceLabel::Medium("BLE".to_string());
+        let ble_devices = shared.controller_handle.get_copro_devices_list().await;
+        for device_infos in ble_devices {
+            let name_label = DeviceLabel::Name(device_infos.name.clone());
+            let mut device_labels = vec![&name_label, &medium_label];
 
-        let mac_label_opt = (device_infos.sensor_type != BleSersorType::LinkyTIC)
-            .then(|| DeviceLabel::Mac(device_infos.ble_addr.mac_string()));
-        if let Some(mac_label) = mac_label_opt.as_ref() {
-            device_labels.push(mac_label);
+            let mac_label_opt = (device_infos.sensor_type != BleSersorType::LinkyTIC)
+                .then(|| DeviceLabel::Mac(device_infos.ble_addr.mac_string()));
+            if let Some(mac_label) = mac_label_opt.as_ref() {
+                device_labels.push(mac_label);
+            }
+
+            buf.push_str(&device_infos.export(&device_labels));
         }
-
-        buf.push_str(&device_infos.export(&device_labels));
     }
 
     buf

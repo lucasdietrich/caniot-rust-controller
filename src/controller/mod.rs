@@ -2,6 +2,7 @@ pub mod caniot_controller;
 pub mod caniot_device;
 pub mod caniot_nodes_controllers;
 pub mod config;
+#[cfg(feature = "ble-copro")]
 pub mod copro_controller;
 pub mod core;
 pub mod handle;
