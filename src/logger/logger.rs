@@ -32,13 +32,6 @@ fn parse_level() -> LevelFilter {
 }
 
 pub fn init_logger() {
-    let mut modules = HashMap::<&str, LevelFilter>::new();
-
-    modules.insert("rocket", LevelFilter::Warn);
-    modules.insert("caniot_rust_controller", LevelFilter::Debug);
-    modules.insert("hyper", LevelFilter::Info);
-    modules.insert("sqlx", LevelFilter::Info);
-
     let global_level = parse_level();
 
     if env::var("LOG_TO_SYSLOG").ok().as_deref() == Some("1") {
@@ -67,6 +60,13 @@ pub fn init_logger() {
             .format_target(FORMAT_TARGET)
             .format_timestamp_millis()
             .filter_level(global_level);
+
+        let mut modules = HashMap::<&str, LevelFilter>::new();
+
+        modules.insert("rocket", LevelFilter::Warn);
+        modules.insert("caniot_rust_controller", LevelFilter::Debug);
+        modules.insert("hyper", LevelFilter::Info);
+        modules.insert("sqlx", LevelFilter::Info);
 
         for (module, level) in modules {
             builder.filter_module(module, level);
