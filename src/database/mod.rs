@@ -1,5 +1,4 @@
 pub mod db;
-pub mod setting;
 pub mod settings_store;
 
 pub use db::*;
