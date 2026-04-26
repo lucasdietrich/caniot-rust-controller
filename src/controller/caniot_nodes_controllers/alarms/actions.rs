@@ -2,14 +2,14 @@ use crate::{caniot::Xps, controller::ActionTrait};
 
 use super::{config::AlarmPartialConfig, outdoor::AlarmControllerReport};
 
-#[derive(Debug, Clone, Default, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Default, Eq, PartialEq)]
 pub enum AlarmEnable {
     #[default]
     Disarmed,
     Armed,
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Copy, Default)]
 pub enum LightAction {
     #[default]
     None,

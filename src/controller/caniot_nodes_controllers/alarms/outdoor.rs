@@ -29,6 +29,7 @@ const SIREN_MAX_ON_DURATION: Duration = Duration::seconds(120);
 
 #[derive(Debug, Clone, Default)]
 pub struct AlarmContext {
+    // Tell if the alarm is enabled (i.e armed)
     pub alarm_enabled: StateMonitor<AlarmEnable>,
 
     pub last_siren_activation: Option<DateTime<Utc>>,
@@ -37,8 +38,9 @@ pub struct AlarmContext {
 }
 
 impl AlarmContext {
-    pub fn set_enable(&mut self, state: &AlarmEnable) -> Option<AlarmEnable> {
-        self.alarm_enabled.update(state.clone())
+    pub fn set_enable(&mut self, state: AlarmEnable) -> Option<AlarmEnable> {
+        log::info!("Arming alarm {}", state == AlarmEnable::Armed);
+        self.alarm_enabled.update(state)
     }
 
     pub fn is_armed(&self) -> bool {
@@ -82,8 +84,8 @@ impl Default for NightLightsContext {
 }
 
 impl NightLightsContext {
-    #[allow(dead_code)]
     pub fn set_auto_active(&mut self, state: bool) {
+        log::info!("Setting night lights auto mode to {}", state);
         self.auto_active = state;
     }
 
@@ -98,6 +100,9 @@ pub struct DeviceIOState {
     pub detectors: [bool; 2], // east, south (true if presence detected)
     pub lights: [bool; 2],    // south, east (true if lights are on)
     pub sabotage: bool,       // false if sabotage detected
+
+    pub siren_pulse_in_progress: bool, // true if a pulse on the siren output is in progress (used to track the state during the pulse duration)
+    pub lights_pulse_in_progress: [bool; 2], // true if a pulse on the lights outputs is in progress (used to track the state during the pulse duration)
 }
 
 impl DeviceIOState {
@@ -219,7 +224,8 @@ impl AlarmController {
         self.east_light_monitor
             .update(self.ios.get_east_light(), now);
 
-        info!("status update - siren: {}, south detector: {}, east detector: {}, sabotage: {}, south light: {}, east light: {}",
+        info!(
+            "siren: {} S det: {} E det: {} sab: {} S light: {} E light: {}",
             self.siren_monitor.get(),
             self.south_detector.get(),
             self.east_detector.get(),
@@ -229,13 +235,16 @@ impl AlarmController {
         );
 
         info!(
-            "time on detectors (sec) - siren: {} east: {}, south: {}, sabotage: {} lights south: {}, east: {}",
+            "time on detectors (sec) - siren: {} E: {}, S: {}, sab: {} lights S: {}, E: {} pulse in progress siren: {} lights S: {}, E: {}",
             self.siren_monitor.get_total_time_high(&now).as_seconds_f32(),
             self.east_detector.get_total_time_high(&now).as_seconds_f32(),
             self.south_detector.get_total_time_high(&now).as_seconds_f32(),
             self.alarm.sabotage.get_total_time_low(&now).as_seconds_f32(),
             self.south_light_monitor.get_total_time_high(&now).as_seconds_f32(),
             self.east_light_monitor.get_total_time_high(&now).as_seconds_f32(),
+            self.ios.siren_pulse_in_progress,
+            self.ios.lights_pulse_in_progress[0],
+            self.ios.lights_pulse_in_progress[1],
         );
 
         let mut detector_triggered = false;
@@ -434,7 +443,7 @@ impl DeviceControllerTrait for AlarmController {
                         AutoAction::Enable => AlarmEnable::Armed,
                         AutoAction::Disable => AlarmEnable::Disarmed,
                     };
-                    self.alarm.set_enable(&action);
+                    self.alarm.set_enable(action);
                 }
                 AlarmJob::DailyAuto(_, AutoDevice::Lights, lights_action) => {
                     self.night_lights
@@ -452,6 +461,7 @@ impl DeviceControllerTrait for AlarmController {
         match job {
             AlarmJob::DailyAuto(time, AutoDevice::Alarm, action) => {
                 if !self.config.auto_alarm_enable {
+                    self.alarm.set_enable(AlarmEnable::Disarmed);
                     return UpdateJobVerdict::Unschedule;
                 } else if (*action == AutoAction::Enable)
                     && (self.config.auto_alarm_enable_time != *time)
@@ -465,6 +475,7 @@ impl DeviceControllerTrait for AlarmController {
             }
             AlarmJob::DailyAuto(time, AutoDevice::Lights, action) => {
                 if !self.config.auto_lights_enable {
+                    self.night_lights.set_auto_active(false);
                     return UpdateJobVerdict::Unschedule;
                 } else if (*action == AutoAction::Enable)
                     && (self.config.auto_lights_enable_time != *time)
@@ -491,14 +502,14 @@ impl DeviceControllerTrait for AlarmController {
             Action::GetConfig => {}
             Action::SetConfig(partial) => self.patch_config(partial.clone(), ctx)?,
             Action::SetAlarm(state) => {
-                let set_alarm_result = self.alarm.set_enable(state);
+                let set_alarm_result = self.alarm.set_enable(*state);
                 if set_alarm_result.is_falling() {
                     let mut command = OutdoorAlarmCommand::default();
                     command.set_siren(Xps::Reset);
                     return Ok(ActionVerdict::ActionPendingOn(command.into_request()));
                 } else if set_alarm_result.is_rising() {
                     if self.ios.sabotage {
-                        self.alarm.set_enable(&AlarmEnable::Disarmed);
+                        self.alarm.set_enable(AlarmEnable::Disarmed);
                         return Ok(ActionVerdict::ActionRejected(
                             "Cannot arm alarm while sabotage detected".to_string(),
                         ));
@@ -540,6 +551,8 @@ impl DeviceControllerTrait for AlarmController {
                 detectors: [telemetry.in1, telemetry.in2],
                 lights: [telemetry.oc1, telemetry.oc2],
                 sabotage: telemetry.in4,
+                siren_pulse_in_progress: telemetry.prl1,
+                lights_pulse_in_progress: [telemetry.poc1, telemetry.poc2],
             };
 
             let now = Utc::now();
