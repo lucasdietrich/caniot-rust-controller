@@ -191,9 +191,12 @@ impl CaniotDevice {
                 }
             }
             ResponseData::Attribute { key, value } => {
-                info!(
-                    "Received attribute {} with value {} for device {}",
-                    key, value, self.did
+                self.handle_read_attribute(*key, *value);
+            }
+            ResponseData::Error { source, error } => {
+                warn!(
+                    "Received error response for device {}: {:?} from source {:?}",
+                    self.did, error, source
                 );
             }
             _ => {}
@@ -204,6 +207,26 @@ impl CaniotDevice {
             inner.wrapper_handle_frame(frame, self.measures.get_class_telemetry(), ctx)
         } else {
             Ok(Verdict::default())
+        }
+    }
+
+    fn handle_read_attribute(&mut self, key: u16, value: u32) {
+        match caniot::attributes::parse_attr(key, value) {
+            Some(attr) => {
+                info!(
+                    "Received attribute {} for device {}: {}",
+                    attr.key, self.did, attr
+                );
+            }
+            None => {
+                info!(
+                "Received unknown attribute 0x{:04X} with raw value {} / 0x{:08X} for device {}",
+                key,
+                value,
+                value,
+                self.did
+            );
+            }
         }
     }
 

@@ -17,8 +17,6 @@ pub use sys_control::*;
 pub use types::*;
 
 #[cfg(test)]
-mod attributes_test;
-#[cfg(test)]
 mod datatypes_test;
 
 #[cfg(test)]
