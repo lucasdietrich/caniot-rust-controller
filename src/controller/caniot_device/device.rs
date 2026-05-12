@@ -4,8 +4,8 @@ use log::{debug, info, warn};
 
 use crate::{
     caniot::{
-        self, classes, BoardClassTelemetry, DeviceId, Endpoint, Response, ResponseData, SysCtrl,
-        TSP,
+        self, classes, BoardClassTelemetry, DeviceId, Endpoint, ParsedAttributeValue, Response,
+        ResponseData, SysCtrl, TSP,
     },
     controller::{
         filtering::{FilterCriteria, FilterableSensor},
@@ -211,22 +211,24 @@ impl CaniotDevice {
     }
 
     fn handle_read_attribute(&mut self, key: u16, value: u32) {
-        match caniot::attributes::parse_attr(key, value) {
-            Some(attr) => {
-                info!(
-                    "Received attribute {} for device {}: {}",
-                    attr.key, self.did, attr
-                );
-            }
-            None => {
-                info!(
-                "Received unknown attribute 0x{:04X} with raw value {} / 0x{:08X} for device {}",
-                key,
-                value,
-                value,
-                self.did
+        if let Some(parsed) = caniot::attributes::parse_attr_value(key, value) {
+            let meta = parsed.get_meta();
+            info!(
+                "Received attribute 0x{:04X} for device {}: {} = {} / 0x{:08X}",
+                key, self.did, meta.display_name, value, value
             );
+
+            info!("Parsed value: {}", parsed);
+
+            match parsed {
+                ParsedAttributeValue::DiagBootSignal(cmmmit) => {}
+                _ => {}
             }
+        } else {
+            info!(
+                "Received unknown attribute 0x{:04X} with raw value {} / 0x{:08X} for device {}",
+                key, value, value, self.did
+            );
         }
     }
 

@@ -3,7 +3,6 @@ use std::{collections::HashMap, future::Future, pin::Pin, sync::Arc};
 use chrono::{DateTime, Utc};
 
 use crate::{
-    caniot::Attribute,
     controller::sensor_change_events::SensorChangeEvent,
     database::{SettingsStore, Storage},
 };
@@ -27,7 +26,7 @@ pub struct ProcessContext<'f> {
     pub storage: Arc<Storage>,
 
     // Update attributes
-    pub update_attributes: HashMap<Attribute, u32>,
+    pub update_attributes: HashMap<u16, u32>,
 
     // Storage update future
     //
