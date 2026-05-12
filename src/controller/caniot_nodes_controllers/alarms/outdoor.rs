@@ -111,11 +111,11 @@ impl DeviceIOState {
     }
 
     pub fn get_south_detector(&self) -> bool {
-        self.detectors[1]
+        self.detectors[0]
     }
 
     pub fn get_east_detector(&self) -> bool {
-        self.detectors[0]
+        self.detectors[1]
     }
 
     pub fn get_sabotage(&self) -> bool {
