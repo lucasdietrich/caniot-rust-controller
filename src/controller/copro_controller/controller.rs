@@ -67,6 +67,9 @@ pub struct CoproControllerStats {
     pub rx_packets: u64,
     pub rx_type_xiaomi: u64,
     pub rx_type_linky_tic: u64,
+    pub rx_control_messages: u64,
+    pub rx_ble_events: u64,
+    pub rx_device_control_commands: u64,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -101,8 +104,16 @@ impl<'a> PrometheusExporterTrait<'a> for CoproControllerStats {
             "controller_copro_iface_rx {}\n\
             controller_copro_iface_rx {{type=\"xiaomi\"}} {}\n\
             controller_copro_iface_rx {{type=\"linky_tic\"}} {}\n\
+            controller_copro_iface_rx_control_messages {}\n\
+            controller_copro_iface_rx_ble_events {}\n\
+            controller_copro_iface_rx_device_control_commands {}\n\
             ",
-            self.rx_packets, self.rx_type_xiaomi, self.rx_type_linky_tic,
+            self.rx_packets,
+            self.rx_type_xiaomi,
+            self.rx_type_linky_tic,
+            self.rx_control_messages,
+            self.rx_ble_events,
+            self.rx_device_control_commands
         )
     }
 }
@@ -244,6 +255,7 @@ impl CoproController {
 
     async fn handle_ble_control_message(&mut self, event: BleControlPayload) {
         info!("BLE event: {}", event);
+        self.stats.rx_ble_events += 1;
 
         match event.message {
             BleControlMessage::Connection(ConnectionEvent::Connected) => {
@@ -307,6 +319,8 @@ impl CoproController {
     async fn handle_device_control_command(&mut self, command: DeviceCtrlCommandMsg) {
         info!("Received DeviceControl command from copro: {:?}", command);
 
+        self.stats.rx_device_control_commands += 1;
+
         // Update stats
         self.devices
             .iter_mut()
@@ -335,6 +349,7 @@ impl CoproController {
             ControlMessage::FirmwareVersion(version) => {
                 info!("BLE Coprocessor firmware version: {}", version);
                 self.firmware_version = Some(version);
+                self.stats.rx_control_messages += 1;
             }
         }
     }
